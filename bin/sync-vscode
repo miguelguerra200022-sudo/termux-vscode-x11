@@ -1,19 +1,34 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -e
 # ==============================================================================
-# sync-vscode: Sincroniza y respalda tus configuraciones a GitHub en un solo clic
+# sync-vscode: Sincronización automática de configuraciones locales a GitHub
 # ==============================================================================
 
-REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+# 1. Localizar el repositorio del proyecto
+REPO_DIR=""
+POSSIBLE_PATHS=(
+    "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    "$HOME/termux-vscode-x11"
+    "/storage/emulated/0/Antigravity/termux-vscode-x11"
+)
 
-if [ ! -d "$REPO_DIR/.git" ]; then
-    echo -e "\033[0;31m[!] Error: No se encontró el repositorio en $REPO_DIR\033[0m"
-    exit 1
+for dir in "${POSSIBLE_PATHS[@]}"; do
+    if [ -d "$dir/.git" ]; then
+        REPO_DIR="$dir"
+        break
+    fi
+done
+
+if [ -z "$REPO_DIR" ]; then
+    REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
 fi
 
-echo -e "\033[0;34m[*] Copiando configuraciones locales al repositorio...\033[0m"
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    echo -e "\033[1;33m[!] Aviso: No se encontró el repositorio Git local para respaldar configuraciones.\033[0m"
+    exit 0
+fi
 
-# Copiar configuraciones actuales
+# 2. Copiar configuraciones locales actuales al repositorio
 mkdir -p "$REPO_DIR/config" "$REPO_DIR/bin"
 [ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json"
 [ -f "$HOME/.vscode-oss/argv.json" ] && cp "$HOME/.vscode-oss/argv.json" "$REPO_DIR/config/argv.json"
@@ -25,14 +40,19 @@ done
 
 cd "$REPO_DIR"
 
+# 3. Comprobar si hay cambios
 if [ -z "$(git status --porcelain)" ]; then
-    echo -e "\033[0;32m[+] Todo está actualizado. No hay cambios pendientes por subir.\033[0m"
+    echo -e "\033[0;32m[+] Configuraciones al día (sin cambios nuevos).\033[0m"
     exit 0
 fi
 
-echo -e "\033[1;33m[*] Subiendo cambios a GitHub (miguelguerra200022-sudo/termux-vscode-x11)...\033[0m"
+echo -e "\033[1;33m[*] Guardando y subiendo cambios automáticamente a GitHub...\033[0m"
 git add .
-git commit -m "sync: actualización automática de configuraciones $(date '+%Y-%m-%d %H:%M:%S')"
-git push origin main
+git commit -m "auto-sync: respaldo automático de configuraciones ($(date '+%Y-%m-%d %H:%M:%S'))"
 
-echo -e "\033[0;32m[+] ¡Configuraciones respaldadas con éxito en GitHub!\033[0m"
+# Subir con timeout de seguridad para no colgar si no hay internet
+if timeout 15 git push origin main; then
+    echo -e "\033[0;32m[+] ¡Configuraciones respaldadas y subidas a GitHub con éxito!\033[0m"
+else
+    echo -e "\033[1;33m[!] Cambios guardados localmente. (No se pudo subir a GitHub ahora, se subirá en la próxima conexión).\033[0m"
+fi

@@ -24,3 +24,9 @@ pulseaudio --kill 2>/dev/null || true
 # 5. Limpiar sockets para que el siguiente inicio sea limpio e inmediato
 rm -rf "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.X11-unix/X*" /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null
 echo "[+] Sesión guardada y entorno gráfico detenido correctamente."
+
+# 6. Sincronización y respaldo 100% automático de configuraciones con GitHub
+if command -v sync-vscode >/dev/null 2>&1; then
+    echo "[*] Sincronizando configuraciones automáticamente con GitHub..."
+    sync-vscode || true
+fi

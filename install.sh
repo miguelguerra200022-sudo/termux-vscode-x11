@@ -2,7 +2,7 @@
 set -e
 
 # ==============================================================================
-# Instalador Automatizado: VS Code Nativo + Termux-X11 (Android)
+# Instalador Automatizado: VS Code Nativo + Termux-X11 Pro (Siempre Última Versión)
 # Repositorio: miguelguerra200022-sudo/termux-vscode-x11
 # ==============================================================================
 
@@ -15,6 +15,7 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  🚀 Instalador de VS Code Nativo + Termux:X11 Pro${NC}"
+echo -e "${CYAN}     (Siempre descargando las últimas versiones)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 
@@ -31,26 +32,36 @@ if [ ! -d "/storage/emulated/0/Download" ]; then
     sleep 2
 fi
 
-# 3. Actualizar repositorios e instalar paquetes necesarios
-echo -e "${YELLOW}[*] Actualizando repositorios de Termux...${NC}"
+# 3. Actualizar repositorios e instalar las versiones más recientes de todo
+echo -e "${YELLOW}[*] Buscando y actualizando paquetes a su última versión disponible...${NC}"
 pkg update -y
+pkg upgrade -y
 
 echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
-echo -e "${YELLOW}[*] Instalando VS Code, X11, Openbox, Audio y utilidades Pro...${NC}"
+echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, X11, Openbox y utilidades...${NC}"
 pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox dbus aria2 pulseaudio termux-tools git cloudflared termux-api
 
-# 4. Descargar APK de Termux:X11 si no existe en Descargas
+# 4. Obtener dinámicamente la última versión de Termux:X11 desde GitHub Releases
+echo -e "${YELLOW}[*] Consultando la última versión oficial de Termux:X11 en GitHub...${NC}"
 APK_PATH="/storage/emulated/0/Download/termux-x11-universal-debug.apk"
-APK_URL="https://github.com/termux/termux-x11/releases/download/nightly/app-arm64-v8a-debug.apk"
+
+# Consultar API de GitHub para obtener la URL de descarga más reciente
+LATEST_APK_URL=$(curl -s "https://api.github.com/repos/termux/termux-x11/releases" 2>/dev/null | grep -o 'https://github.com/termux/termux-x11/releases/download/[^"]*universal-debug\.apk' | head -n 1)
+
+if [ -z "$LATEST_APK_URL" ]; then
+    LATEST_APK_URL="https://github.com/termux/termux-x11/releases/download/nightly/termux-x11-universal-debug.apk"
+fi
+
+echo -e "${CYAN}[i] Versión de Termux:X11 detectada: ${LATEST_APK_URL}${NC}"
 
 if [ ! -f "$APK_PATH" ]; then
-    echo -e "${YELLOW}[*] Descargando la aplicación Termux:X11 a Descargas...${NC}"
-    aria2c -x 4 -s 4 -d "/storage/emulated/0/Download" -o "termux-x11-universal-debug.apk" "$APK_URL" || \
-    curl -L "$APK_URL" -o "$APK_PATH" || true
+    echo -e "${YELLOW}[*] Descargando la última versión del APK a Descargas...${NC}"
+    aria2c -x 4 -s 4 -d "/storage/emulated/0/Download" -o "termux-x11-universal-debug.apk" "$LATEST_APK_URL" || \
+    curl -L "$LATEST_APK_URL" -o "$APK_PATH" || true
     echo -e "${GREEN}[+] APK descargado en: ${APK_PATH}${NC}"
-    echo -e "${YELLOW}[i] Si aún no tienes la app instalada, ábrela e instálala desde tu gestor de archivos o Descargas.${NC}"
+    echo -e "${YELLOW}[i] Instala o actualiza la app Termux:X11 desde tu gestor de archivos o Descargas.${NC}"
 else
     echo -e "${GREEN}[+] APK de Termux:X11 ya disponible en Descargas.${NC}"
 fi
@@ -58,9 +69,10 @@ fi
 # 5. Obtener directorio del script (local o clonado)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
 BASE_RAW="https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main"
+CURL_OPTS=(-fsSL -H "Cache-Control: no-cache" -H "Pragma: no-cache")
 
 # 6. Crear y configurar scripts y comandos de desarrollo en $PREFIX/bin
-echo -e "${YELLOW}[*] Instalando utilidades en el sistema (start-vscode, stop-vscode, share-port, dev-info, notify-done, sync-vscode, setup-swap)...${NC}"
+echo -e "${YELLOW}[*] Instalando utilidades Pro en el sistema...${NC}"
 
 SCRIPTS=("start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done" "sync-vscode" "setup-swap")
 
@@ -68,7 +80,7 @@ for s in "${SCRIPTS[@]}"; do
     if [ -f "$SCRIPT_DIR/bin/$s" ]; then
         cp "$SCRIPT_DIR/bin/$s" "$PREFIX/bin/$s"
     else
-        curl -fsSL "$BASE_RAW/bin/$s" -o "$PREFIX/bin/$s"
+        curl "${CURL_OPTS[@]}" "$BASE_RAW/bin/$s" -o "$PREFIX/bin/$s"
     fi
     chmod +x "$PREFIX/bin/$s"
 done
@@ -85,8 +97,8 @@ if [ -f "$SCRIPT_DIR/config/settings.json" ]; then
     cp "$SCRIPT_DIR/config/settings.json" "$HOME/.config/Code - OSS/User/settings.json"
     cp "$SCRIPT_DIR/config/argv.json" "$HOME/.vscode-oss/argv.json"
 else
-    curl -fsSL "$BASE_RAW/config/settings.json" -o "$HOME/.config/Code - OSS/User/settings.json"
-    curl -fsSL "$BASE_RAW/config/argv.json" -o "$HOME/.vscode-oss/argv.json"
+    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/settings.json" -o "$HOME/.config/Code - OSS/User/settings.json"
+    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/argv.json" -o "$HOME/.vscode-oss/argv.json"
 fi
 
 # 8. Configuración de Openbox (Optimización de pantalla completa sin bordes)
@@ -95,7 +107,7 @@ mkdir -p "$HOME/.config/openbox"
 if [ -f "$SCRIPT_DIR/config/rc.xml" ]; then
     cp "$SCRIPT_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml"
 else
-    curl -fsSL "$BASE_RAW/config/rc.xml" -o "$HOME/.config/openbox/rc.xml"
+    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/rc.xml" -o "$HOME/.config/openbox/rc.xml"
 fi
 
 # 9. Configuración de variables en ~/.bashrc
@@ -115,7 +127,7 @@ echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "🚀 ${CYAN}Comandos disponibles en tu terminal:${NC}"
 echo -e "  • ${YELLOW}start-vscode${NC}      : Abre VS Code con audio y aceleración multi-hilo."
-echo -e "  • ${YELLOW}stop-vscode${NC}       : Cierra limpiamente y guarda sesión, tabs y credenciales."
+echo -e "  • ${YELLOW}stop-vscode${NC}       : Cierra limpiamente y respalda TODO en GitHub automáticamente."
 echo -e "  • ${YELLOW}share-port <port>${NC} : Genera túnel público HTTPS Cloudflare al instante."
 echo -e "  • ${YELLOW}dev-info <port>${NC}   : Muestra enlaces locales y código QR para tu red Wi-Fi."
 echo -e "  • ${YELLOW}notify-done \"msg\"${NC} : Alerta con vibración/notificación al terminar un comando."
