@@ -9,11 +9,12 @@ set -e
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  Instalador de VS Code Nativo + Termux:X11${NC}"
+echo -e "${GREEN}  🚀 Instalador de VS Code Nativo + Termux:X11 Pro${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 
@@ -37,8 +38,8 @@ pkg update -y
 echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
-echo -e "${YELLOW}[*] Instalando VS Code, gestor X11, Openbox y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox dbus aria2 pulseaudio termux-tools git
+echo -e "${YELLOW}[*] Instalando VS Code, X11, Openbox, Audio y utilidades Pro...${NC}"
+pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox dbus aria2 pulseaudio termux-tools git cloudflared termux-api
 
 # 4. Descargar APK de Termux:X11 si no existe en Descargas
 APK_PATH="/storage/emulated/0/Download/termux-x11-universal-debug.apk"
@@ -56,20 +57,22 @@ fi
 
 # 5. Obtener directorio del script (local o clonado)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+BASE_RAW="https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main"
 
-# 6. Crear y configurar scripts de arranque y apagado en $PREFIX/bin
-echo -e "${YELLOW}[*] Configurando comandos 'start-vscode' y 'stop-vscode'...${NC}"
+# 6. Crear y configurar scripts y comandos de desarrollo en $PREFIX/bin
+echo -e "${YELLOW}[*] Instalando utilidades en el sistema (start-vscode, stop-vscode, share-port, dev-info, notify-done, sync-vscode, setup-swap)...${NC}"
 
-if [ -f "$SCRIPT_DIR/bin/start-vscode" ]; then
-    cp "$SCRIPT_DIR/bin/start-vscode" "$PREFIX/bin/start-vscode"
-    cp "$SCRIPT_DIR/bin/stop-vscode" "$PREFIX/bin/stop-vscode"
-else
-    # Si se ejecuta mediante curl directo sin clonar
-    curl -fsSL "https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main/bin/start-vscode" -o "$PREFIX/bin/start-vscode"
-    curl -fsSL "https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main/bin/stop-vscode" -o "$PREFIX/bin/stop-vscode"
-fi
+SCRIPTS=("start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done" "sync-vscode" "setup-swap")
 
-chmod +x "$PREFIX/bin/start-vscode" "$PREFIX/bin/stop-vscode"
+for s in "${SCRIPTS[@]}"; do
+    if [ -f "$SCRIPT_DIR/bin/$s" ]; then
+        cp "$SCRIPT_DIR/bin/$s" "$PREFIX/bin/$s"
+    else
+        curl -fsSL "$BASE_RAW/bin/$s" -o "$PREFIX/bin/$s"
+    fi
+    chmod +x "$PREFIX/bin/$s"
+done
+
 ln -sf "$PREFIX/bin/start-vscode" "$HOME/start-vscode.sh"
 ln -sf "$PREFIX/bin/stop-vscode" "$HOME/stop-vscode.sh"
 
@@ -82,8 +85,8 @@ if [ -f "$SCRIPT_DIR/config/settings.json" ]; then
     cp "$SCRIPT_DIR/config/settings.json" "$HOME/.config/Code - OSS/User/settings.json"
     cp "$SCRIPT_DIR/config/argv.json" "$HOME/.vscode-oss/argv.json"
 else
-    curl -fsSL "https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main/config/settings.json" -o "$HOME/.config/Code - OSS/User/settings.json"
-    curl -fsSL "https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main/config/argv.json" -o "$HOME/.vscode-oss/argv.json"
+    curl -fsSL "$BASE_RAW/config/settings.json" -o "$HOME/.config/Code - OSS/User/settings.json"
+    curl -fsSL "$BASE_RAW/config/argv.json" -o "$HOME/.vscode-oss/argv.json"
 fi
 
 # 8. Configuración de Openbox (Optimización de pantalla completa sin bordes)
@@ -92,7 +95,7 @@ mkdir -p "$HOME/.config/openbox"
 if [ -f "$SCRIPT_DIR/config/rc.xml" ]; then
     cp "$SCRIPT_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml"
 else
-    curl -fsSL "https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main/config/rc.xml" -o "$HOME/.config/openbox/rc.xml"
+    curl -fsSL "$BASE_RAW/config/rc.xml" -o "$HOME/.config/openbox/rc.xml"
 fi
 
 # 9. Configuración de variables en ~/.bashrc
@@ -107,12 +110,15 @@ termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true >/dev
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"
-echo -e "${GREEN}  ¡Instalación y Configuración Completadas con Éxito!${NC}"
+echo -e "${GREEN}  ¡Instalación y Configuración Pro Completadas!${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
-echo -e "Puedes iniciar tu entorno gráfico en cualquier momento con:"
-echo -e "  ${YELLOW}start-vscode${NC}"
-echo ""
-echo -e "Y guardarlo/cerrarlo de forma limpia con:"
-echo -e "  ${YELLOW}stop-vscode${NC}"
+echo -e "🚀 ${CYAN}Comandos disponibles en tu terminal:${NC}"
+echo -e "  • ${YELLOW}start-vscode${NC}      : Abre VS Code con audio y aceleración multi-hilo."
+echo -e "  • ${YELLOW}stop-vscode${NC}       : Cierra limpiamente y guarda sesión, tabs y credenciales."
+echo -e "  • ${YELLOW}share-port <port>${NC} : Genera túnel público HTTPS Cloudflare al instante."
+echo -e "  • ${YELLOW}dev-info <port>${NC}   : Muestra enlaces locales y código QR para tu red Wi-Fi."
+echo -e "  • ${YELLOW}notify-done \"msg\"${NC} : Alerta con vibración/notificación al terminar un comando."
+echo -e "  • ${YELLOW}sync-vscode${NC}       : Respalda tus ajustes a GitHub en un solo clic."
+echo -e "  • ${YELLOW}setup-swap${NC}        : Supervisa la memoria RAM y Swap contra cierres OOM."
 echo ""

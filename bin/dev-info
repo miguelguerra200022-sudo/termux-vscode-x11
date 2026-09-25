@@ -1,0 +1,34 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# dev-info: Inspector de red local y generador de enlaces/QR para desarrollo web
+# ==============================================================================
+
+PORT="${1:-3000}"
+
+# 1. Obtener IP local en la red Wi-Fi
+LOCAL_IP=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n 1)
+if [ -z "$LOCAL_IP" ]; then
+    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+fi
+
+echo -e "\033[0;34m=====================================================\033[0m"
+echo -e "\033[0;32m  📡 Servidor de Desarrollo Local (Puerto: $PORT)\033[0m"
+echo -e "\033[0;34m=====================================================\033[0m"
+echo ""
+echo -e "📱 \033[1;33mEn este móvil (Android):\033[0m"
+echo -e "   http://localhost:$PORT"
+echo ""
+
+if [ -n "$LOCAL_IP" ]; then
+    DEV_URL="http://$LOCAL_IP:$PORT"
+    echo -e "💻 \033[1;33mEn tu PC, Tablet u otros dispositivos (Mismo Wi-Fi):\033[0m"
+    echo -e "   $DEV_URL"
+    echo ""
+    echo -e "\033[0;34m[*] Código QR para escanear con la cámara de otro dispositivo:\033[0m"
+    curl -s -m 4 "https://qrenco.de/$DEV_URL" 2>/dev/null || true
+    echo ""
+else
+    echo -e "\033[1;31m[!] No se detectó conexión Wi-Fi activa. Solo disponible en localhost.\033[0m"
+fi
+
+echo -e "\033[0;36m💡 Tip: Para compartirlo públicamente por internet usa: \033[1;32mshare-port $PORT\033[0m"

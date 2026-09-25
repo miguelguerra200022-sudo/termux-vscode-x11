@@ -1,0 +1,23 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# share-port: Túnel HTTPS instantáneo para compartir servidores locales
+# ==============================================================================
+
+PORT="${1:-3000}"
+
+if [ -z "$PORT" ]; then
+    echo "Uso: share-port <puerto> (Ej: share-port 3000)"
+    exit 1
+fi
+
+echo -e "\033[0;34m[*] Creando túnel público HTTPS para el puerto local: $PORT...\033[0m"
+
+# 1. Intentar con Cloudflare Tunnel si está instalado (Recomendado, ultraveloz y seguro)
+if command -v cloudflared >/dev/null 2>&1; then
+    echo -e "\033[0;32m[+] Usando Cloudflare Tunnels (Copia la URL .trycloudflare.com generada abajo):\033[0m"
+    exec cloudflared tunnel --url "http://127.0.0.1:$PORT"
+else
+    # 2. Alternativa sin instalación mediante túnel SSH
+    echo -e "\033[1;33m[*] Cloudflared no detectado. Conectando túnel seguro vía SSH (localhost.run)...\033[0m"
+    exec ssh -R 80:localhost:"$PORT" nokey@localhost.run
+fi

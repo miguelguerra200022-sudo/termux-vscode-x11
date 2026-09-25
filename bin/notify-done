@@ -1,0 +1,23 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# notify-done: Alerta en Android al terminar comandos largos o compilaciones
+# Uso: npm run build && notify-done "Build terminado"
+# ==============================================================================
+
+MSG="${*:-Tarea completada con éxito}"
+TITLE="Termux / VS Code"
+
+# 1. Notificación en barra de Android con timeout para evitar esperas si falta Termux:API app
+if command -v termux-notification >/dev/null 2>&1; then
+    timeout 1.5 termux-notification --title "$TITLE" --content "$MSG" --priority high 2>/dev/null || true
+elif command -v termux-toast >/dev/null 2>&1; then
+    timeout 1.5 termux-toast -s "$MSG" 2>/dev/null || true
+fi
+
+# 2. Vibración háptica rápida si está disponible
+command -v termux-vibrate >/dev/null 2>&1 && timeout 1 termux-vibrate -d 300 2>/dev/null || true
+
+# 3. Sonido de campana en terminal
+printf '\a' 2>/dev/null || true
+
+echo -e "\033[0;32m[🔔 Notificación]: $MSG\033[0m"

@@ -1,0 +1,21 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# setup-swap: Monitor de memoria RAM / Swap y protección contra cierres OOM
+# ==============================================================================
+
+echo -e "\033[0;34m=====================================================\033[0m"
+echo -e "\033[0;32m  🧠 Estado de Memoria y Swap de Android\033[0m"
+echo -e "\033[0;34m=====================================================\033[0m"
+free -h
+echo ""
+
+echo -e "\033[1;33m[*] Procesos que más memoria consumen actualmente:\033[0m"
+ps -eo pid,user,%mem,command --sort=-%mem 2>/dev/null | head -n 6 || ps aux | head -n 6
+echo ""
+
+SWAP_FREE=$(free -m | awk '/Swap:/ {print $4}')
+if [ -n "$SWAP_FREE" ] && [ "$SWAP_FREE" -lt 500 ]; then
+    echo -e "\033[1;31m[⚠️ Alerta]: Tienes menos de 500MB de Swap disponible. Considera cerrar apps pesadas en segundo plano antes de compilar.\033[0m"
+else
+    echo -e "\033[0;32m[+] Tienes suficiente memoria disponible para compilar y ejecutar VS Code sin riesgo de cierre.\033[0m"
+fi
