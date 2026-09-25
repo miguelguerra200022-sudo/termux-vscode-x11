@@ -64,6 +64,26 @@ fi
 echo "[*] Abriendo app Termux:X11..."
 am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || true
 
-# 10. Iniciar VS Code con optimizaciones de memoria y contraseñas
+# 10. Asegurar que la Guía Rápida esté siempre presente y abierta en el directorio de trabajo
+MASTER_GUIDE="/data/data/com.termux/files/usr/share/termux-vscode-x11/GUIA_RAPIDA.md"
+
+# Determinar carpeta de trabajo
+TARGET_DIR="${1:-$PWD}"
+if [ -f "$TARGET_DIR" ]; then
+    TARGET_DIR=$(dirname "$TARGET_DIR")
+fi
+
+# Si no existe la guía en el directorio de trabajo, copiarla desde la maestra
+if [ -f "$MASTER_GUIDE" ]; then
+    if [ ! -f "$TARGET_DIR/GUIA_RAPIDA.md" ]; then
+        cp "$MASTER_GUIDE" "$TARGET_DIR/GUIA_RAPIDA.md" 2>/dev/null || true
+    fi
+fi
+
+# 11. Iniciar VS Code abriendo la carpeta y la Guía Rápida como primera pestaña activa
 echo "[+] Lanzando VS Code con sesión persistente..."
-exec code --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$@"
+if [ -f "$TARGET_DIR/GUIA_RAPIDA.md" ]; then
+    exec code --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$TARGET_DIR" "$TARGET_DIR/GUIA_RAPIDA.md" "$@"
+else
+    exec code --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$@"
+fi

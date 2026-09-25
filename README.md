@@ -54,6 +54,7 @@ chmod +x install.sh
 | :--- | :--- |
 | `start-vscode` | Arranca VS Code con Wakelock, audio, aceleración multi-hilo y entorno gráfico. |
 | `stop-vscode` | Cierra limpiamente, guarda pestañas y credenciales, y respalda automáticamente tus configuraciones a GitHub. |
+| `guia` | Abre inmediatamente la copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md). |
 | `start-vscode-web` | Modo Dual: comparte la pantalla de VS Code para usarlo desde tu PC o Tablet en la red local. |
 | `new-project` | Generador interactivo de proyectos (Python, Web, Bots, Node) listos con Git en 3 segundos. |
 | `set-marketplace` | Alterna entre la tienda oficial de Microsoft Marketplace (`official`) y Open-VSX (`openvsx`). |

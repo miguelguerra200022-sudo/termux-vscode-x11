@@ -85,6 +85,7 @@ SCRIPTS=(
     "fix-phantom-killer"
     "new-project"
     "start-vscode-web"
+    "guia"
 )
 
 for s in "${SCRIPTS[@]}"; do
@@ -162,6 +163,13 @@ if [ ! -f "$PREFIX/share/fonts/TTF/FiraCode-Regular.ttf" ]; then
     cp "$FONT_TMP/ttf/"*.ttf "$PREFIX/share/fonts/TTF/" 2>/dev/null && \
     cp "$FONT_TMP/ttf/FiraCode-Regular.ttf" "$HOME/.termux/font.ttf" 2>/dev/null || true
     rm -rf "$FONT_TMP"
+# 14. Instalar copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md)
+echo -e "${YELLOW}[*] Instalando copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md)...${NC}"
+mkdir -p "$PREFIX/share/termux-vscode-x11"
+if [ -f "$SCRIPT_DIR/docs/GUIA_RAPIDA.md" ]; then
+    cp "$SCRIPT_DIR/docs/GUIA_RAPIDA.md" "$PREFIX/share/termux-vscode-x11/GUIA_RAPIDA.md"
+else
+    curl "${CURL_OPTS[@]}" "$BASE_RAW/docs/GUIA_RAPIDA.md" -o "$PREFIX/share/termux-vscode-x11/GUIA_RAPIDA.md"
 fi
 
 echo ""
@@ -170,8 +178,9 @@ echo -e "${GREEN}  ¡Instalación y Configuración Pro Completadas!${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "🚀 ${CYAN}Comandos Pro disponibles en tu terminal:${NC}"
-echo -e "  • ${YELLOW}start-vscode${NC}      : Abre VS Code con audio y aceleración multi-hilo."
+echo -e "  • ${YELLOW}start-vscode${NC}      : Abre VS Code con audio, aceleración y la Guía Rápida en pantalla."
 echo -e "  • ${YELLOW}stop-vscode${NC}       : Cierra limpiamente y respalda TODO en GitHub automáticamente."
+echo -e "  • ${YELLOW}guia${NC}              : Abre la copia original permanente de la Guía (@GUIA_RAPIDA.md)."
 echo -e "  • ${YELLOW}start-vscode-web${NC}  : Comparte VS Code para usarlo desde tu PC o Tablet remota."
 echo -e "  • ${YELLOW}new-project${NC}       : Generador interactivo de plantillas de proyectos en 3 segundos."
 echo -e "  • ${YELLOW}share-port <port>${NC} : Genera túnel público HTTPS Cloudflare al instante."

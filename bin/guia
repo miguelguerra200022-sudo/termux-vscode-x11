@@ -1,0 +1,19 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# guia: Abre la copia original permanente de la Guía Rápida en VS Code
+# ==============================================================================
+
+MASTER_GUIDE="/data/data/com.termux/files/usr/share/termux-vscode-x11/GUIA_RAPIDA.md"
+
+if [ ! -f "$MASTER_GUIDE" ]; then
+    echo -e "\033[0;31m[!] No se encontró la guía maestra en $MASTER_GUIDE\033[0m"
+    exit 1
+fi
+
+echo -e "\033[0;32m[*] Abriendo la Guía Rápida en VS Code...\033[0m"
+
+if pgrep -f "code-oss" >/dev/null 2>&1; then
+    code "$MASTER_GUIDE"
+else
+    start-vscode "$MASTER_GUIDE"
+fi
