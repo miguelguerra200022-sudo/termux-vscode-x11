@@ -12,3 +12,10 @@ extensions/
 __pycache__/
 node_modules/
 .DS_Store
+
+# Seguridad y credenciales
+*token*
+*.key
+*.pem
+.env*
+
