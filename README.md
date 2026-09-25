@@ -50,7 +50,7 @@ chmod +x install.sh
 | Comando | Descripción |
 | :--- | :--- |
 | `start-vscode` | Arranca VS Code con Wakelock, audio, aceleración multi-hilo y entorno gráfico. |
-| `stop-vscode` | Cierra de forma ordenada, libera Wakelock y guarda permanentemente pestañas y sesiones. |
+| `stop-vscode` | Cierra limpiamente, guarda pestañas y credenciales, y respalda automáticamente tus configuraciones a GitHub. |
 | `share-port <puerto>` | Genera un túnel público seguro HTTPS con Cloudflare (ej: `share-port 3000`). |
 | `dev-info <puerto>` | Muestra URLs para móvil/PC en tu Wi-Fi y genera un código QR escaneable. |
 | `notify-done "texto"` | Envía notificación y vibración a Android al terminar un comando. |
