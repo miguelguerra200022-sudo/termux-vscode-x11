@@ -1,0 +1,23 @@
+#!/data/data/com.termux/files/usr/bin/bash
+echo "[*] Guardando sesión y cerrando VS Code..."
+
+# 1. Enviar señal de cierre limpio (SIGTERM) para que VS Code guarde estado, pestañas y credenciales
+pkill -15 -f "code-oss" 2>/dev/null
+
+# 2. Esperar a que los procesos de VS Code finalicen limpiamente y guarden en disco
+for i in {1..12}; do
+    if ! pgrep -f "code-oss" >/dev/null 2>&1; then
+        break
+    fi
+    sleep 0.5
+done
+
+# 3. Forzar el cierre de procesos restantes si quedó alguno colgado
+pkill -9 -f "code-oss" 2>/dev/null
+pkill -9 -x "openbox" 2>/dev/null
+pkill -9 -f "termux-x11" 2>/dev/null
+pulseaudio --kill 2>/dev/null || true
+
+# Limpiar sockets para que el siguiente inicio sea limpio e inmediato
+rm -rf "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.X11-unix/X*" /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null
+echo "[+] Sesión guardada y entorno gráfico detenido correctamente."

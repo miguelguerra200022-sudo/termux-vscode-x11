@@ -1,0 +1,61 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+# 1. Variables de entorno X11, DBus y Navegador
+export XDG_RUNTIME_DIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
+export DISPLAY=:0
+export PULSE_SERVER=127.0.0.1
+export BROWSER=termux-open-url
+
+# 2. Persistencia de credenciales, sesiones y tokens
+export VSCODE_CLI_USE_FILE_KEYCHAIN=1
+
+# Configurar preferencias móviles de Termux-X11 (Portapapeles activo, pantalla completa)
+termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true >/dev/null 2>&1 || true
+
+# Iniciar servidor de sonido PulseAudio si no está activo
+if ! pgrep -x "pulseaudio" > /dev/null 2>&1; then
+    pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1 >/dev/null 2>&1 || true
+fi
+
+# Iniciar bus de sesión D-Bus si no está activo
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] || ! pgrep -x "dbus-daemon" > /dev/null 2>&1; then
+    eval $(dbus-launch --sh-syntax 2>/dev/null)
+fi
+
+echo "[*] Preparando entorno gráfico Termux-X11..."
+
+# 3. Iniciar el servidor Termux-X11 si no está activo
+if ! pgrep -f "termux-x11.*:0" > /dev/null 2>&1; then
+    # Limpiar posibles sockets huérfanos anteriores
+    rm -rf "$XDG_RUNTIME_DIR/.X11-unix/X*" /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null
+    
+    echo "[*] Arrancando servidor Termux-X11 en :0..."
+    termux-x11 :0 -ac > "$XDG_RUNTIME_DIR/x11.log" 2>&1 &
+    disown
+    
+    # Esperar activamente a que el socket X0 esté listo
+    for i in {1..30}; do
+        if [ -S "$XDG_RUNTIME_DIR/.X11-unix/X0" ] || [ -S "/data/data/com.termux/files/usr/tmp/.X11-unix/X0" ]; then
+            break
+        fi
+        sleep 0.2
+    done
+else
+    echo "[+] Servidor Termux-X11 ya en ejecución."
+fi
+
+# 4. Iniciar el gestor de ventanas Openbox en segundo plano
+if ! pgrep -x "openbox" > /dev/null 2>&1; then
+    echo "[*] Iniciando gestor de ventanas Openbox..."
+    openbox >/dev/null 2>&1 &
+    disown
+    sleep 0.5
+fi
+
+# 5. Traer la app Termux:X11 al frente en la pantalla del teléfono
+echo "[*] Abriendo app Termux:X11..."
+am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || true
+
+# 6. Iniciar VS Code con almacenamiento de contraseñas persistente
+echo "[+] Lanzando VS Code con sesión persistente..."
+exec code --no-sandbox --disable-gpu --password-store=basic "$@"

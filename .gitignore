@@ -1,0 +1,14 @@
+# Logs y temporales
+*.log
+*.tmp
+.X11-unix/
+
+# Carpetas de extensiones pesadas (se mantienen fuera del instalador)
+extensions/
+.vscode-oss/extensions/
+*.vsix
+
+# Archivos de caché del sistema
+__pycache__/
+node_modules/
+.DS_Store

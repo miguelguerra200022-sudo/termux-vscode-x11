@@ -1,0 +1,6 @@
+{
+    "window.restoreWindows": "all",
+    "workbench.startupEditor": "restoreOpenedEditors",
+    "files.hotExit": "onExitAndWindowClose",
+    "workbench.externalBrowser": "termux-open-url"
+}

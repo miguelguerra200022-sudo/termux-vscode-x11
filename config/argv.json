@@ -1,0 +1,4 @@
+{
+    "enable-crash-reporter": true,
+    "password-store": "basic"
+}
