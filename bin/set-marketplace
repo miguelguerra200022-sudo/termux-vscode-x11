@@ -1,0 +1,46 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# set-marketplace: Alterna entre la tienda oficial de Microsoft y Open-VSX
+# Uso: set-marketplace [official|openvsx]
+# ==============================================================================
+
+MODE="${1:-official}"
+PRODUCT_JSON="/data/data/com.termux/files/usr/lib/code-oss/resources/app/product.json"
+
+if [ ! -f "$PRODUCT_JSON" ]; then
+    echo -e "\033[0;31m[!] No se encontró product.json de VS Code en $PRODUCT_JSON\033[0m"
+    exit 1
+fi
+
+python3 - "$MODE" "$PRODUCT_JSON" << 'EOF'
+import sys, json
+
+mode = sys.argv[1].lower()
+path = sys.argv[2]
+
+with open(path, 'r') as f:
+    data = json.load(f)
+
+if mode in ('official', 'microsoft'):
+    data['extensionsGallery'] = {
+        'serviceUrl': 'https://marketplace.visualstudio.com/_apis/public/gallery',
+        'cacheUrl': 'https://vscode.blob.core.windows.net/gallery/index',
+        'itemUrl': 'https://marketplace.visualstudio.com/items'
+    }
+    trusted = data.get('linkProtectionTrustedDomains', [])
+    if 'https://marketplace.visualstudio.com' not in trusted:
+        trusted.append('https://marketplace.visualstudio.com')
+    data['linkProtectionTrustedDomains'] = trusted
+    print("\033[0;32m[+] Tienda configurada: Oficial de Microsoft Marketplace (Más de 60.000 extensiones).\033[0m")
+else:
+    data['extensionsGallery'] = {
+        'serviceUrl': 'https://open-vsx.org/vscode/gallery',
+        'itemUrl': 'https://open-vsx.org/vscode/item'
+    }
+    print("\033[1;33m[+] Tienda configurada: Open-VSX comunitaria.\033[0m")
+
+with open(path, 'w') as f:
+    json.dump(data, f, indent=4)
+EOF
+
+echo -e "\033[0;36m[i] Reinicia VS Code ('stop-vscode' y luego 'start-vscode') para aplicar los cambios en la tienda.\033[0m"

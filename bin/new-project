@@ -1,0 +1,181 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# new-project: Generador interactivo de plantillas de proyectos en 3 segundos
+# ==============================================================================
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo -e "${BLUE}=====================================================${NC}"
+echo -e "${GREEN}  ⚡ Generador Rápido de Proyectos para VS Code${NC}"
+echo -e "${BLUE}=====================================================${NC}"
+echo ""
+echo -e "Selecciona el tipo de proyecto:"
+echo -e "  ${YELLOW}1)${NC} 🐍 Python (Entorno virtual venv + main.py)"
+echo -e "  ${YELLOW}2)${NC} 🌐 Web Moderna (HTML5 + CSS + JavaScript)"
+echo -e "  ${YELLOW}3)${NC} 🤖 Bot de Telegram / API (FastAPI / Telegram Bot)"
+echo -e "  ${YELLOW}4)${NC} 🚀 Node.js Backend (Express API + package.json)"
+echo ""
+
+read -p "Opción [1-4]: " OPTION
+read -p "Nombre del proyecto (carpeta): " PNAME
+
+if [ -z "$PNAME" ]; then
+    echo -e "${RED}[!] Debes ingresar un nombre de proyecto.${NC}"
+    exit 1
+fi
+
+mkdir -p "$PNAME"
+cd "$PNAME"
+
+case "$OPTION" in
+    1)
+        echo -e "${CYAN}[*] Inicializando proyecto Python...${NC}"
+        cat << 'EOF' > main.py
+def main():
+    print("🚀 ¡Hola desde tu proyecto Python en Termux VS Code!")
+
+if __name__ == "__main__":
+    main()
+EOF
+        cat << 'EOF' > requirements.txt
+# Agrega tus librerías aquí
+requests
+EOF
+        cat << 'EOF' > .gitignore
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+EOF
+        python3 -m venv .venv 2>/dev/null || true
+        ;;
+    2)
+        echo -e "${CYAN}[*] Inicializando proyecto Web Frontend...${NC}"
+        cat << 'EOF' > index.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Web en Termux</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Proyecto Web en VS Code Android</h1>
+        <p>Servidor local corriendo directamente desde Termux.</p>
+        <button id="btn">Haz clic aquí</button>
+        <p id="msg"></p>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
+EOF
+        cat << 'EOF' > style.css
+body {
+    background-color: #0d1117;
+    color: #c9d1d9;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.container {
+    text-align: center;
+    padding: 2rem;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #161b22;
+}
+button {
+    background: #238636;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+EOF
+        cat << 'EOF' > script.js
+document.getElementById('btn').addEventListener('click', () => {
+    document.getElementById('msg').innerText = '✅ ¡JavaScript ejecutándose perfectamente en tu móvil!';
+});
+EOF
+        cat << 'EOF' > .gitignore
+node_modules/
+.DS_Store
+EOF
+        ;;
+    3)
+        echo -e "${CYAN}[*] Inicializando Bot / API en Python...${NC}"
+        cat << 'EOF' > app.py
+from fastapi import FastAPI
+
+app = FastAPI(title="Mi API en Termux")
+
+@app.get("/")
+def read_root():
+    return {"status": "online", "platform": "Android / Termux", "ide": "VS Code"}
+EOF
+        cat << 'EOF' > requirements.txt
+fastapi
+uvicorn
+EOF
+        cat << 'EOF' > .gitignore
+__pycache__/
+.venv/
+.env
+EOF
+        python3 -m venv .venv 2>/dev/null || true
+        ;;
+    4)
+        echo -e "${CYAN}[*] Inicializando API Node.js Express...${NC}"
+        cat << 'EOF' > package.json
+{
+  "name": "api-termux",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {}
+}
+EOF
+        cat << 'EOF' > index.js
+console.log("🚀 Servidor Node.js listo en Termux!");
+EOF
+        cat << 'EOF' > .gitignore
+node_modules/
+.env
+EOF
+        ;;
+    *)
+        echo "Opción no válida."
+        exit 1
+        ;;
+esac
+
+# Inicializar Git si está disponible
+if command -v git >/dev/null 2>&1; then
+    git init -b main >/dev/null 2>&1 || git init >/dev/null 2>&1
+    git add . >/dev/null 2>&1
+    git commit -m "feat: initial commit for $PNAME" >/dev/null 2>&1 || true
+fi
+
+echo ""
+echo -e "${GREEN}[✓ Proyecto '$PNAME' creado con éxito!]${NC}"
+echo -e "Ruta: \033[1;33m$(pwd)\033[0m"
+echo ""
+
+read -p "¿Deseas abrir este proyecto ahora en VS Code? (S/n): " OPEN_VS
+if [[ ! "$OPEN_VS" =~ ^[nN]$ ]]; then
+    start-vscode "$(pwd)" &
+fi

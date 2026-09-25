@@ -1,0 +1,41 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# start-vscode-web: Modo Dual para usar VS Code desde el navegador de tu PC/Tablet
+# ==============================================================================
+
+PORT="${1:-6080}"
+LOCAL_IP=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n 1)
+[ -z "$LOCAL_IP" ] && LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+
+echo -e "\033[0;34m=====================================================\033[0m"
+echo -e "\033[0;32m  💻 Modo Dual: VS Code en tu PC / Tablet (Remoto)\033[0m"
+echo -e "\033[0;34m=====================================================\033[0m"
+
+# 1. Asegurar que el entorno gráfico y VS Code estén corriendo
+if ! pgrep -f "code-oss" >/dev/null 2>&1; then
+    echo -e "\033[1;33m[*] Iniciando entorno VS Code en segundo plano...\033[0m"
+    start-vscode >/dev/null 2>&1 &
+    sleep 2
+fi
+
+# 2. Iniciar servidor VNC para compartir la pantalla :0
+if command -v x11vnc >/dev/null 2>&1; then
+    if ! pgrep -x "x11vnc" >/dev/null 2>&1; then
+        echo -e "\033[1;33m[*] Compartiendo pantalla de VS Code en la red local...\033[0m"
+        x11vnc -display :0 -rfbport 5900 -nopw -forever -shared >/dev/null 2>&1 &
+        disown
+    fi
+fi
+
+echo ""
+echo -e "🌐 \033[1;32mAbre este enlace en el navegador de tu Laptop, PC o Tablet:\033[0m"
+if [ -n "$LOCAL_IP" ]; then
+    echo -e "   \033[1;36mhttp://$LOCAL_IP:5900\033[0m (o cliente VNC)"
+    echo -e "   Móvil local: \033[1;33mhttp://localhost:5900\033[0m"
+    echo ""
+    echo -e "\033[0;34m[*] Escanea con tu tablet o laptop para conectar:\033[0m"
+    curl -s -m 4 "https://qrenco.de/http://$LOCAL_IP:5900" 2>/dev/null || true
+fi
+
+echo ""
+echo -e "💡 \033[0;33mTip: Para acceder desde fuera de tu casa por internet, ejecuta:\033[0m \033[1;32mshare-port 5900\033[0m"

@@ -41,13 +41,12 @@ echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
 echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, X11, Openbox y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox dbus aria2 pulseaudio termux-tools git cloudflared termux-api
+pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip
 
 # 4. Obtener dinámicamente la última versión de Termux:X11 desde GitHub Releases
 echo -e "${YELLOW}[*] Consultando la última versión oficial de Termux:X11 en GitHub...${NC}"
 APK_PATH="/storage/emulated/0/Download/termux-x11-universal-debug.apk"
 
-# Consultar API de GitHub para obtener la URL de descarga más reciente
 LATEST_APK_URL=$(curl -s "https://api.github.com/repos/termux/termux-x11/releases" 2>/dev/null | grep -o 'https://github.com/termux/termux-x11/releases/download/[^"]*universal-debug\.apk' | head -n 1)
 
 if [ -z "$LATEST_APK_URL" ]; then
@@ -74,7 +73,19 @@ CURL_OPTS=(-fsSL -H "Cache-Control: no-cache" -H "Pragma: no-cache")
 # 6. Crear y configurar scripts y comandos de desarrollo en $PREFIX/bin
 echo -e "${YELLOW}[*] Instalando utilidades Pro en el sistema...${NC}"
 
-SCRIPTS=("start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done" "sync-vscode" "setup-swap")
+SCRIPTS=(
+    "start-vscode"
+    "stop-vscode"
+    "share-port"
+    "dev-info"
+    "notify-done"
+    "sync-vscode"
+    "setup-swap"
+    "set-marketplace"
+    "fix-phantom-killer"
+    "new-project"
+    "start-vscode-web"
+)
 
 for s in "${SCRIPTS[@]}"; do
     if [ -f "$SCRIPT_DIR/bin/$s" ]; then
@@ -88,7 +99,7 @@ done
 ln -sf "$PREFIX/bin/start-vscode" "$HOME/start-vscode.sh"
 ln -sf "$PREFIX/bin/stop-vscode" "$HOME/stop-vscode.sh"
 
-# 7. Configuración de VS Code (Sesión persistente, navegador móvil, hotExit)
+# 7. Configuración de VS Code (OLED Pure Black, fuentes con ligaduras, persistencia y navegador)
 echo -e "${YELLOW}[*] Aplicando configuraciones de VS Code...${NC}"
 mkdir -p "$HOME/.config/Code - OSS/User"
 mkdir -p "$HOME/.vscode-oss"
@@ -120,16 +131,53 @@ grep -q "BROWSER=termux-open-url" "$HOME/.bashrc" || echo "export BROWSER=termux
 echo -e "${YELLOW}[*] Optimizando preferencias de Termux:X11 (Portapapeles, Pantalla Completa)...${NC}"
 termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true >/dev/null 2>&1 || true
 
+# 11. Configurar accesos directos para la app Termux:Widget en pantalla de inicio
+echo -e "${YELLOW}[*] Configurando accesos directos de pantalla de inicio (~/.shortcuts/)...${NC}"
+mkdir -p "$HOME/.shortcuts/tasks"
+cat << 'EOF' > "$HOME/.shortcuts/VS-Code"
+#!/data/data/com.termux/files/usr/bin/bash
+start-vscode
+EOF
+cat << 'EOF' > "$HOME/.shortcuts/Cerrar-VS-Code"
+#!/data/data/com.termux/files/usr/bin/bash
+stop-vscode
+EOF
+cat << 'EOF' > "$HOME/.shortcuts/Compartir-Web"
+#!/data/data/com.termux/files/usr/bin/bash
+dev-info 8080
+EOF
+chmod -R 700 "$HOME/.shortcuts"
+
+# 12. Habilitar la tienda oficial de Microsoft Marketplace
+echo -e "${YELLOW}[*] Desbloqueando la tienda oficial de extensiones de Microsoft...${NC}"
+"$PREFIX/bin/set-marketplace" official >/dev/null 2>&1 || true
+
+# 13. Descargar e instalar tipografía Fira Code con ligaduras
+if [ ! -f "$PREFIX/share/fonts/TTF/FiraCode-Regular.ttf" ]; then
+    echo -e "${YELLOW}[*] Instalando tipografía Fira Code con ligaduras de programación...${NC}"
+    FONT_TMP="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/firafont"
+    mkdir -p "$FONT_TMP" "$PREFIX/share/fonts/TTF" "$HOME/.termux"
+    curl -sL "https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip" -o "$FONT_TMP/fira.zip" 2>/dev/null && \
+    unzip -q "$FONT_TMP/fira.zip" -d "$FONT_TMP" 2>/dev/null && \
+    cp "$FONT_TMP/ttf/"*.ttf "$PREFIX/share/fonts/TTF/" 2>/dev/null && \
+    cp "$FONT_TMP/ttf/FiraCode-Regular.ttf" "$HOME/.termux/font.ttf" 2>/dev/null || true
+    rm -rf "$FONT_TMP"
+fi
+
 echo ""
 echo -e "${GREEN}======================================================${NC}"
 echo -e "${GREEN}  ¡Instalación y Configuración Pro Completadas!${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
-echo -e "🚀 ${CYAN}Comandos disponibles en tu terminal:${NC}"
+echo -e "🚀 ${CYAN}Comandos Pro disponibles en tu terminal:${NC}"
 echo -e "  • ${YELLOW}start-vscode${NC}      : Abre VS Code con audio y aceleración multi-hilo."
 echo -e "  • ${YELLOW}stop-vscode${NC}       : Cierra limpiamente y respalda TODO en GitHub automáticamente."
+echo -e "  • ${YELLOW}start-vscode-web${NC}  : Comparte VS Code para usarlo desde tu PC o Tablet remota."
+echo -e "  • ${YELLOW}new-project${NC}       : Generador interactivo de plantillas de proyectos en 3 segundos."
 echo -e "  • ${YELLOW}share-port <port>${NC} : Genera túnel público HTTPS Cloudflare al instante."
 echo -e "  • ${YELLOW}dev-info <port>${NC}   : Muestra enlaces locales y código QR para tu red Wi-Fi."
+echo -e "  • ${YELLOW}set-marketplace${NC}  : Alterna entre tienda Oficial Microsoft y Open-VSX."
+echo -e "  • ${YELLOW}fix-phantom-killer${NC}: Desactiva el Phantom Process Killer de Android 12+."
 echo -e "  • ${YELLOW}notify-done \"msg\"${NC} : Alerta con vibración/notificación al terminar un comando."
 echo -e "  • ${YELLOW}sync-vscode${NC}       : Respalda tus ajustes a GitHub en un solo clic."
 echo -e "  • ${YELLOW}setup-swap${NC}        : Supervisa la memoria RAM y Swap contra cierres OOM."

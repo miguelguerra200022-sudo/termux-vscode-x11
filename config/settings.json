@@ -2,5 +2,22 @@
     "window.restoreWindows": "all",
     "workbench.startupEditor": "restoreOpenedEditors",
     "files.hotExit": "onExitAndWindowClose",
-    "workbench.externalBrowser": "termux-open-url"
+    "workbench.externalBrowser": "termux-open-url",
+    "editor.fontFamily": "'Fira Code', 'DejaVu Sans Mono', monospace",
+    "editor.fontLigatures": true,
+    "editor.fontSize": 14,
+    "terminal.integrated.fontFamily": "'Fira Code', monospace",
+    "terminal.integrated.fontSize": 13,
+    "workbench.colorTheme": "Default Dark Modern",
+    "workbench.colorCustomizations": {
+        "editor.background": "#000000",
+        "sideBar.background": "#000000",
+        "sideBarSectionHeader.background": "#111111",
+        "activityBar.background": "#000000",
+        "statusBar.background": "#000000",
+        "titleBar.activeBackground": "#000000",
+        "terminal.background": "#000000"
+    },
+    "workbench.tree.indent": 16,
+    "workbench.tree.renderIndentGuides": "always"
 }

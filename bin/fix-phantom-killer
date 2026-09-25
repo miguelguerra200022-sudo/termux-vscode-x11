@@ -1,0 +1,48 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# fix-phantom-killer: Desactiva el Phantom Process Killer de Android 12+
+# ==============================================================================
+
+SDK=$(getprop ro.build.version.sdk 2>/dev/null || echo 0)
+RELEASE=$(getprop ro.build.version.release 2>/dev/null || echo "Desconocida")
+
+echo -e "\033[0;34m=====================================================\033[0m"
+echo -e "\033[0;32m  🛡️ Escudo Anti-Phantom Process Killer de Android\033[0m"
+echo -e "\033[0;34m=====================================================\033[0m"
+echo -e "Versión de Android detectada: \033[1;33mAndroid $RELEASE (SDK $SDK)\033[0m"
+echo ""
+
+# Activar Wakelock inmediatamente
+command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
+echo -e "\033[0;32m[+] Wakelock de Termux activado (evita suspensión de CPU al apagar pantalla).\033[0m"
+
+if [ "$SDK" -lt 31 ]; then
+    echo -e "\033[0;32m[+] Tu versión de Android no tiene Phantom Process Killer activo. ¡Todo en orden!\033[0m"
+    exit 0
+fi
+
+echo -e "\033[1;33m[*] Comprobando métodos para elevar el límite de subprocesos...\033[0m"
+
+# 1. Intentar con Root (su)
+if command -v su >/dev/null 2>&1; then
+    if su -c "/system/bin/device_config put activity_manager max_phantom_processes 2147483647 && /system/bin/settings put global settings_enable_monitor_phantom_procs false" 2>/dev/null; then
+        echo -e "\033[0;32m[✓ Éxito]: Phantom Process Killer desactivado permanentemente mediante Root.\033[0m"
+        exit 0
+    fi
+fi
+
+# 2. Intentar con Shizuku (rish)
+if command -v rish >/dev/null 2>&1; then
+    if rish -c "/system/bin/device_config put activity_manager max_phantom_processes 2147483647 && /system/bin/settings put global settings_enable_monitor_phantom_procs false" 2>/dev/null; then
+        echo -e "\033[0;32m[✓ Éxito]: Phantom Process Killer desactivado permanentemente mediante Shizuku.\033[0m"
+        exit 0
+    fi
+fi
+
+# 3. Instrucción para Wireless Debugging / ADB local
+echo ""
+echo -e "\033[0;36mPara desactivarlo sin root en Android $RELEASE, ejecuta este comando en tu terminal ADB:\033[0m"
+echo ""
+echo -e "  \033[1;32madb shell \"/system/bin/device_config put activity_manager max_phantom_processes 2147483647 && /system/bin/settings put global settings_enable_monitor_phantom_procs false\"\033[0m"
+echo ""
+echo -e "\033[0;33m💡 Consejo: Puedes usar la app 'LADB' o 'Shizuku' directamente desde tu teléfono sin cables ni PC.\033[0m"
