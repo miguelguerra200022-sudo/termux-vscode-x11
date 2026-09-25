@@ -19,3 +19,9 @@ node_modules/
 *.pem
 .env*
 
+# Datos locales del usuario (no compartir en Git)
+*proyectos.json
+*historial.json
+termux-vscode/
+
+
