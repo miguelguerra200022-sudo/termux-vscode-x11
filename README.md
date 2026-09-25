@@ -52,7 +52,8 @@ chmod +x install.sh
 
 | Comando | Descripción |
 | :--- | :--- |
-| `start-vscode` | Arranca VS Code con Wakelock, audio, aceleración multi-hilo y entorno gráfico. |
+| `vscode` | Explorador interactivo con números y flechas para navegar por cualquier carpeta del dispositivo y abrirla en VS Code. |
+| `start-vscode` | Arranca VS Code directo en la carpeta actual con Wakelock, audio, aceleración multi-hilo y entorno gráfico. |
 | `stop-vscode` | Cierra limpiamente, guarda pestañas y credenciales, y respalda automáticamente tus configuraciones a GitHub. |
 | `guia` | Abre inmediatamente la copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md). |
 | `start-vscode-web` | Modo Dual: comparte la pantalla de VS Code para usarlo desde tu PC o Tablet en la red local. |
@@ -72,7 +73,7 @@ chmod +x install.sh
 Si instalas la aplicación complementaria **Termux:Widget** desde F-Droid:
 1. Mantén presionado un espacio vacío en la pantalla de inicio de tu celular y añade el widget de **Termux**.
 2. Podrás colocar iconos directos para:
-   * 🟢 **VS-Code**: Abre el entorno gráfico de inmediato.
+   * 🟢 **VS-Code**: Abre Termux con el explorador interactivo de carpetas para elegir proyecto con números/flechas y arrancar.
    * 🔴 **Cerrar-VS-Code**: Cierra y respalda todo en GitHub.
    * 🌐 **Compartir-Web**: Muestra enlaces y código QR de tu servidor local.
 

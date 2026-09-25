@@ -21,7 +21,8 @@ Bienvenido a tu entorno de desarrollo nativo. Esta guía se genera automáticame
 
 | Comando | Para qué sirve |
 | :--- | :--- |
-| **`start-vscode`** | Arranca el entorno gráfico, activa el escudo anti-cierres (Wakelock), acelera el procesador a multi-hilo y abre VS Code con tema negro OLED. |
+| **`vscode`** | Abre el explorador interactivo con números y flechas para navegar por cualquier carpeta del dispositivo y abrirla en VS Code. |
+| **`start-vscode`** | Arranca directo en la carpeta actual con el entorno gráfico, escudo anti-cierres (Wakelock), aceleración multi-hilo y tema OLED. |
 | **`stop-vscode`** | Cierra de forma limpia, guarda tus pestañas y sesiones, y **respalda automáticamente tus configuraciones a GitHub**. |
 | **`guia`** | Abre inmediatamente la copia maestra de esta guía en VS Code. |
 

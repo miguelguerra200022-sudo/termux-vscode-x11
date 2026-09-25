@@ -86,6 +86,7 @@ SCRIPTS=(
     "new-project"
     "start-vscode-web"
     "guia"
+    "vscode"
 )
 
 for s in "${SCRIPTS[@]}"; do
@@ -137,7 +138,7 @@ echo -e "${YELLOW}[*] Configurando accesos directos de pantalla de inicio (~/.sh
 mkdir -p "$HOME/.shortcuts/tasks"
 cat << 'EOF' > "$HOME/.shortcuts/VS-Code"
 #!/data/data/com.termux/files/usr/bin/bash
-start-vscode
+vscode
 EOF
 cat << 'EOF' > "$HOME/.shortcuts/Cerrar-VS-Code"
 #!/data/data/com.termux/files/usr/bin/bash
@@ -178,7 +179,8 @@ echo -e "${GREEN}  ¡Instalación y Configuración Pro Completadas!${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "🚀 ${CYAN}Comandos Pro disponibles en tu terminal:${NC}"
-echo -e "  • ${YELLOW}start-vscode${NC}      : Abre VS Code con audio, aceleración y la Guía Rápida en pantalla."
+echo -e "  • ${YELLOW}vscode${NC}            : Explorador interactivo con números/flechas para elegir carpeta y abrir."
+echo -e "  • ${YELLOW}start-vscode${NC}      : Abre VS Code directo con audio, aceleración y la Guía Rápida."
 echo -e "  • ${YELLOW}stop-vscode${NC}       : Cierra limpiamente y respalda TODO en GitHub automáticamente."
 echo -e "  • ${YELLOW}guia${NC}              : Abre la copia original permanente de la Guía (@GUIA_RAPIDA.md)."
 echo -e "  • ${YELLOW}start-vscode-web${NC}  : Comparte VS Code para usarlo desde tu PC o Tablet remota."

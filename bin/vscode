@@ -1,0 +1,219 @@
+#!/data/data/com.termux/files/usr/bin/python3
+import os
+import sys
+import tty
+import termios
+import subprocess
+
+# Colores ANSI
+BLUE = "\033[1;34m"
+GREEN = "\033[1;32m"
+CYAN = "\033[1;36m"
+YELLOW = "\033[1;33m"
+WHITE = "\033[1;37m"
+GRAY = "\033[0;90m"
+RED = "\033[1;31m"
+BOLD = "\033[1m"
+REVERSE = "\033[7m"
+NC = "\033[0m"
+
+BOOKMARKS = {
+    'A': ('Antigravity', '/storage/emulated/0/Antigravity'),
+    'D': ('Descargas', '/storage/emulated/0/Download'),
+    'H': ('Termux Home', os.path.expanduser('~')),
+    'S': ('Almacenamiento', '/storage/emulated/0')
+}
+
+def get_key():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        ch = sys.stdin.read(1)
+        if ch == '\x1b':
+            ch2 = sys.stdin.read(1)
+            if ch2 == '[':
+                ch3 = sys.stdin.read(1)
+                return f"\x1b[{ch3}"
+            return '\x1b'
+        return ch
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+def get_subdirs(path):
+    try:
+        entries = sorted([
+            d for d in os.listdir(path)
+            if not d.startswith('.') and os.path.isdir(os.path.join(path, d))
+        ], key=lambda s: s.lower())
+        return entries
+    except PermissionError:
+        return []
+    except Exception:
+        return []
+
+def launch_vscode(target_path):
+    print(f"\n{GREEN}[✓] Abriendo en VS Code:{NC} {CYAN}{target_path}{NC}\n")
+    # Limpiar terminal y ejecutar start-vscode
+    cmd = ["start-vscode", target_path]
+    os.execvp("start-vscode", cmd)
+
+def main():
+    # Si se pasó una ruta directa como argumento, abrirla inmediatamente
+    if len(sys.argv) > 1:
+        target = sys.argv[1]
+        if os.path.exists(target):
+            launch_vscode(os.path.abspath(target))
+        else:
+            print(f"{RED}[!] La ruta no existe: {target}{NC}")
+            sys.exit(1)
+
+    # Iniciar en el directorio actual, o en Antigravity / sdcard si está disponible
+    current_dir = os.getcwd()
+    if current_dir == os.path.expanduser('~') and os.path.exists('/storage/emulated/0/Antigravity'):
+        current_dir = '/storage/emulated/0/Antigravity'
+
+    cursor_idx = 0
+    page_size = 15
+    page_offset = 0
+    num_buffer = ""
+
+    while True:
+        # Obtener carpetas
+        subdirs = get_subdirs(current_dir)
+        total_items = 2 + len(subdirs) # 0: Abrir, 1: Subir (..), 2+: subdirs
+
+        # Asegurar cursor dentro de rango
+        if cursor_idx >= total_items:
+            cursor_idx = total_items - 1
+        if cursor_idx < 0:
+            cursor_idx = 0
+
+        # Paginación
+        page_offset = (cursor_idx // page_size) * page_size
+        visible_subdirs = subdirs[page_offset:page_offset + page_size]
+
+        # Limpiar pantalla y dibujar
+        sys.stdout.write("\033[H\033[J")
+        print(f"{BLUE}=================================================================={NC}")
+        print(f"{GREEN}  📂 EXPLORADOR DE CARPETAS INTERACTIVO (VS CODE){NC}")
+        print(f"{BLUE}=================================================================={NC}")
+        print(f"{YELLOW}Ruta actual:{NC} {CYAN}{current_dir}{NC}")
+        print(f"{GRAY}──────────────────────────────────────────────────────────────────{NC}")
+
+        # Opción 0: Abrir aquí
+        prefix_0 = f"{GREEN} > [0]{NC} " if cursor_idx == 0 else "   [0] "
+        style_0 = f"{REVERSE}{GREEN}" if cursor_idx == 0 else f"{BOLD}{GREEN}"
+        print(f"{prefix_0}{style_0}🚀 [ ABRIR ESTA CARPETA EN VS CODE ]{NC}")
+
+        # Opción 1: Subir nivel
+        prefix_up = f"{YELLOW} > [..]{NC}" if cursor_idx == 1 else "   [..]"
+        style_up = f"{REVERSE}{YELLOW}" if cursor_idx == 1 else f"{YELLOW}"
+        print(f"{prefix_up} {style_up}⬆️  Subir un nivel (Volver atrás){NC}")
+        print(f"{GRAY}──────────────────────────────────────────────────────────────────{NC}")
+
+        # Listar subdirectorios visibles
+        if not subdirs:
+            print(f"   {GRAY}(No hay subcarpetas en este directorio){NC}")
+        else:
+            for idx, dname in enumerate(visible_subdirs):
+                real_idx = page_offset + idx + 2
+                is_selected = (cursor_idx == real_idx)
+                prefix = f"{CYAN} > [{page_offset + idx + 1}]{NC}" if is_selected else f"   [{page_offset + idx + 1}]"
+                style = f"{REVERSE}{WHITE}" if is_selected else f"{WHITE}"
+                print(f"{prefix} {style}📁 {dname}{NC}")
+
+            if len(subdirs) > page_size:
+                current_page = (page_offset // page_size) + 1
+                total_pages = ((len(subdirs) - 1) // page_size) + 1
+                print(f"{GRAY}   (Página {current_page} de {total_pages} - Usa flechas para desplazarte){NC}")
+
+        print(f"{GRAY}──────────────────────────────────────────────────────────────────{NC}")
+        print(f"⚡ {BOLD}Atajos directos:{NC} [A] Antigravity | [D] Descargas | [H] Home | [S] Almacenamiento")
+        print(f"🎮 {BOLD}Controles:{NC} [↑/↓] Navegar | [ENTER] Seleccionar | [0-9] Ir a número | [Q] Salir")
+        if num_buffer:
+            print(f"{YELLOW}Número ingresado:{NC} {num_buffer}")
+
+        sys.stdout.flush()
+
+        # Leer tecla
+        k = get_key()
+
+        # Teclas de control y flechas
+        if k in ('\x1b[A', 'k'): # Flecha Arriba
+            cursor_idx -= 1
+            num_buffer = ""
+        elif k in ('\x1b[B', 'j'): # Flecha Abajo
+            cursor_idx += 1
+            num_buffer = ""
+        elif k in ('\x1b[D', 'h', 'b', '\x7f', '\b'): # Flecha Izquierda / Backspace / Volver
+            num_buffer = ""
+            parent = os.path.dirname(os.path.abspath(current_dir))
+            if parent and parent != current_dir:
+                current_dir = parent
+                cursor_idx = 0
+        elif k in ('\x1b[C', 'l'): # Flecha Derecha (Entrar a carpeta)
+            num_buffer = ""
+            if cursor_idx == 0:
+                launch_vscode(current_dir)
+                return
+            elif cursor_idx == 1:
+                parent = os.path.dirname(os.path.abspath(current_dir))
+                if parent and parent != current_dir:
+                    current_dir = parent
+                    cursor_idx = 0
+            else:
+                chosen_dir = subdirs[cursor_idx - 2]
+                current_dir = os.path.join(current_dir, chosen_dir)
+                cursor_idx = 0
+        elif k in ('\r', '\n'): # ENTER
+            if num_buffer:
+                val = int(num_buffer)
+                num_buffer = ""
+                if val == 0:
+                    launch_vscode(current_dir)
+                    return
+                elif 1 <= val <= len(subdirs):
+                    current_dir = os.path.join(current_dir, subdirs[val - 1])
+                    cursor_idx = 0
+                    continue
+
+            if cursor_idx == 0:
+                launch_vscode(current_dir)
+                return
+            elif cursor_idx == 1:
+                parent = os.path.dirname(os.path.abspath(current_dir))
+                if parent and parent != current_dir:
+                    current_dir = parent
+                    cursor_idx = 0
+            else:
+                chosen_dir = subdirs[cursor_idx - 2]
+                current_dir = os.path.join(current_dir, chosen_dir)
+                cursor_idx = 0
+        elif k in ('q', 'Q', '\x03'): # Q o Ctrl+C
+            print(f"\n{YELLOW}[*] Cancelado. Saliendo sin abrir VS Code.{NC}\n")
+            sys.exit(0)
+        elif k in ('o', 'O', ' '): # O o Barra espaciadora: Abrir aquí
+            launch_vscode(current_dir)
+            return
+        elif k.upper() in BOOKMARKS: # Atajos de salto
+            bname, bpath = BOOKMARKS[k.upper()]
+            if os.path.exists(bpath):
+                current_dir = os.path.abspath(bpath)
+                cursor_idx = 0
+                num_buffer = ""
+        elif k.isdigit():
+            num_buffer += k
+            val = int(num_buffer)
+            if val == 0:
+                launch_vscode(current_dir)
+                return
+            elif 1 <= val <= len(subdirs):
+                cursor_idx = val + 1 # Apuntar a la carpeta correspondiente
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nSaliendo...")
+        sys.exit(0)
