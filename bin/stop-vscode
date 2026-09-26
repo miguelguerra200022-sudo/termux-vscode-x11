@@ -1,39 +1,27 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -e
 
-HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
-
-# 1. Autenticación de seguridad antes de cerrar y sincronizar
-if [ -t 0 ]; then
-    echo -ne "🔒 Contraseña: "
-    read -s USER_PASS
-    echo ""
-    INPUT_HASH=$(echo -n "$USER_PASS" | sha256sum | awk '{print $1}')
-    if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
-        echo "[!] Contraseña incorrecta."
-        exit 1
-    fi
-    export SYNC_PASS="$USER_PASS"
-fi
-
 echo "Cerrando..."
+
+# 1. Detener demonio de sincronización
+pkill -f "watcher-sync" 2>/dev/null || true
 
 # 2. Liberar wakelock de Android para ahorrar batería
 command -v termux-wake-unlock >/dev/null 2>&1 && termux-wake-unlock
 
-# 3. Enviar señal de cierre limpio (SIGTERM) para que VS Code y Zen Browser guarden estado, cookies y credenciales
+# 3. Enviar señal de cierre limpio a aplicaciones gráficas
 pkill -15 -f "code-oss" 2>/dev/null || true
 pkill -15 -f "zen-browser" 2>/dev/null || true
 
-# 4. Esperar a que los procesos finalicen limpiamente y guarden en disco
-for i in {1..10}; do
+# 4. Breve espera para que los procesos guarden estado en disco
+for i in {1..4}; do
     if ! pgrep -f "code-oss" >/dev/null 2>&1 && ! pgrep -f "zen-browser" >/dev/null 2>&1; then
         break
     fi
-    sleep 0.4
+    sleep 0.2
 done
 
-# 5. Forzar el cierre de procesos restantes si quedó alguno colgado
+# 5. Cierre definitivo de procesos gráficos restantes
 pkill -9 -f "code-oss" 2>/dev/null || true
 pkill -9 -f "zen-browser" 2>/dev/null || true
 pkill -9 -x "tint2" 2>/dev/null || true
@@ -41,12 +29,10 @@ pkill -9 -x "openbox" 2>/dev/null || true
 pkill -9 -f "termux-x11" 2>/dev/null || true
 pulseaudio --kill 2>/dev/null || true
 
-# 6. Limpiar sockets para que el siguiente inicio sea limpio e inmediato
+# 6. Limpiar sockets temporales para el próximo inicio
 rm -rf "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.X11-unix/X*" /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null || true
 
-# 7. Sincronización segura de datos (silenciosa)
+# 7. Disparar sincronización final rápida en segundo plano (sin retrasar la salida)
 if command -v sync-vscode >/dev/null 2>&1; then
-    sync-vscode --quiet || true
+    nohup sync-vscode --quiet >/dev/null 2>&1 &
 fi
-
-echo "Listo."

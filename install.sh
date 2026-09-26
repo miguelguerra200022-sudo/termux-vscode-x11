@@ -48,7 +48,7 @@ echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
 echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip
+pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl
 
 # 4. Obtener dinámicamente la última versión de Termux:X11 desde GitHub Releases
 echo -e "${YELLOW}[*] Consultando la última versión oficial de Termux:X11 en GitHub...${NC}"
@@ -88,6 +88,7 @@ SCRIPTS=(
     "notify-done"
     "sync-vscode"
     "restore-vscode"
+    "watcher-sync"
     "setup-swap"
     "set-marketplace"
     "fix-phantom-killer"

@@ -1,0 +1,151 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -e
+
+# ==============================================================================
+# watcher-sync: Demonio de Sincronización en Tiempo Real con Debounce Inteligente
+# ==============================================================================
+
+PIDFILE="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/watcher-sync.pid"
+HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
+ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
+
+# 1. Evitar múltiples instancias del demonio
+if [ -f "$PIDFILE" ]; then
+    OLD_PID=$(cat "$PIDFILE" 2>/dev/null || true)
+    if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+        exit 0
+    fi
+fi
+echo $$ > "$PIDFILE"
+trap 'rm -f "$PIDFILE" 2>/dev/null; exit 0' SIGTERM SIGINT SIGHUP EXIT
+
+# 2. Localizar el repositorio
+REPO_DIR=""
+POSSIBLE_PATHS=(
+    "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    "$HOME/termux-vscode-x11"
+    "/storage/emulated/0/Antigravity/termux-vscode-x11"
+)
+for dir in "${POSSIBLE_PATHS[@]}"; do
+    if [ -d "$dir/.git" ]; then
+        REPO_DIR="$dir"
+        break
+    fi
+done
+
+if [ -z "$REPO_DIR" ]; then
+    REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
+fi
+
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    exit 0
+fi
+
+# 3. Función de sincronización y subida silenciosa
+do_sync() {
+    # 3.1 Limpiar posibles bloqueos huérfanos de Git si hubo un cierre forzado
+    if [ -f "$REPO_DIR/.git/index.lock" ]; then
+        if ! pgrep -x "git" >/dev/null 2>&1; then
+            rm -f "$REPO_DIR/.git/index.lock" 2>/dev/null || true
+        fi
+    fi
+
+    # 3.2 Asegurar carpetas en el repositorio
+    mkdir -p "$REPO_DIR/data/vscode/User" "$REPO_DIR/data/zen" "$REPO_DIR/config" "$REPO_DIR/bin"
+
+    # 3.3 Sincronizar VS Code (archivos, extensiones, estado)
+    if [ -d "$HOME/.config/Code - OSS/User" ]; then
+        rsync -rltD --no-perms --no-owner --no-group --delete \
+            --exclude=".git" \
+            --exclude="checkpoints" \
+            --exclude="*.log" \
+            --exclude="*.tmp" \
+            --exclude="*.sock" \
+            --exclude="*.cpuprofile" \
+            --exclude="*.heapsnapshot" \
+            "$HOME/.config/Code - OSS/User/" "$REPO_DIR/data/vscode/User/" 2>/dev/null || true
+    fi
+    [ -f "$HOME/.vscode-oss/argv.json" ] && cp "$HOME/.vscode-oss/argv.json" "$REPO_DIR/data/vscode/argv.json" 2>/dev/null || true
+
+    # 3.4 Sincronizar Zen Browser (incluyendo archivos SQLite WAL/SHM para integridad total)
+    if [ -d "$HOME/.config/zen" ]; then
+        rsync -rltD --no-perms --no-owner --no-group --delete \
+            --exclude="cache2" \
+            --exclude="startupCache" \
+            --exclude="lock" \
+            --exclude=".parentlock" \
+            --exclude="*.tmp" \
+            --exclude="*.log" \
+            --exclude="Crash Reports" \
+            --exclude="minidumps" \
+            "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
+    fi
+
+    # 3.5 Sincronizar configuraciones visuales
+    [ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
+    [ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
+    [ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
+    [ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
+
+    # 3.6 Comprobar si hay cambios para Git
+    cd "$REPO_DIR"
+    CHANGES=$(git status --porcelain data/ config/ bin/ docs/ 2>/dev/null || true)
+    
+    # Comprobar también si hay commits pendientes de empujar
+    UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || true)
+
+    if [ -n "$CHANGES" ]; then
+        git add data/ config/ bin/ docs/ install.sh 2>/dev/null || true
+        git commit -m "sync: cambios en tiempo real ($(date '+%Y-%m-%d %H:%M:%S'))" >/dev/null 2>&1 || true
+        UNPUSHED="1"
+    fi
+
+    # 3.7 Si hay commits sin empujar, intentar subirlos a GitHub
+    if [ -n "$UNPUSHED" ]; then
+        # Verificar conectividad a Internet rápidamente (timeout 2s)
+        if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://github.com >/dev/null 2>&1; then
+            TOKEN="${SYNC_TOKEN:-}"
+            if [ -z "$TOKEN" ] && [ -n "${SYNC_PASS:-}" ]; then
+                TOKEN=$(echo "$ENC_TOKEN" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"$SYNC_PASS" 2>/dev/null || true)
+            fi
+
+            if [ -n "$TOKEN" ]; then
+                timeout 30 git push "https://miguelguerra200022-sudo:${TOKEN}@github.com/miguelguerra200022-sudo/termux-vscode-x11.git" main >/dev/null 2>&1 || true
+            else
+                timeout 30 git push origin main >/dev/null 2>&1 || true
+            fi
+        fi
+    fi
+}
+
+# 4. Asegurar directorios a vigilar
+WATCH_DIRS=()
+[ -d "$HOME/.config/Code - OSS/User" ] && WATCH_DIRS+=("$HOME/.config/Code - OSS/User")
+[ -d "$HOME/.config/zen" ] && WATCH_DIRS+=("$HOME/.config/zen")
+
+if [ ${#WATCH_DIRS[@]} -eq 0 ]; then
+    # Si aún no existen, esperar y reintentar
+    sleep 10
+    exit 0
+fi
+
+# 5. Bucle principal con inotifywait y Debounce Inteligente (30 segundos)
+EXCLUDE_REGEX='(cache2|startupCache|\.parentlock|\.lock|lock|Crash Reports|minidumps|\.log|\.tmp|\.sock|\.cpuprofile|\.heapsnapshot|checkpoints)'
+
+while true; do
+    # inotifywait espera de forma ultraeficiente (0% CPU mientras duerme en el kernel)
+    if inotifywait -r -q -e modify,create,delete,move --exclude "$EXCLUDE_REGEX" "${WATCH_DIRS[@]}" >/dev/null 2>&1; then
+        # Detectó actividad: iniciar temporizador de debounce inteligente (30s)
+        # Si siguen llegando cambios durante los 30 segundos, el temporizador se reinicia
+        while inotifywait -r -q -t 25 -e modify,create,delete,move --exclude "$EXCLUDE_REGEX" "${WATCH_DIRS[@]}" >/dev/null 2>&1; do
+            sleep 1
+        done
+        
+        # Tras 25-30s de silencio sin nuevos cambios, sincronizar limpiamente
+        do_sync || true
+    else
+        # Si inotifywait termina o no está disponible, esperar 180s y sincronizar
+        sleep 180
+        do_sync || true
+    fi
+done
