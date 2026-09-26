@@ -133,28 +133,33 @@ else
     echo -e "${GREEN}[✓] Termux:Widget ya se encuentra instalado.${NC}"
 fi
 
-# 5. Obtener directorio del script y Sanitización Cero-Rastros (Zero-Knowledge)
+# 5. Localización Universal del Repositorio y Sanitización Cero-Rastros
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+mkdir -p "$HOME/.config/termux-vscode"
+
+# Si no se ejecuta desde una carpeta clonada (ej. curl | bash), clonar en $HOME universal
+if [ ! -d "$SCRIPT_DIR/.git" ]; then
+    SCRIPT_DIR="$HOME/termux-vscode-x11"
+    if [ ! -d "$SCRIPT_DIR/.git" ]; then
+        echo -e "${YELLOW}[*] Obteniendo repositorio en ubicación universal ($SCRIPT_DIR)...${NC}"
+        git clone --depth 1 "https://github.com/miguelguerra200022-sudo/termux-vscode-x11.git" "$SCRIPT_DIR" 2>/dev/null || true
+    fi
+fi
+
+# Guardar la ruta universal del repositorio para todos los centinelas y utilidades
 if [ -d "$SCRIPT_DIR/.git" ]; then
+    echo "$SCRIPT_DIR" > "$HOME/.config/termux-vscode/repo_path" 2>/dev/null || true
     CURRENT_REMOTE=$(git -C "$SCRIPT_DIR" config --get remote.origin.url 2>/dev/null || true)
     if [ -n "$CURRENT_REMOTE" ]; then
         TOKEN_FROM_URL=$(echo "$CURRENT_REMOTE" | sed -nE "s/https:\/\/[^:]+:([^@]+)@.*/\1/p")
         [ -z "$TOKEN_FROM_URL" ] && TOKEN_FROM_URL=$(echo "$CURRENT_REMOTE" | sed -nE "s/https:\/\/([^@]+)@.*/\1/p")
         if [ -n "$TOKEN_FROM_URL" ]; then
-            mkdir -p "$HOME/.config/termux-vscode"
             MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
             echo -n "$TOKEN_FROM_URL" | openssl enc -aes-256-cbc -a -A -pbkdf2 -pass pass:"$MACHINE_KEY" > "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
             chmod 400 "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
             rm -f "$HOME/.config/termux-vscode/.auth_token" 2>/dev/null || true
         fi
         CLEAN_REMOTE=$(echo "$CURRENT_REMOTE" | sed -E "s/https:\/\/[^@]+@/https:\/\//")
-        git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
-    fi
-fi
-if [ -d "$SCRIPT_DIR/.git" ]; then
-    CURRENT_REMOTE=$(git -C "$SCRIPT_DIR" config --get remote.origin.url 2>/dev/null || true)
-    if [ -n "$CURRENT_REMOTE" ]; then
-        CLEAN_REMOTE=$(echo "$CURRENT_REMOTE" | sed -E 's/https:\/\/[^@]+@/https:\/\//')
         git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
     fi
 fi

@@ -17,19 +17,27 @@ echo -e "${YELLOW}  🧹 Desinstalador Seguro de VS Code Pro + Centinelas${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 
-# 1. Localizar repositorios
+# 1. Localizar dinámicamente el repositorio en cualquier dispositivo
 REPO_DIR=""
-POSSIBLE_PATHS=(
-    "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
-    "$HOME/termux-vscode-x11"
-    "/storage/emulated/0/Antigravity/termux-vscode-x11"
-)
-for dir in "${POSSIBLE_PATHS[@]}"; do
-    if [ -d "$dir/.git" ]; then
-        REPO_DIR="$dir"
-        break
-    fi
-done
+CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
+fi
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    SCRIPT_PARENT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
+    [ -d "$SCRIPT_PARENT/.git" ] && REPO_DIR="$SCRIPT_PARENT"
+fi
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    for root in "$HOME" "${STORAGE_ROOT:-/storage/emulated/0}" "/sdcard" "/var/mobile"; do
+        [ -d "$root" ] || continue
+        found=$(find "$root" -maxdepth 4 -type d -name "termux-vscode-x11" 2>/dev/null | head -n 1)
+        if [ -n "$found" ] && [ -d "$found/.git" ]; then
+            REPO_DIR="$found"
+            break
+        fi
+    done
+fi
 
 # 2. Respaldo Criptográfico Final en GitHub antes de borrar
 if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
