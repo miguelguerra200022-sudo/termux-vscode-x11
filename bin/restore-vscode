@@ -4,21 +4,17 @@ set -e
 # ==============================================================================
 # restore-vscode: Restauración Completa de VS Code, Zen Browser y Entorno X11
 # ==============================================================================
-# - Verificación por contraseña (hash SHA-256 criptográfico).
-# - Restaura cookies, historial, extensiones y pestañas directamente.
-# ==============================================================================
 
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-HASH_SEGURA="1e875d6311ef243cebac22b61d5fa9fa4bd57ef94db3e8079879b2002ba7ae8a"
+HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
 
 # 1. Autenticación con contraseña protegida
 if [ -t 0 ]; then
-    echo -ne "${CYAN}🔒 Ingrese contraseña de seguridad para restaurar:${NC} "
+    echo -ne "🔒 Contraseña: "
     read -s USER_PASS
     echo ""
 else
@@ -27,7 +23,7 @@ fi
 
 INPUT_HASH=$(echo -n "$USER_PASS" | sha256sum | awk '{print $1}')
 if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
-    echo -e "${RED}[!] Contraseña incorrecta. Acceso denegado.${NC}"
+    echo -e "${RED}[!] Contraseña incorrecta.${NC}"
     exit 1
 fi
 
@@ -51,8 +47,6 @@ if [ -z "$SOURCE_DIR" ]; then
     exit 1
 fi
 
-echo -e "${CYAN}[*] Restaurando entorno, extensiones, historial y sesiones...${NC}"
-
 # 3. Restaurar VS Code
 if [ -d "$SOURCE_DIR/vscode/User" ]; then
     mkdir -p "$HOME/.config/Code - OSS/User"
@@ -75,4 +69,3 @@ mkdir -p "${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
 mkdir -p "$HOME/.config/openbox" "$HOME/.config/tint2"
 
 echo -e "${GREEN}[✓] ¡Restauración completada con éxito!${NC}"
-echo -e "${CYAN}[i] Al abrir VS Code y Zen Browser todo estará tal como lo dejaste.${NC}"
