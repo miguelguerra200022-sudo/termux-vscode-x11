@@ -4,30 +4,9 @@
 # start-vscode: Lanzador ultrarrápido con Anti-Cierres y Optimización Móvil
 # ==============================================================================
 
-# 0. Autenticación de seguridad y Sincronización de Recuperación (Catch-Up)
-HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
-ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
-
-USER_PASS="${SYNC_PASS:-}"
-if [ -z "$USER_PASS" ] && [ -t 0 ]; then
-    echo -ne "🔒 Contraseña: "
-    read -s USER_PASS
-    echo ""
-    INPUT_HASH=$(echo -n "$USER_PASS" | sha256sum | awk '{print $1}')
-    if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
-        echo "[!] Contraseña incorrecta."
-        exit 1
-    fi
-    export SYNC_PASS="$USER_PASS"
-fi
-
-if [ -n "$USER_PASS" ]; then
-    export SYNC_TOKEN=$(echo "$ENC_TOKEN" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"$USER_PASS" 2>/dev/null || true)
-fi
-
-# Disparar sincronización silenciosa en segundo plano por si quedaron cambios de un cierre forzado previo
+# 0. Auto-recuperación silenciosa en segundo plano por si hubo un cierre forzado previo
 if command -v sync-vscode >/dev/null 2>&1; then
-    nohup sync-vscode --quiet >/dev/null 2>&1 &
+    ( sync-vscode --quiet >/dev/null 2>&1 & )
 fi
 
 # 1. Prevenir que Android suspenda o mate el proceso en segundo plano (Anti-Cierres)

@@ -10,21 +10,24 @@ CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+AUTH_FILE="$HOME/.config/termux-vscode/.auth_token"
 HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
 
-# 1. Autenticación con contraseña protegida
-if [ -t 0 ]; then
-    echo -ne "🔒 Contraseña: "
-    read -s USER_PASS
-    echo ""
-else
-    read -r USER_PASS || true
-fi
+# 1. Autenticación protegida (solo si no ha sido instalado previamente)
+if [ ! -f "$AUTH_FILE" ]; then
+    if [ -t 0 ]; then
+        echo -ne "🔒 Contraseña: "
+        read -s USER_PASS
+        echo ""
+    else
+        read -r USER_PASS || true
+    fi
 
-INPUT_HASH=$(echo -n "$USER_PASS" | sha256sum | awk '{print $1}')
-if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
-    echo -e "${RED}[!] Contraseña incorrecta.${NC}"
-    exit 1
+    INPUT_HASH=$(echo -n "$USER_PASS" | sha256sum | awk '{print $1}')
+    if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
+        echo -e "${RED}[!] Contraseña incorrecta.${NC}"
+        exit 1
+    fi
 fi
 
 # 2. Localizar la fuente de datos
