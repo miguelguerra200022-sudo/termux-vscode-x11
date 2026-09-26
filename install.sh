@@ -330,6 +330,8 @@ fi
 echo -e "${YELLOW}[*] Instalando utilidades Pro en el sistema...${NC}"
 
 SCRIPTS=(
+    "encender"
+    "apagar"
     "start-vscode"
     "stop-vscode"
     "share-port"
@@ -367,8 +369,28 @@ for s in "${SCRIPTS[@]}"; do
 done
 chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" 2>/dev/null || true
 
-ln -sf "$PREFIX/bin/start-vscode" "$HOME/start-vscode.sh"
-ln -sf "$PREFIX/bin/stop-vscode" "$HOME/stop-vscode.sh"
+# Enlaces simbólicos de compatibilidad y accesos directos
+ln -sf "$PREFIX/bin/encender" "$PREFIX/bin/vscode" 2>/dev/null || true
+ln -sf "$PREFIX/bin/encender" "$PREFIX/bin/start-vscode" 2>/dev/null || true
+ln -sf "$PREFIX/bin/apagar" "$PREFIX/bin/stop-vscode" 2>/dev/null || true
+ln -sf "$PREFIX/bin/encender" "$HOME/encender.sh" 2>/dev/null || true
+ln -sf "$PREFIX/bin/apagar" "$HOME/apagar.sh" 2>/dev/null || true
+
+# Widgets táctiles para Termux:Widget
+mkdir -p "$HOME/.shortcuts"
+cat << 'EOF_SHORTCUT_ON' > "$HOME/.shortcuts/Encender"
+#!/data/data/com.termux/files/usr/bin/bash
+encender
+EOF_SHORTCUT_ON
+chmod +x "$HOME/.shortcuts/Encender"
+
+cat << 'EOF_SHORTCUT_OFF' > "$HOME/.shortcuts/Apagar"
+#!/data/data/com.termux/files/usr/bin/bash
+apagar
+EOF_SHORTCUT_OFF
+chmod +x "$HOME/.shortcuts/Apagar"
+
+rm -f "$HOME/.shortcuts/VS-Code" "$HOME/.shortcuts/Cerrar-VS-Code" 2>/dev/null || true
 
 # 11. Configuración de VS Code y Openbox
 echo -e "${YELLOW}[*] Aplicando configuraciones de VS Code y Openbox...${NC}"

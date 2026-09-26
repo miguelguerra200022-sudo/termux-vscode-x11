@@ -152,14 +152,19 @@ if ! pgrep -x "tint2" > /dev/null 2>&1; then
     sleep 0.3
 fi
 
-# 8.3 Iniciar el demonio de sincronización en tiempo real en segundo plano
+# 8.4 Iniciar el demonio de sincronización en tiempo real en segundo plano
 if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
     if command -v watcher-sync >/dev/null 2>&1; then
         nohup watcher-sync >/dev/null 2>&1 &
     fi
 fi
 
-# 8.4 Detección Dinámica de Pantalla y Adaptación UI/UX (Safe Areas y Curvatura)
+# 8.5 Traer la app Termux:X11 al frente en la pantalla del teléfono
+echo "[*] Abriendo app Termux:X11..."
+am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || true
+sleep 0.4
+
+# 8.6 Detección Dinámica de Pantalla y Adaptación UI/UX (Safe Areas y Curvatura)
 DISP_W=1080
 DISP_H=0
 if command -v xdotool >/dev/null 2>&1; then
@@ -170,7 +175,7 @@ if command -v xdotool >/dev/null 2>&1; then
     fi
 fi
 
-# 8.5 Cargar Fondo de Pantalla Inteligente (Horizontal vs Vertical adaptativo)
+# 8.7 Cargar Fondo de Pantalla Expandido al 100% (Sin cuadros ni repeticiones)
 WALLPAPER_DIR="$HOME/.config/termux-vscode"
 WALLPAPER_IMG=""
 if [ -n "$DISP_H" ] && [ "$DISP_H" -gt "$DISP_W" ]; then
@@ -203,7 +208,11 @@ if [ -z "$WALLPAPER_IMG" ]; then
 fi
 
 if [ -n "$WALLPAPER_IMG" ] && command -v feh >/dev/null 2>&1; then
-    DISPLAY=:0 feh --bg-fill "$WALLPAPER_IMG" >/dev/null 2>&1 || true
+    DISPLAY=:0 feh --no-fehbg --bg-scale "$WALLPAPER_IMG" >/dev/null 2>&1 || true
+    (
+        sleep 1.2
+        DISPLAY=:0 feh --no-fehbg --bg-scale "$WALLPAPER_IMG" >/dev/null 2>&1 || true
+    ) &
 fi
 
 ZOOM_LEVEL=1
@@ -224,10 +233,6 @@ for sfile in "$HOME/.config/Code - OSS/User/settings.json" "${REPO_DIR:-$PWD}/co
         sed -i -E "s/\"window.zoomLevel\": [0-9.]+/\"window.zoomLevel\": $ZOOM_LEVEL/" "$sfile" 2>/dev/null || true
     fi
 done
-
-# 9. Traer la app Termux:X11 al frente en la pantalla del teléfono
-echo "[*] Abriendo app Termux:X11..."
-am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || true
 
 # 10. Asegurar que la Guía Rápida esté siempre presente y abierta en el directorio de trabajo
 MASTER_GUIDE="/data/data/com.termux/files/usr/share/termux-vscode-x11/GUIA_RAPIDA.md"
