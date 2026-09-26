@@ -92,7 +92,7 @@ f941698683bf4fbb09c612177d27879fc242c8a55236a9127ee899acc784adfe  ./data/vscode/
 2d817b2f240755c84e9568ff95c2804df52374f04f91bb32f8919a67f8b6784f  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-wal
 831aca80a43e9f6e3a21aac14b16ab35cdde8f1ca9127d8c6b374d1591ad3bf4  ./data/vscode/User/globalStorage/state.vscdb
 f73e8fbc22d48e353bc43363c689e5bf0e575df278d411264a93b6d93b8d6b3c  ./data/vscode/User/globalStorage/state.vscdb.backup
-1404a325ebeefc46936f23a51aec4b2ab43c5b72690007b283490d5b734b7828  ./data/vscode/User/globalStorage/storage.json
+24cbfdc68b571ce635437db4d24a182f4109336be40a97445a6366c83abbced7  ./data/vscode/User/globalStorage/storage.json
 8d5bccec199626052664188964f504b6c268b025448c177e8a3c521c37caaa6d  ./data/vscode/User/profiles/builtin/agents/globalStorage/state.vscdb
 f22eecebd113162df1a8967b94a75ba2edf5b030b82b112dcd5b67c618986be3  ./data/vscode/User/settings.json
 c648a30ceefe9969b2b37a27843fd0389936c5b280cb1311243180469fd7cc17  ./data/vscode/User/workspaceStorage/56c0e868/state.vscdb
@@ -116,7 +116,7 @@ ef69a7d7c72de97eff6d3a1422bca780ebd644adb8cda93a92103169eb5f2757  ./data/vscode/
 b79935759dafa295ebacf6708977b1463b4f6b442f8aeea17277c2e4ddec62ce  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/chatEditingSessions/a47181d1-8cd3-486e-9bbd-06c7f95ba965/state.json
 d110a825b0f18f810a9ee18e62e4751dc56a88888e887e571eab1cd0c2b7fa85  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/chatSessions/8717c41c-4e82-4918-9e71-a07e763a3cd4.jsonl
 b6451d2c5a22fdacd4d827ac94532049d20600721fb6d7e0484248ec7abe80b0  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/chatSessions/a47181d1-8cd3-486e-9bbd-06c7f95ba965.jsonl
-fb10822bbef5436fbbe669f9e54294a40ef5d85e8963b977b6372c7fcae7a630  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/state.vscdb
+6410d962c2936ffb4b32f97dc984cb07b7b0cd368682c778ffd34583502a48bc  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/state.vscdb
 79be66da2a862c61d731a74f95df94d88418be0b8a70a25502e03d26746094bc  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/state.vscdb.backup
 208c8b933d2e2c3816b43764b540f9e4445943a9620b923d9a9bf18433b19a04  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/workspace.json
 da2a17c8f8bedb80b2aa1d5e7b8dfe784bbe2f9b145137930feb579a13390466  ./data/vscode/User/workspaceStorage/c867980a3fda79e1bf6e2aa568f09602/state.vscdb
@@ -130,31 +130,32 @@ f68e7ac1e5a17e952f312009dcb5c49e5f3847a8dcd7f6d14bb219f1449e83c7  ./data/zen/Pro
 fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb  ./data/zen/Profile Groups/3a1c5f2b.sqlite-shm
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/Profile Groups/3a1c5f2b.sqlite-wal
 bc572bcd2d3170f19912be559b65c2af09c3944135f3f4c8eddbb62db50a8901  ./data/zen/duajl3es.Default Profile/times.json
+8673e7f3fd8cc30fc6b90f95a3be893b92353503af6565f20790c9f9c6873105  ./data/zen/firefox-mpris/5060_1.png
 757be64eb4a8001ca76f779169ed4caf72059ac1096a07ee5425b8ece098c7c7  ./data/zen/installs.ini
 0fb991ddf95548aa8d020caf9d5d790e346b5f294d87a757da58b912e0e250b1  ./data/zen/profiles.ini
-6d2a079fb881b04e3a2f13174f292eb9629c2b11595baf8fc717548fcd8c96e6  ./data/zen/qqlfient.Default (release)/AlternateServices.bin
+e663073ce8c6e4a3a9db08ff2a54af6fe97510086e1b56d4ad650090d74eb8a6  ./data/zen/qqlfient.Default (release)/AlternateServices.bin
 7d68d7e560fb8b54367653f216210295791773b110cb1691d3006ef9f6fe1c3b  ./data/zen/qqlfient.Default (release)/ExperimentStoreData.json
 41f095127c8d4ad7b3a8b8b71e531ca4988c104ee736c6014046a50930f1d9c7  ./data/zen/qqlfient.Default (release)/SiteSecurityServiceState.bin
 73a443922aa80114793a5ae1ed6abbc24fc7cf19cff40e035eb30b71ab4ba832  ./data/zen/qqlfient.Default (release)/addonStartup.json.lz4
-e11d2cf4ccce237f7bec1377f3f511ddaefce1890bae235dc43cf86ad4bde9f4  ./data/zen/qqlfient.Default (release)/bounce-tracking-protection.sqlite
+c4b9752ab9dd7bc35c12b509a9d13b73703602e819c07d2bf9feacfacbec8717  ./data/zen/qqlfient.Default (release)/bounce-tracking-protection.sqlite
 a86fb8d19e0a7bf1de9ded9f9c6c7dc7723ae656e0883929042011e67c8dee3f  ./data/zen/qqlfient.Default (release)/broadcast-listeners.json
 5c52e8a97930885d92a1bbf98f84bd662778ef73dcbcdba3c09674df673bb2f4  ./data/zen/qqlfient.Default (release)/cert9.db
 085386e5241425c615a84fdcb964c59a145044009ec67e9cf12ef04514cda01f  ./data/zen/qqlfient.Default (release)/chrome/zen-themes.css
 56788355a6c54978be588e98ad31e57e0eb8784ad1c7cade02477598cdebdfa3  ./data/zen/qqlfient.Default (release)/compatibility.ini
 ee22977940eca24fb886d37c18bab2cc1f61ea001a91b2f3a641e4cf929bb9dd  ./data/zen/qqlfient.Default (release)/containers.json
 401f1cd3d0f80362cf26104c45948272e7f6911037896f7e439982122d682ab2  ./data/zen/qqlfient.Default (release)/content-prefs.sqlite
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/content-prefs.sqlite-wal
-567acb8c3ca19960bd425814e1787df9490b02885be1ec9e999987a23c8453a8  ./data/zen/qqlfient.Default (release)/cookies.sqlite
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/cookies.sqlite-wal
+e766d99b4c84743d2b8a8a416ea5cfb7cabef11cb257ffba47abe43ad96879f5  ./data/zen/qqlfient.Default (release)/content-prefs.sqlite-wal
+4d5c88cd8b1b2547604fd79e204d0bfaca03758ad91cbb1ffd99b17e276c7a8e  ./data/zen/qqlfient.Default (release)/cookies.sqlite
+99ee194d17a4939e9ccf4a58642629137e7557025e320602ff1707ae1b86d675  ./data/zen/qqlfient.Default (release)/cookies.sqlite-wal
 8ecad37f682f58b4669834ff64cb1174a63b0f3b1e2e87527f83e9bab70cfd32  ./data/zen/qqlfient.Default (release)/datareporting/glean/client_id.txt
-2cccc0a3502c4e080e92cca6779b48b920023d0ffcef1116f5fb2901b7058242  ./data/zen/qqlfient.Default (release)/datareporting/glean/db/data.safe.bin
-92cfd43390365f5d2d08a85138a16ed15c78de6257c2b7b52b5c2aa8ce968d42  ./data/zen/qqlfient.Default (release)/datareporting/glean/events/events
+fad698ab2269d4782f25187aa78bb3120718c3127f6fb10415cf177104fe6039  ./data/zen/qqlfient.Default (release)/datareporting/glean/db/data.safe.bin
+00353431dbe0b2a3084681002d9d1fa467ece076ec449d643687ad8a5fcb8549  ./data/zen/qqlfient.Default (release)/datareporting/glean/events/events
 03c2fd5df90de8a951a556d9a980b4bf8c4f0a5475ed95903633d6ba2d7278d6  ./data/zen/qqlfient.Default (release)/datareporting/state.json
 cd349a4dbe114d4347153b9e6f09f3e50aaa69b58db6c3cebf07eb97931bbec8  ./data/zen/qqlfient.Default (release)/extension-preferences.json
 91925357a08fdd578eb3c9d1d00b2ed0cc7bd7ad438b8aabb0912456b8965928  ./data/zen/qqlfient.Default (release)/extension-store/data.safe.bin
 cbbd567e297cd1f937bcf5b39d424fb34b7c7fbfdf3cb88826110aeaec4a03e8  ./data/zen/qqlfient.Default (release)/extensions.json
 a048637bb2a9bd2acc8aefa9de9e1c6b86a225ca454050e9e1f4a79e370e07d7  ./data/zen/qqlfient.Default (release)/favicons.sqlite
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/favicons.sqlite-wal
+4e978b6720f5816687aca21107696fb9da8547ef36f82dd3adb1068cac42675f  ./data/zen/qqlfient.Default (release)/favicons.sqlite-wal
 04d96f05fbc4c88867d6cf4fe2c92cf8c9b43e9664f40194571aea4fbba0e083  ./data/zen/qqlfient.Default (release)/formhistory.sqlite
 fe7686a6281f0ab519c32c788ce0da0d01640425018dcffcfcb81105757f6fe6  ./data/zen/qqlfient.Default (release)/gmp-gmpopenh264/2.6.0/gmpopenh264.info
 d88c0da1322b2ad03005a4656dd63afa4e9dd44b2a5b7d34dfb2ddee3750ce06  ./data/zen/qqlfient.Default (release)/gmp-gmpopenh264/2.6.0/libgmpopenh264.so
@@ -162,12 +163,12 @@ d88c0da1322b2ad03005a4656dd63afa4e9dd44b2a5b7d34dfb2ddee3750ce06  ./data/zen/qql
 2de363b868f73d3a9b901082100cccd9e7b8bb6edb6f1f1a179e7901b7568ef0  ./data/zen/qqlfient.Default (release)/key4.db
 e1be167c45ff09cd3c3dbb5f277d98de30a32c397bc486ac869804b409a39ad8  ./data/zen/qqlfient.Default (release)/logins.db
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/notificationstore.json
-15be8ad31e6fc5deffbb35c7d1082d97fd17d84f8e7e844de2b5118331540934  ./data/zen/qqlfient.Default (release)/permissions.sqlite
+66b8fb69548d46729f6b89fcfd425223c61b3eecaeb004a53b0284bcfc0b2b3a  ./data/zen/qqlfient.Default (release)/permissions.sqlite
 95b094f603e0c35452746404871da02c6d9dedd874f8d2905bf2635e4bf6675a  ./data/zen/qqlfient.Default (release)/pkcs11.txt
-421d6a7437aa0f675b710d472ee78ca1aec2316568c511f9466aa43b74c80f84  ./data/zen/qqlfient.Default (release)/places.sqlite
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/places.sqlite-wal
-15c663fbbd8acf794e9304f48549300f7535fe7fce937a4c82f1a41b36a4830b  ./data/zen/qqlfient.Default (release)/prefs.js
-29be2262a834d05d49b6587256bc3db7cc8252b92272a50ccfa904f14761e4f6  ./data/zen/qqlfient.Default (release)/protections.sqlite
+c02accb48a24dd05869ada37652eef0d2fb62e62d2246c7f59b0044b3a224dfb  ./data/zen/qqlfient.Default (release)/places.sqlite
+ae7a24526fdcfeacbdbd682daa89b93808fd509793d17af64692532892a5418b  ./data/zen/qqlfient.Default (release)/places.sqlite-wal
+0d0dfe4a2bea28ee513c0067de6263400d2933d2510da60bdb17eac4821cd1c9  ./data/zen/qqlfient.Default (release)/prefs.js
+8c39d092c901c6fc8971498296f8a62e78219cf62dc908bedae1654f29765c20  ./data/zen/qqlfient.Default (release)/protections.sqlite
 1dbff62ae1c2d2dd52ffa32b16b48ee2df5370874fc4c5f007922f7d13f39340  ./data/zen/qqlfient.Default (release)/search.json.mozlz4
 8edb0cac1772ec921be842880c74b3bd49abf81c1646a8a98c4a6a1debb30de2  ./data/zen/qqlfient.Default (release)/security_state/20260902-1-default.filter.delta
 5b4ed22f30316dab4185081ab9659ff6b4183f627c357f16917555fa960a80b8  ./data/zen/qqlfient.Default (release)/security_state/20260903-0-default.filter.delta
@@ -220,21 +221,21 @@ eeda181814f32f4f5e34748db12a8d7e227aafa51255e6ff524406d939881ac5  ./data/zen/qql
 ae61548dfbeb6881a878c387ccf43e97a5d96abe68fc08c7282e1fdb6ca31e37  ./data/zen/qqlfient.Default (release)/security_state/crlite.filter
 99b16b0e3f8cb589e0cb09ab232d05cb93e4607203c1d92f570425daf2863aef  ./data/zen/qqlfient.Default (release)/security_state/data.safe.bin
 f4a30b50d9c4cff1d733d24a70ccbe777939cc0a94d1641eb89f2a53b02a323d  ./data/zen/qqlfient.Default (release)/serviceworker.txt
-2fca1f29b73dd5b4159fa1eb16e69276482f5224ba7d2219a547039129a51f0e  ./data/zen/qqlfient.Default (release)/sessionCheckpoints.json
-50b001445db2ad25483031626f2d37bf3e3f2e5f21db52a37fbfe37ef3126f52  ./data/zen/qqlfient.Default (release)/sessionstore-backups/previous.jsonlz4
-e040a67c83ac9563c4a8ba443f06aa6b6b75337c2842c9b33a770e27e9b70977  ./data/zen/qqlfient.Default (release)/sessionstore-backups/recovery.baklz4
-b46bbffa060c0ef8ea5758f21b03264e7204e2a59ca4260afcce836d8e069ded  ./data/zen/qqlfient.Default (release)/sessionstore-backups/recovery.jsonlz4
+00ad9799527c3fd21f3a85012565eae817490f3e0d417413bf9567bb5909f6a2  ./data/zen/qqlfient.Default (release)/sessionCheckpoints.json
+319e213c9eba4d69978c701076dc207469ec36cd9fcba4daadfd2c928d7d7374  ./data/zen/qqlfient.Default (release)/sessionstore-backups/previous.jsonlz4
+c8642a85691ca7a48f8ce88515e453431bd8b3e8df78ced01f97108b71e1a094  ./data/zen/qqlfient.Default (release)/sessionstore-backups/recovery.baklz4
+1c179947ecad35075f243f02fc12f6b8d395516cbc62215c8fb4de53e2e2b9ca  ./data/zen/qqlfient.Default (release)/sessionstore-backups/recovery.jsonlz4
 50b001445db2ad25483031626f2d37bf3e3f2e5f21db52a37fbfe37ef3126f52  ./data/zen/qqlfient.Default (release)/sessionstore-backups/upgrade.jsonlz4-20260912200443
-319e213c9eba4d69978c701076dc207469ec36cd9fcba4daadfd2c928d7d7374  ./data/zen/qqlfient.Default (release)/sessionstore.jsonlz4
 d11870ac2cbfa1e3cb0f5811468360327151dd7270d9bd6d44b9fe67a60e4e95  ./data/zen/qqlfient.Default (release)/settings/data.safe.bin
 704d28223a4320a853df4a19d48c7015cf79d56a5317cc3475b6305fa43dcc05  ./data/zen/qqlfient.Default (release)/shield-preference-experiments.json
-503f893a45b02a40dc63585093eb925e6c94dc806dca72dce82dd7c0347cf829  ./data/zen/qqlfient.Default (release)/storage.sqlite
+756a3bbf16f4aeefa8a97744c81a4aef3d08c7c65a0328855f06c7cbd8330931  ./data/zen/qqlfient.Default (release)/storage.sqlite
 c1c89180aae0ec9cfae55af0ac1dd27ef5a5cc6e57296368ac1efbccbad07531  ./data/zen/qqlfient.Default (release)/storage/default/chrome/.metadata-v2
 7de258b998b2ca5be04f749aef2af7b2410ffa3f01f38c9fb6ecce2d9985a346  ./data/zen/qqlfient.Default (release)/storage/default/chrome/fs/metadata.sqlite
-d1361770d5c9e6d6af3544e4658699009475e3f87f3f15acfab8258a468c9e5f  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/.metadata-v2
+5540b8c8b1d581a61de401082e6aadd408da1221b35236b79bf72e690a7846b0  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/.metadata-v2
 af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/.padding
-a5a784ca8420e9354327624080d2bd5bbf5dbffa370bd610c747b86169ff7252  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/caches.sqlite
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/caches.sqlite-wal
+5c7fefd00ae86591f2e55f52cb24eb5b2b8f7bdcd450c6516bf55e24f4843ed5  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/caches.sqlite
+8b7e5f23fa5db223310a60369d664561df2d99c218f3e71abf67ac315b5661bc  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/caches.sqlite-wal
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/context_open.marker
 b989d6863cc97f8652b21016d1d17379cb017ed224e4addc0716b5de28d04405  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/0/{b76998b1-1e5e-4c65-a6bb-bc754d715b00}.final
 6a5ef799cc524bf71962ac5a37afdc5b663a13f794b3492792259a83c6d329af  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/102/{c302fc0f-2a07-4f31-9081-e7fbfcd46266}.final
 678cfac3f864367533b7617faf0992f4bb345dc6758a0c88d909d723a46e1d1b  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/108/{5f7a6c74-d50f-49e7-ba1f-ebd095c3dc6c}.final
@@ -247,13 +248,17 @@ aa4c0bd01d051d65ee1b6b7fdb70649b7707da39c6bc0dc03b7fb7dd557b82a7  ./data/zen/qql
 aac4f7cdddc0c2a0ec73c0cc01664ef6ba0510f5f047045598f681c4ce8b5c3f  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/123/{919e6da3-adb7-4555-9fff-eadf9384427b}.final
 00ad6a28af951086f596020b7688bf2c5b86e9c3bfa5138fab026db32d08fe5d  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/127/{29f1759c-dfc0-40b1-b92f-533fd314b87f}.final
 76b91ed358636c9907e6b5167ac6671d0c4564b8b174c79ca056d79016ff4c57  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/127/{7ee6c082-85cc-460d-ab5c-cc8fb24dd27f}.final
+a79fe33039b067602df1b363a53c51af1c29b0933050011d29891a5d98f7ed9c  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/13/{af48b245-8da9-47f4-bad5-f41752ee5f0d}.final
 7d8cdeb9d2124d7863d8dbddf02857a6a9efd2bf113a6e48696898eec0befd40  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/138/{641bf92a-d913-431c-ad92-3c3c4215028a}.final
 61c5836cc1a153d9ed263fcdb44a78a7f9a80760e456933ff0289b8a380de896  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/148/{7cf53cb6-18cb-49fb-9a04-b2e81fb5bf94}.final
+6f217edf8c053ac4d0638e8add91384e0752da5f137bec1f46f21d4f5effa2dd  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/151/{38c3e285-3585-4b83-9dbf-c528fedd0f97}.final
 d1d8d3520f14de8cb4fc7f4071da21831af6f0d5a96918e2653f1c205ff5571b  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/153/{e3d8812a-7477-455c-932c-2ee0a842f399}.final
+f9866a6981476ee86bf10a8e1e176a74e3aba46ab363deb860fa8351123d29fc  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/155/{c512dd2e-adc6-4698-a226-602fab4aa89b}.final
 c69b0fb02f24dee570873608703ddc6ee8a4e72567a5a0f0866a5e996c2c39d6  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/158/{5cee666c-36a0-47ac-bf65-3eebd177539e}.final
 b7457a4fe828a771a9223ff698a2b252cf35a0fbaafdd5d24ffb098a24f4374c  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/158/{baf72170-0e0b-4001-9be8-e2180b04a59e}.final
 4b98d2792576e371d9a9769d5393c8f9034de7affb86730ec885832e70c5ba2b  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/159/{8f9abe47-f109-44e3-ab44-f7235ca72a9f}.final
 b66ba97282acb4425e5a2026dbe971e020d5cfbd578dc0f2bc0d0bc7f9801546  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/16/{41c0b7b1-4f74-4c83-8ff2-162c2b1ff010}.final
+9d51d332246eeecf390a06db2db47aeba14ca2f4f42cce42ac3968417bd13421  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/162/{0eca6f1c-c9a2-4446-a40e-2f50fcab69a2}.final
 43edb005507c7b7ded6a7f4eb25e0047594cb2616dcdb9aabe6b61efd0ccfcb9  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/165/{c80d905d-8f59-4fee-82e0-1d0136b8bea5}.final
 0495e9f2a6dd37a787587b96429e7e96a5821085f53507861063e51832f853f0  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/169/{049870a5-14df-4559-aa81-fa32c63412a9}.final
 c7b871a09f25777b3b9567614960963d3f4cc0fd02ff6106ab0861e135eeca98  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/172/{701f1ee2-c120-4e0a-b514-f24374a205ac}.final
@@ -261,15 +266,14 @@ d71f509b3baa3fdca323b8be17626d388e1ebb4982db5ec0a6d3512b183d474d  ./data/zen/qql
 a2708543235c3a0fd79f97c50ca1a5c0db658622e87917ed53b0f65bf9526fd3  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/179/{9a1d2631-cc0c-4e0a-8930-ed8e6e91b2b3}.final
 eef6ac6c3b902a6ac322a7c4cd97772a476fb8438f6fd122eab31d38287a77ca  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/18/{554bb9c9-c81e-460f-b771-2ed771c02a12}.final
 3b339433141e9d91736ec678e692c2ec5890be7d216f4ba576461109835b802b  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/18/{ddb8bc00-eb34-4e61-aea0-4db0a2559712}.final
-1c009cf75d82b3093cb7584c80ac7b41b409dbcc23187ef29a232258f041c287  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/181/{94ece7a0-1a42-40ca-8d78-3414071d84b5}.final
 cf6c26caf5b62530b2a681069165dd41d7fc7016fd84e416daf6a87f880c51df  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/182/{9bcdc9c3-8356-4d69-9918-bc58e59f68b6}.final
 0702bfa6837ae4b52f8a1f1d44001ec45c8ef71b9fa67ce332e4d672a9a0b1c4  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/182/{cc088db1-5fae-46cc-aea2-32f918cfb7b6}.final
 684d3f041557a56df8207422867ea12cc76c72a6028103260442f3e29fe1fb17  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/182/{e4a73ebe-122f-4163-824f-75cdac7e7db6}.final
-9de64f4d2991ff1b4c6fd1be9d16a0ba04a80ed8ebca83561858c497927ac205  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/183/{a435bf81-dcad-4baa-a2cb-182e531565b7}.final
 60045646484bf8423ebc75b25ae8463e4ceb30824d48b19ccfb8afd41ca61754  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/184/{4db962a1-1753-44ba-9e8c-63997c03fab8}.final
 d5b33a3bc3af44b444808147e59ab302c4b10cbc9039ba96c2f3ed42dae9e904  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/186/{3badaa23-4112-4fc9-8836-d3feaf974fba}.final
 414aebaa780925c702fb34bad18efc581e27efa182fc469757a5a871a3aa3dd2  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/187/{ac66cf97-fc46-4309-9a93-b945ddbf80bb}.final
 bbaf8fcc3720af3e3bfecb0da46dc0ce9c12cdf34893d9e793f686462899fced  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/19/{f2ec03fd-833f-496e-b218-50a1b92c3e13}.final
+0e4523ac8c7d7e7d85bb952a79ff35ba5368be01da5a9f5ed11bc2eff3d45079  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/19/{f9374520-4904-4fd0-a892-080cabcf3813}.final
 94799e9e93431cde88766669df147720cece832818696c8bb4276b27d6919051  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/190/{2f988a56-e689-4280-a9a0-dc06b865eabe}.final
 678c07913cdcd423261df50f1366db545abfcd414fb262dbdf988882f4f865e2  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/192/{0fb18633-2ad0-466f-8e99-8f25602bffc0}.final
 e7e146399c5fe1b1788f8501210cdb94a6c795a6329aade434f8a96237e6be59  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/193/{3628a99c-6758-46a9-9130-2f212c56fac1}.final
@@ -281,6 +285,7 @@ d753640f8d2b6246aef0e37ba40dcce1169186506dc4bad16f900eaa7f48a101  ./data/zen/qql
 f10f267d97f50eb7a7c626210c6d81477acf0573a389fe3fe4791431571df369  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/202/{ddd1b908-2f2e-48bb-bde0-778f34758bca}.final
 e1e00c57786108ec3ca9679bc081ccee4b086daf9c3716a8efd1f85a91efa467  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/204/{51a4aab5-b099-4f06-a452-17761f36e9cc}.final
 c887643a282178b265338bd7834132b0894b6fe65c88df16ea02c8284e3de478  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/206/{49e655a8-de91-4e81-b2c6-1296ceffe0ce}.final
+1d574fe95d025c8b568d320ae7c80a8f770d8345e8d33984991122b77422770b  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/208/{f38b0c25-7671-4c7f-9873-7d279609fad0}.final
 31e6d4ce210b2d73777c2cca2dbb063e2107e815ef36984460ff32f18fdf0d05  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/211/{8564f47f-a3d6-4c29-ae35-708ea12d89d3}.final
 754ca583779df1666b6aae480b641c31fdea46fbee540b72faaae53aa766ebbc  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/211/{ee07f103-932f-47d5-a4ca-393ddcf57ed3}.final
 ae1fb65dce2e3e709bdd2182094129d0568200ac6b386fa5aa32361220db653c  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/212/{f622c90e-3886-49a0-9175-9eb5cbff13d4}.final
@@ -288,6 +293,7 @@ ae1fb65dce2e3e709bdd2182094129d0568200ac6b386fa5aa32361220db653c  ./data/zen/qql
 62847dbf2bbe20c2584a3592c4f7089ed86fb230ae213903674808c209b82cb3  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/213/{dbcdbf6e-8058-4b79-a4b2-4642db8c15d5}.final
 2b1659f56b7aed8cdfafd4af4309cc4fd407b4eeee6c58b0ae7911c4b0a765f3  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/213/{fae4c52d-9028-4c08-ae66-bbe4addde7d5}.final
 48dc46d71908e54016aed38629628109e8a44f904c91f7c8789513e1e351f851  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/214/{3b8f36d2-014a-4855-aa79-62011dc89ad6}.final
+e1d66ce979566efb6a34ec55958d5d85eb59ca0ee679caa03b0c81cb32615367  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/216/{a133722b-5cb1-41a9-a90e-155ce67cd6d8}.final
 aecfec69e6667ab47d43dd9b2baba9fa97e4dc7040ebaa4d882e042966b56810  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/217/{64683dca-36fc-4ce2-9f47-fe2f18e975d9}.final
 a8f190be5147e0bd58730f2b2eb5038a1c143d0165c58ed22c87497d37297d0e  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/219/{a62cbd67-1c08-48f6-881b-dff7d2d219db}.final
 5a08fb07ed982171f6e88c63c051513f9da5c53f87612e4e2457beb9b4e446ad  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/221/{16086502-8a29-4428-89cb-134ccd9562dd}.final
@@ -298,6 +304,7 @@ a5d8e775c1bb1cbcb90c4b7c6cda2eb16f00db8cb71cf50598a619a6421d23d6  ./data/zen/qql
 c75d611b50a8c83641a42a3d55fb64e8cf1c8fb18a9cbbbd63f64875039f6163  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/228/{d8f932d9-2f12-409b-bf4f-4055f915e0e4}.final
 e01b0b9900c4df28913502727fbd33364c6590eee9aa2b528c7f7047d3e76776  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/229/{12eb8fa2-348e-4cf2-85ed-c10e0df145e5}.final
 93e69f4fc3e30c811f7404ea831adbfe50c1c83bdcc167a5d776bd299dee9922  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/230/{b38d4c36-cead-4920-87dc-7d59cadf26e6}.final
+1346eb5fd30df5941b5ae204432d52e5332c6890a14ff083da7bdedb82a41a36  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/231/{acecf216-66fa-4256-bf98-2e759e9bede7}.final
 f951406eaf2fd95efc4f8202a51d93d907d07388598e33522f7acc7c4c41b299  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/240/{6477a4d1-9c4d-4b0c-a46e-49f5a6cc76f0}.final
 c60a6c60ae24dc0f798f788ba31e86dea934e2a38228c455d272b8b28ca5db73  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/240/{75b2363d-8629-4871-8d90-72195cdc0ff0}.final
 5c6a6b4249432f2e2a817746d7a0fbda8e471893c4837c39d7500487d9541340  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/243/{023c2dd4-928a-449c-bcb8-db1fa8e82df3}.final
@@ -307,9 +314,12 @@ b1028a9c96ba4bf47aefaa9cd4b7e1ecdef3fc279dc0b970861d9d86dab22ad7  ./data/zen/qql
 c7cfbc425d8a138c6ec453b47c006c3a52a3fd789ea4e5431fe56b5f968aff0f  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/248/{fd5e6dda-fa23-400a-b675-bcc5b761d8f8}.final
 51b121e5820d34f08bfe29448c7c3b3c340d66fb1828b4efd23098cd52f12cf7  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/249/{890b8a38-1849-48be-8519-b4e714d228f9}.final
 83a74a0c835321eb3a302108c25fc96fd1874b87de5e863acee2973a7d3070ae  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/249/{e170dd78-d3d1-45d5-937d-280dbb559df9}.final
+795f21ec6f213386fc6f9034846e2df21719cb5af4a8b629221228346f53111d  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/25/{b9d2ef28-6a5e-41f5-bebc-a9a75c478119}.final
 593ca15494b38336e17c1527f95dc2d7a8e61e6f9c966e3f63998a2041ef20d0  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/253/{515919f8-ce8e-4692-b4e3-e93a1205c9fd}.final
+fb70b485f2ec7bced732d5fed503fee3d0e5a5edb65d64f5247cb9f36ee2c850  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/26/{5af69f94-66e8-4c28-97b1-7716b201481a}.final
 1f00fb83ddc9b667e4252388f3e2155a68f4e183be5fa81cbd7e2fbe00800eec  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/32/{740a73e2-fffd-4a57-b295-fe2149311a20}.final
 42edc079c09c0349c131d5035671c021b76640373664eb3dc2342da7d29fffd8  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/32/{cadee817-885f-4b35-a671-f4031cbbad20}.final
+35e39748884ee3c078265ec378da7f0a9746fe5c3e94d43c6f561814fef3ef28  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/32/{f1fc620f-ad69-4895-b412-54a951a7cb20}.final
 5ff0c0a5e1c414607518142b7e657cf3d277ca6826dd9a32059ea3256a59cfde  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/33/{a7aef3b8-8702-49e9-ad5e-8d294d93ef21}.final
 1a25bcbbd014fc6d895c9660bd9fdfc5afd2f515660742e6bb442f4baeffec29  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/36/{c429eb0d-a7a3-47a4-910d-d6e75f063f24}.final
 6b05f1c42868a41e00179baf6ccf28dce77c03484e47c547e55841143607be15  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/39/{a2992eac-cd7c-4f5d-86ed-f580c47e4627}.final
@@ -338,7 +348,6 @@ d42071e280a8e10f3bf35185a4a92f696a663dda949d7eeed050bfcc027f7211  ./data/zen/qql
 f5142059035f9fd85a1e45794a03d474c24115fd90fa2c169a9285587ac03da9  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/71/{d688fde6-bb2a-49fe-bef7-b36482100447}.final
 aad2c2840c74a30de76b76e866198a02e218929deb5364fceec8cada24776a65  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/72/{2d16b0cf-7bb9-4cd9-b6c5-7d68e73ac048}.final
 8b0a571b2714ed9169cfa00d7d3fb4733f2bd5b7b7324cf494fc687301fd63c2  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/72/{be01410f-7ce7-4511-9b72-c28db31ba348}.final
-4d5c3e1a30cb55d76bfb0e70e6e5f8eae5d464ea2364c19344e120d64a66196d  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/72/{f66c8f40-e62a-49a3-9dc7-149c29ab4548}.final
 215c8e4adbe7e37bce4185b9244f29c36e5960e7ee209a226d8d159cf1b1557c  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/75/{e0703d3c-b1eb-46d8-bc5d-4556d2a4044b}.final
 b6c2a7e50fb9cd200251eef8888af27e74a879ac7fc980b8d082b9284feb6d2a  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/76/{4c3db205-af1b-45ff-a5e4-e059116d9c4c}.final
 6309aca88db20b8d3f83ef9c9619a80e552bb64c55af9adad08328873fd68dd5  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/76/{d581e42d-724c-430e-8cb8-b7183667a04c}.final
@@ -347,35 +356,39 @@ dc18ab932e0b0ea8a3a44c9ca02cf53807cb53f7f35538e059136ecbce458180  ./data/zen/qql
 536aaff1a83524e5b515ddf03269ed52dd8a6e012d9c48ced997aef1fb06ba0f  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/81/{0462621d-75e7-4fd2-b761-1f0b097ff751}.final
 b4acbd7b4cfe4c494e5effaef32a0b0c19bed08ef36df527ddb09a3fb0f19798  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/81/{fd6ea2a9-6380-4b46-9bac-58a71ed41851}.final
 b622c1be755be6a1afc6ba42b1853c3af4ff9d28395ca6b4d5bde4237061861a  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/82/{45945289-c701-4af8-a780-a11cab591a52}.final
+2292a5aef49824d4b0d4602046b98e8eb0868c50c81c788935691aff2f9a04cd  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/83/{8ee49e90-88ba-4a2b-b454-af785dde7453}.final
 756bfbe1ba57bee16b181b8f44c0f438e5a970cf68cab476ee3e149d1c62ba16  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/84/{402731c5-2b2b-4879-8f93-17adf5f6c754}.final
 5d3d673386138f45d42fb840b26f602c134e363188ffbd5fcc9a14c65456336e  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/86/{5971925e-c84e-4003-9a54-7e2dd16d3b56}.final
 6412dc90f49e4e1eafcf9a602b2f607b8b4a8d9c7d462c04ac6d0e7a92165d98  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/87/{f2c3712a-b29f-4873-bf42-3dfee70a3557}.final
+5f755ddf8871fc3b9a6f5014a3089708f6b920c2d2c440813c4139cb17b316ab  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/9/{2bf12fa9-5f31-427e-9f28-ec0b7d8e2609}.final
 4d0a1ad2988635b8078c8ccf7b15ccbbaf96e4b904bc78fd6b5bce0e518b3ce9  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/91/{d7b78598-3189-466d-8140-ce0cb6cdd95b}.final
 9cc93f95cac58b9d154d59347618923ab135853fdd1538ae6c33d96b371c54ff  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/92/{03434bd4-e16c-4c65-8e4d-957ce2bdcc5c}.final
+84901bb23708a8a2ee4535873ad6659e8d5f9b461e5c68e477526f2566143f26  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/92/{9aa55ad2-569b-4e50-b542-1aee9c4b615c}.final
 75a092e9f1ac415981503d40b967b7d901210b2f27aa18faa4058abf09296da9  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/95/{dc4b2625-539c-432a-affa-34fd3a6b645f}.final
+7a262b0b6f1c53df19df7afacdcdd6091d88ab70eb17755ad73ed7e4453992c1  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/97/{0b74c7d2-4bfe-4961-93f1-bd19a2cae761}.final
 0ed3210afde1d7afa7e02190104fa49b6e995de7826f7b8b949053b22900182d  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/97/{abc42039-10b0-4fd1-97b1-06fe15cc4561}.final
 139b18c304e37428e0f78a0a2cba5a16b81bc33f37d5ae7225ffc464412b729c  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/cache/morgue/99/{dda1d6db-8aad-4163-ad54-dfee5596bd63}.final
 30145daf0c2aa849aeb3979c0d7044107b46f5cce2fa68b58798c67f13eb287b  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1595705585yCt7-%pCl7a%yee8rb-8l.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1595705585yCt7-%pCl7a%yee8rb-8l.sqlite-wal
-c8bd9cbe331315f52b711148cac23d0407a02668fd90d4cca852e71f42adc6f8  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1710353379LCo7g%sCD7a%tea8bba8s.sqlite
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1710353379LCo7g%sCD7a%tea8bba8s.sqlite-wal
-1af6a0baf166ff63ed08c3acc26b2f982d8a7e7d26bdf34c8300faad12febba3  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1915922489PCe7r%sCi7s%tee8nbt8E.sqlite
+fb1b4c41774923babdb971c96c6f5c8f6e29c1f17a241a28a3d7017821dd70df  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1710353379LCo7g%sCD7a%tea8bba8s.sqlite
+ae296235226c403a89becb2613ee966ca32fc65691e6700be28b8fc577c6ea90  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1710353379LCo7g%sCD7a%tea8bba8s.sqlite-wal
+3e31f27a54780dca28f0b4f28a6a3a0f166a556d24cbc49335934b70e332bd74  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1915922489PCe7r%sCi7s%tee8nbt8E.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/1915922489PCe7r%sCi7s%tee8nbt8E.sqlite-wal
-2c09ad0ae1ea65d380d619f4c258da8250506e8ba7f895f8cd928fb57b13fa65  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/2057579554yatt-asdeartveimc-erw.sqlite
+46bf02a8123852123065be3f10c3da74b73dfb678d3ec29693212496173b8db1  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/2057579554yatt-asdeartveimc-erw.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/2057579554yatt-asdeartveimc-erw.sqlite-wal
 341f6cd41141f2441d7ced04d5711a626c71a8916da1f3086dfb602173126102  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/2171031483YattIedMb.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/2171031483YattIedMb.sqlite-wal
 9bdffe48cfd534765365f2911d6388c34da2f8b18dfdfe3e7983e52d23d9790e  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/2232182701SeesravbiacteaWDosrgk.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/2232182701SeesravbiacteaWDosrgk.sqlite-wal
-3dbbdb1c390dcda07a3cb2f02b98481442dfcc4960e8478c73032aeb027d32f5  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/3149432445yCt7-%iCd7b%-ep8rbe8f.sqlite
+9a809dd6a9933a2213b70b3cd0b36b5760ef5614f527a1fe5c7b473516ac3841  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/3149432445yCt7-%iCd7b%-ep8rbe8f.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/3149432445yCt7-%iCd7b%-ep8rbe8f.sqlite-wal
 03861e59640b6b5775288a3fa9f0e581fe5d4443ef4637b4337f357841a60db0  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/3211250388sbwdpsunsohintoatciif.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/3211250388sbwdpsunsohintoatciif.sqlite-wal
-9bd2f0067628cc92a382631b2c418bdcd938d4778477a32e38d3861a6fdc2ab9  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/3627800919yCt7-%iCt7-%ree8sbp8o.sqlite
+ac5efd040c888ab75b4a20fe24e4bab4c00c8ba079ecda5cbbf5ee45bfbb4a1a  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/3627800919yCt7-%iCt7-%ree8sbp8o.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/3627800919yCt7-%iCt7-%ree8sbp8o.sqlite-wal
-19a4308769ef5012519b430a0334ec6f79f54e81af647e25172eea3c7485a6a2  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/438220yCt7G%cCf7C%oen8fbi8g.sqlite
+961d4ed619276bff3efa87031422400268e48a8b6b9d9e158892eec96e3cca64  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/438220yCt7G%cCf7C%oen8fbi8g.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/idb/438220yCt7G%cCf7C%oen8fbi8g.sqlite-wal
-9a47de46bd734ade65986aa122268e1d26b8b122ee359481e9f5841b0438f521  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/ls/data.sqlite
+467164f8efd82d125fee42384773e449f4a05a320f8cc3114dfd8d922ed1daca  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/ls/data.sqlite
 e0adfd54e00929bbca981739639ee851d7a2498719be006f4c7df91c6c692038  ./data/zen/qqlfient.Default (release)/storage/default/https+++www.youtube.com/ls/usage
 d344253b227ebf9794d9e0494215229093fe3826cf4454a11485fb908f9bb8ad  ./data/zen/qqlfient.Default (release)/storage/ls-archive.sqlite
 5e5c312df6d51b550a928984b90462ef0a68ba2671fd635bb7f4463ac00864e8  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/.metadata-v2
@@ -401,12 +414,12 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qql
 46903d8bf48488cd4f6cc1bd061984a888a21853143082db03a2324b2e8e9057  ./data/zen/qqlfient.Default (release)/times.json
 645b2e2c23a53d763abf3ce4cb02f8f9c59bafc01009dbaa6543bbd6f6716a05  ./data/zen/qqlfient.Default (release)/webappsstore.sqlite
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/webappsstore.sqlite-wal
-d08a5457011c534863fc6f39fa52a72a13b9c81e166c8ea7b0a03b7aea41bec2  ./data/zen/qqlfient.Default (release)/xulstore.json
+9c64f17eeeb0963863392c1dd445f01615835ee756c113f1372bcdd3a00b632b  ./data/zen/qqlfient.Default (release)/xulstore.json
 e5893ad05f997e6c8b7cd5b070b572d7a09aab7843ddfe1173c147c7ce970f03  ./data/zen/qqlfient.Default (release)/zen-keyboard-shortcuts.json
 0dd22af73bf7560a8bc72ee90aba611c1241c2054d488f75d90a4afc27309efb  ./data/zen/qqlfient.Default (release)/zen-live-folders.jsonlz4
-ec241d3b04f47472047752a7589587539764a813d6937a818369af73051001e6  ./data/zen/qqlfient.Default (release)/zen-sessions-backup/clean.jsonlz4
-ec241d3b04f47472047752a7589587539764a813d6937a818369af73051001e6  ./data/zen/qqlfient.Default (release)/zen-sessions-backup/recovery.baklz4
-4c64ede34bec9489e5df9fe53836edc96999410ee29c3a9f95c3c0c77ccec6a0  ./data/zen/qqlfient.Default (release)/zen-sessions.jsonlz4
+5657de01e66c7c257e0f6a625abbafa784bdbff747ee8a1f4001f404bf1c39f3  ./data/zen/qqlfient.Default (release)/zen-sessions-backup/clean.jsonlz4
+5657de01e66c7c257e0f6a625abbafa784bdbff747ee8a1f4001f404bf1c39f3  ./data/zen/qqlfient.Default (release)/zen-sessions-backup/recovery.baklz4
+b40b3c86d86a486d70837fbe5388baa6b1d358c0936248438ebad6da89053f22  ./data/zen/qqlfient.Default (release)/zen-sessions.jsonlz4
 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a  ./data/zen/qqlfient.Default (release)/zen-themes.json
 a39ca57624ff36ea946acb2aaf721eafbaf1e2b3cefa55dd7d6ab67733a0f23f  ./docs/GUIA_RAPIDA.md
 99f9638bc9d0c0659b033e65ac4718aa04c0ec2e0f4241f303c5580a8fe32b57  ./instalar
