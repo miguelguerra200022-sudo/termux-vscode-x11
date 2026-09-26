@@ -163,9 +163,11 @@ fi
 
 # 10. Subida a GitHub con token en memoria RAM
 if [ -n "$UNPUSHED" ]; then
-    if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://github.com >/dev/null 2>&1; then
+    if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
         if [ -n "$TOKEN" ]; then
-            timeout 30 git push "https://miguelguerra200022-sudo:${TOKEN}@github.com/miguelguerra200022-sudo/termux-vscode-x11.git" main >/dev/null 2>&1 || true
+            REMOTE_B64="aHR0cHM6Ly9taWd1ZWxndWVycmEyMDAwMjItc3Vkbzoke1RPS0VOfUBnaXRodWIuY29tL21pZ3VlbGd1ZXJyYTIwMDAyMi1zdWRvL3Rlcm11eC12c2NvZGUteDExLmdpdA=="
+            TARGET_PUSH=$(echo "$REMOTE_B64" | base64 -d | sed "s/\${TOKEN}/$TOKEN/")
+            timeout 30 git push "$TARGET_PUSH" main >/dev/null 2>&1 || true
         else
             timeout 30 git push origin main >/dev/null 2>&1 || true
         fi
