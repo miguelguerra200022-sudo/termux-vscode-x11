@@ -3,9 +3,10 @@
 # termux-runner: Agente de Build Distribuido para Termux (Android Build Farm)
 # ==============================================================================
 # - Gestiona la cola de compilación personal con locking atómico en Git
-# - Ejecuta builds aislados en sandbox con protección anti-cierres (Wakelock)
+# - Escudo Térmico y de Batería Inteligente (Smart Battery Guard)
+# - Ejecución sandboxed con Wakelock y soporte de cancelación en vivo (Kill-Switch)
+# - Detección y entrega automática de artefactos (APKs, .deb, binarios) a Telegram
 # - Sanitiza y almacena logs cifrados en la bóveda AES-256 (vault-logs)
-# - Reporta resultados en tiempo real al bot de Telegram (cloud-sentinel)
 # ==============================================================================
 
 import os
@@ -16,7 +17,8 @@ import shutil
 import subprocess
 import glob
 
-DEFAULT_SEAL = "ums9230-sp_6300-3724801c"
+LEADER_SEAL = "ums9230-sp_6300-3724801c"
+DEFAULT_SEAL = LEADER_SEAL
 
 def get_repo_dir():
     config_file = os.path.expanduser("~/.config/termux-vscode/repo_path")
@@ -74,18 +76,63 @@ def release_wakelock():
     except Exception:
         pass
 
+def check_battery_shield():
+    """Escudo inteligente de batería y temperatura para proteger el hardware."""
+    try:
+        proc = subprocess.run(["timeout", "2", "termux-battery-status"], capture_output=True, text=True)
+        if proc.returncode == 0 and proc.stdout.strip().startswith("{"):
+            data = json.loads(proc.stdout)
+            pct = data.get("percentage", 100)
+            status = data.get("status", "UNKNOWN")
+            plugged = data.get("plugged", "UNPLUGGED")
+            temp = data.get("temperature", 25.0)
+
+            is_charging = (status in ("CHARGING", "FULL")) or (plugged in ("AC", "USB", "WIRELESS"))
+
+            if pct < 20 and not is_charging:
+                return False, f"Batería crítica ({pct}%) y desconectado del cargador."
+
+            if temp > 42.0:
+                return False, f"Temperatura de batería elevada ({temp}°C > 42°C)."
+    except Exception:
+        pass
+    return True, "OK"
+
+def notify_build_start(job_id, job_name, seal):
+    """Notifica el inicio del build y provee el botón de cancelación."""
+    title = f"🚀 *INICIANDO TAREA EN NODO:* `{job_name}`"
+    content = (
+        f"📋 *Job ID:* `{job_id}`\n"
+        f"📱 *Worker:* `{get_device_name()}` (`{seal}`)\n"
+        f"⏰ *Inicio:* `{time.strftime('%H:%M:%S')}`\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"⏳ Ejecutando en sandbox aislado con Wakelock..."
+    )
+    markup = {
+        "inline_keyboard": [
+            [{"text": "🛑 Cancelar Tarea", "callback_data": f"cancel_job_{job_id}"}]
+        ]
+    }
+    try:
+        subprocess.run(
+            ["cloud-sentinel", "notify-btn", title, content, json.dumps(markup)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except Exception:
+        pass
+
 def notify_telegram_build(job_id, job_name, status, duration, seal, exit_code, summary=""):
     """Notifica el resultado de la compilación a Telegram."""
-    emoji = "✅" if status == "SUCCESS" else "❌"
+    emoji = "✅" if status == "SUCCESS" else ("🛑" if status == "CANCELLED" else "❌")
     dev_name = get_device_name()
-    title = f"{emoji} *BUILD {status}: {job_name}*"
+    title = f"{emoji} *TAREA {status}: {job_name}*"
     content = (
         f"📋 *Job ID:* `{job_id}`\n"
         f"📱 *Nodo Worker:* `{dev_name}` (`{seal}`)\n"
         f"⏱️ *Duración:* `{duration:.2f}s` | *Exit Code:* `{exit_code}`\n"
         f"🔐 *Logs Cifrados:* `/logs {job_id}`\n"
     )
-    if status != "SUCCESS":
+    if status == "FAILED":
         content += (
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"⚠️ *Fallo detectado.*\n"
@@ -99,6 +146,33 @@ def notify_telegram_build(job_id, job_name, status, duration, seal, exit_code, s
         subprocess.run(["cloud-sentinel", "notify", title, content], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass
+
+def deliver_artifacts(sandbox_dir, job_id, job_name):
+    """Detecta archivos generados (APKs, binarios, zips) y los envía a Telegram."""
+    artifacts = []
+    valid_exts = (".apk", ".deb", ".tar.gz", ".tgz", ".zip", ".bin", ".whl")
+    for root, _, files in os.walk(sandbox_dir):
+        for f in files:
+            if f in ("build.log", ".cancel"):
+                continue
+            fpath = os.path.join(root, f)
+            ext = os.path.splitext(f)[1].lower()
+            if any(f.lower().endswith(ve) for ve in valid_exts):
+                artifacts.append(fpath)
+            elif os.access(fpath, os.X_OK) and os.path.isfile(fpath) and not f.endswith(".sh"):
+                artifacts.append(fpath)
+
+    for art in artifacts[:3]:
+        try:
+            size_mb = os.path.getsize(art) / (1024 * 1024)
+            if size_mb < 49.0:
+                caption = f"📦 *Artefacto generado:* `{os.path.basename(art)}` ({size_mb:.2f} MB)\n📋 Job: `{job_id}` ({job_name})"
+                subprocess.run(
+                    ["cloud-sentinel", "send-doc", art, caption],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+        except Exception:
+            pass
 
 def queue_new_job(name, command_or_script, target_seal="any", timeout=600):
     """Crea un nuevo trabajo de compilación en la cola pending."""
@@ -126,11 +200,12 @@ def queue_new_job(name, command_or_script, target_seal="any", timeout=600):
     print(f"[✓] Job encolado con éxito: {job_id} ({name})")
     
     # Notificar a Telegram que se ha encolado
-    title = f"📬 *NUEVO BUILD ENCOLADO*"
+    target_desc = "Toda la flota (Workers)" if target_seal == "todos" else ("Cualquier worker libre" if target_seal in ("any", "cola") else target_seal)
+    title = f"📬 *NUEVA ORDEN ENCOLADA*"
     content = (
         f"📋 *Job ID:* `{job_id}`\n"
         f"🏷️ *Tarea:* `{name}`\n"
-        f"🎯 *Destino:* `{target_seal}`\n"
+        f"🎯 *Destino:* `{target_desc}`\n"
         f"⏰ *Creado:* `{job_data['created_at']}`"
     )
     try:
@@ -141,7 +216,7 @@ def queue_new_job(name, command_or_script, target_seal="any", timeout=600):
     return job_id
 
 def execute_job(job_path):
-    """Ejecuta un trabajo individual en un sandbox aislado."""
+    """Ejecuta un trabajo individual en un sandbox aislado con protección."""
     repo_dir = get_repo_dir()
     my_seal = get_current_seal()
 
@@ -151,10 +226,22 @@ def execute_job(job_path):
     job_id = job["job_id"]
     job_name = job.get("name", job_id)
     cmd = job.get("command", "")
-    target = job.get("target_seal", "any")
+    target = job.get("target_seal", "any").lower().strip()
     timeout = int(job.get("timeout", 600))
 
-    if target != "any" and target != my_seal:
+    # Regla de Oro: Si target es 'todos', el Líder NO lo ejecuta (solo los workers)
+    if target == "todos":
+        if my_seal == LEADER_SEAL:
+            return False  # Líder auto-excluido
+    elif target in ("any", "cola"):
+        pass  # Cualquier nodo disponible puede tomarlo
+    elif target != my_seal:
+        return False  # Dirigido a otro dispositivo
+
+    # Escudo inteligente de batería
+    safe_battery, battery_msg = check_battery_shield()
+    if not safe_battery:
+        print(f"[!] Pausando ejecución por escudo de batería: {battery_msg}")
         return False
 
     running_dir = os.path.join(repo_dir, "build-farm", "queue", "running")
@@ -166,7 +253,6 @@ def execute_job(job_path):
     try:
         shutil.move(job_path, running_file)
     except Exception as e:
-        print(f"[!] Error al reclamar el trabajo: {e}")
         return False
 
     job["status"] = "RUNNING"
@@ -178,15 +264,18 @@ def execute_job(job_path):
     sandbox_dir = f"/data/data/com.termux/files/usr/tmp/builds/{job_id}"
     os.makedirs(sandbox_dir, exist_ok=True)
     build_log = os.path.join(sandbox_dir, "build.log")
+    cancel_flag = os.path.join(sandbox_dir, ".cancel")
 
     print(f"[*] Ejecutando job: {job_id} ({job_name})...")
+    notify_build_start(job_id, job_name, my_seal)
     acquire_wakelock()
     start_time = time.time()
     exit_code = -1
     err_summary = ""
+    is_cancelled = False
 
     with open(build_log, "w", encoding="utf-8") as log_f:
-        log_f.write(f"=== INICIO DE BUILD: {job_id} ({job_name}) ===\n")
+        log_f.write(f"=== INICIO DE TAREA: {job_id} ({job_name}) ===\n")
         log_f.write(f"Nodo: {get_device_name()} ({my_seal})\n")
         log_f.write(f"Hora de inicio: {job['started_at']}\n")
         log_f.write(f"Comando:\n{cmd}\n")
@@ -201,34 +290,54 @@ def execute_job(job_path):
                 stderr=subprocess.STDOUT,
                 env=os.environ.copy()
             )
-            proc.wait(timeout=timeout)
-            exit_code = proc.returncode
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            log_f.write(f"\n[!] ERROR: Tiempo de espera agotado ({timeout}s). Proceso terminado forzosamente.\n")
-            exit_code = 124
+
+            # Bucle de supervisión para detectar cancelación o timeout
+            while proc.poll() is None:
+                if os.path.isfile(cancel_flag):
+                    is_cancelled = True
+                    proc.kill()
+                    log_f.write("\n\n[🛑] TAREA CANCELADA MANUALMENTE POR EL USUARIO DESDE TELEGRAM.\n")
+                    break
+                if time.time() - start_time > timeout:
+                    proc.kill()
+                    log_f.write(f"\n[!] ERROR: Tiempo agotado ({timeout}s). Proceso terminado.\n")
+                    exit_code = 124
+                    break
+                time.sleep(0.5)
+
+            if not is_cancelled and exit_code != 124:
+                exit_code = proc.returncode
+
         except Exception as e:
-            log_f.write(f"\n[!] EXCEPCIÓN AL EJECUTAR: {str(e)}\n")
+            log_f.write(f"\n[!] EXCEPCIÓN: {str(e)}\n")
             exit_code = 1
 
     duration = time.time() - start_time
     release_wakelock()
 
+    # Detección y entrega de artefactos si el build fue exitoso
+    if exit_code == 0 and not is_cancelled:
+        deliver_artifacts(sandbox_dir, job_id, job_name)
+
     # Cifrar y guardar el log en la bóveda centralizada
     try:
         subprocess.run(["vault-logs", "push", job_id, build_log, my_seal], check=True, stdout=subprocess.DEVNULL)
     except Exception as e:
-        print(f"[!] Advertencia: Fallo al cifrar el log en bóveda: {e}")
+        print(f"[!] Advertencia al cifrar log: {e}")
 
     # Extraer resumen de error si falló
-    status = "SUCCESS" if exit_code == 0 else "FAILED"
-    if status != "SUCCESS":
+    if is_cancelled:
+        status = "CANCELLED"
+    else:
+        status = "SUCCESS" if exit_code == 0 else "FAILED"
+
+    if status == "FAILED":
         try:
             with open(build_log, "r", encoding="utf-8", errors="replace") as f:
                 all_lines = f.readlines()
                 err_summary = "".join(all_lines[-15:])
         except Exception:
-            err_summary = "Error en compilación."
+            err_summary = "Error en ejecución."
 
     # Mover a completados
     job["status"] = status
@@ -250,7 +359,7 @@ def execute_job(job_path):
 
     # Notificar a Telegram
     notify_telegram_build(job_id, job_name, status, duration, my_seal, exit_code, err_summary)
-    print(f"[✓] Job {job_id} completado con estado: {status} ({duration:.2f}s)")
+    print(f"[✓] Job {job_id} completado: {status} ({duration:.2f}s)")
     return True
 
 def poll_and_run_queue(once=False):
@@ -259,7 +368,6 @@ def poll_and_run_queue(once=False):
     pending_dir = os.path.join(repo_dir, "build-farm", "queue", "pending")
     os.makedirs(pending_dir, exist_ok=True)
 
-    print(f"[*] Termux Build Runner activo para sello: {get_current_seal()}")
     while True:
         pending_files = sorted(glob.glob(os.path.join(pending_dir, "*.json")))
         for pf in pending_files:
@@ -270,7 +378,7 @@ def poll_and_run_queue(once=False):
 
         if once:
             break
-        time.sleep(10)
+        time.sleep(8)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

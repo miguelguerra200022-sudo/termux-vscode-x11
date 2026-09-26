@@ -14,6 +14,8 @@ import subprocess
 import urllib.request
 import urllib.parse
 import hashlib
+import glob
+import base64
 
 # Configuración Cifrada del Bot (Decodificada y descifrada en memoria)
 ENC_TG = "U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
@@ -96,6 +98,40 @@ def get_ram_info():
     except Exception:
         return "Desconocida"
 
+def get_battery_info():
+    """Obtiene la telemetría de batería usando termux-api si está disponible."""
+    try:
+        proc = subprocess.run(["timeout", "2", "termux-battery-status"], capture_output=True, text=True)
+        if proc.returncode == 0 and proc.stdout.strip().startswith("{"):
+            data = json.loads(proc.stdout)
+            pct = data.get("percentage", 0)
+            status = data.get("status", "UNKNOWN")
+            plugged = data.get("plugged", "UNPLUGGED")
+            temp = data.get("temperature", 0.0)
+
+            is_charging = (status in ("CHARGING", "FULL")) or (plugged in ("AC", "USB", "WIRELESS"))
+            icon = "🔌" if is_charging else "🔋"
+            return {
+                "percentage": pct,
+                "status": status,
+                "plugged": plugged,
+                "temp": temp,
+                "is_charging": is_charging,
+                "icon": icon,
+                "text": f"{pct}% {icon} ({status}, {temp}°C)"
+            }
+    except Exception:
+        pass
+    return {
+        "percentage": -1,
+        "status": "DESCONOCIDO",
+        "plugged": "UNKNOWN",
+        "temp": 0.0,
+        "is_charging": False,
+        "icon": "🔋",
+        "text": "Info no disponible (Requiere Termux:API)"
+    }
+
 def get_public_ip():
     """Obtiene la IP pública del dispositivo de manera rápida y segura."""
     for service in ["https://api.ipify.org", "https://ifconfig.me/ip", "https://icanhazip.com"]:
@@ -154,10 +190,45 @@ def send_telegram_document(chat_id, file_path, caption=""):
         req = urllib.request.Request(url, data=payload, headers={
             "Content-Type": f"multipart/form-data; boundary={boundary}"
         })
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=40) as resp:
             return json.loads(resp.read().decode())
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+def resolve_registered_devices():
+    """Devuelve la lista estructurada de todos los celulares registrados en credenciales/."""
+    repo_dir = get_repo_dir()
+    creds_dir = os.path.join(repo_dir, "credenciales")
+    devices = []
+    if os.path.isdir(creds_dir):
+        for idx, d in enumerate(sorted(os.listdir(creds_dir)), 1):
+            d_path = os.path.join(creds_dir, d)
+            if os.path.isdir(d_path):
+                meta_file = os.path.join(d_path, "metadata.enc")
+                username = d
+                is_master = (d == LEADER_SEAL)
+                model = ""
+                if os.path.isfile(meta_file):
+                    try:
+                        cmd = [
+                            "openssl", "enc", "-d", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000",
+                            "-pass", f"pass:{HARDCODED_PASS}_{d}", "-in", meta_file
+                        ]
+                        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode()
+                        data = json.loads(out)
+                        username = data.get("username", username)
+                        model = data.get("device_model", "")
+                        is_master = data.get("is_master", is_master)
+                    except Exception:
+                        pass
+                devices.append({
+                    "index": idx,
+                    "seal": d,
+                    "username": username,
+                    "model": model,
+                    "is_master": is_master
+                })
+    return devices
 
 # ==============================================================================
 # SECCIÓN 1: Language Server Protocol (LSP) y Análisis Estático en Caliente
@@ -298,7 +369,6 @@ def run_lsp_analysis(code_text, lang_hint=""):
     return header + "\n\n".join(report_lines)
 
 def shutil_which(cmd):
-    """Comprueba si un ejecutable existe en el PATH."""
     for p in os.environ.get("PATH", "").split(os.pathsep):
         candidate = os.path.join(p, cmd)
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
@@ -306,7 +376,7 @@ def shutil_which(cmd):
     return None
 
 # ==============================================================================
-# SECCIÓN 2: Integración con IA de Gemini para Documentación y Diagnóstico
+# SECCIÓN 2: Integración con IA de Gemini
 # ==============================================================================
 
 def get_machine_key():
@@ -317,7 +387,6 @@ def get_machine_key():
         return "default_key"
 
 def get_gemini_key():
-    """Recupera la API Key de Gemini desde variables de entorno o archivo cifrado."""
     if os.environ.get("GEMINI_API_KEY"):
         return os.environ.get("GEMINI_API_KEY")
 
@@ -334,7 +403,6 @@ def get_gemini_key():
     return None
 
 def save_gemini_key(api_key):
-    """Guarda la API Key de Gemini cifrada con la llave local de la máquina."""
     api_key = api_key.strip()
     enc_file = os.path.expanduser("~/.config/termux-vscode/.gemini_api.enc")
     os.makedirs(os.path.dirname(enc_file), exist_ok=True)
@@ -348,23 +416,16 @@ def save_gemini_key(api_key):
     return True
 
 def ask_gemini(prompt, system_instruction=None):
-    """Consulta directa a la API REST de Google Gemini."""
     api_key = get_gemini_key()
     if not api_key:
         return "⚠️ *API Key de Gemini no configurada.*\nUsa `/set_ai_key <tu_api_key>` para registrarla de forma cifrada."
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     payload = {
-        "contents": [
-            {
-                "parts": [{"text": prompt}]
-            }
-        ]
+        "contents": [{"parts": [{"text": prompt}]}]
     }
     if system_instruction:
-        payload["systemInstruction"] = {
-            "parts": [{"text": system_instruction}]
-        }
+        payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
 
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
@@ -373,17 +434,14 @@ def ask_gemini(prompt, system_instruction=None):
             res_json = json.loads(resp.read().decode())
             candidates = res_json.get("candidates", [])
             if candidates:
-                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                return text
+                return candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
             return "[-] La IA no devolvió ninguna respuesta."
     except urllib.error.HTTPError as e:
-        err_msg = e.read().decode()
-        return f"❌ *Error en la API de Gemini ({e.code}):*\n`{err_msg[:300]}`"
+        return f"❌ *Error en la API de Gemini ({e.code}):*\n`{e.read().decode()[:300]}`"
     except Exception as e:
-        return f"❌ *Excepción de conexión con Gemini:* `{str(e)}`"
+        return f"❌ *Excepción con Gemini:* `{str(e)}`"
 
 def ai_diagnose_job(job_id):
-    """Diagnóstico inteligente de un log de build fallido."""
     try:
         cmd = ["vault-logs", "read", job_id, "--failed"]
         log_snippet = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode("utf-8", errors="replace")
@@ -404,14 +462,12 @@ def ai_diagnose_job(job_id):
     return ask_gemini(prompt, sys_inst)
 
 def ai_document_script(script_target):
-    """Generación automática de documentación técnica para scripts."""
     repo_dir = get_repo_dir()
     script_path = os.path.join(repo_dir, "bin", script_target)
     if not os.path.isfile(script_path):
         script_path = os.path.join(repo_dir, script_target)
     
     if not os.path.isfile(script_path):
-        # Puede ser código directo pasado en el argumento
         code_text = script_target
         name = "Script de Usuario"
     else:
@@ -432,15 +488,173 @@ def ai_document_script(script_target):
     return ask_gemini(prompt, sys_inst)
 
 # ==============================================================================
-# SECCIÓN 3: Despachador de Comandos y Demonio Interactivo de Telegram
+# SECCIÓN 3: Despachador de /comando sin comillas y Teclado Táctil
+# ==============================================================================
+
+PENDING_COMMAND_PROMPTS = {}
+
+def dispatch_command(target_type, target_val, raw_cmd, chat_id):
+    """Encola y despacha un comando a un dispositivo, a todos o a la cola."""
+    if not raw_cmd.strip():
+        send_telegram("sendMessage", {"chat_id": chat_id, "text": "[-] El comando no puede estar vacío."})
+        return
+
+    name_label = f"Cmd: {raw_cmd[:25]}"
+    if target_type == "todos":
+        target_seal = "todos"
+        desc = "Toda la Flota (Workers excluyendo al Líder)"
+    elif target_type == "cola":
+        target_seal = "any"
+        desc = "Primer Worker libre en la Cola"
+    else:
+        target_seal = target_val
+        desc = f"Dispositivo `{target_val}`"
+
+    try:
+        cmd_runner = ["termux-runner", "queue", name_label, raw_cmd, target_seal, "600"]
+        subprocess.run(cmd_runner, check=True)
+        # Detonar procesamiento si el Líder es elegible o hay worker local
+        subprocess.Popen(["termux-runner", "poll"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        send_telegram("sendMessage", {
+            "chat_id": chat_id,
+            "text": f"⚡ *COMANDO DESPACHADO CON ÉXITO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🎯 *Destino:* {desc}\n💻 *Comando:* `{raw_cmd}`\n⏳ _Ejecución en curso en segundo plano..._",
+            "parse_mode": "Markdown"
+        })
+    except Exception as e:
+        send_telegram("sendMessage", {"chat_id": chat_id, "text": f"Error despachando comando: {e}"})
+
+def handle_comando_request(args_text, chat_id):
+    """Parsea /comando sin necesidad de comillas obligatorias."""
+    raw = args_text.strip()
+    if not raw:
+        send_telegram("sendMessage", {
+            "chat_id": chat_id,
+            "text": (
+                "💡 *Uso del comando:* `/comando <destino> <comando>`\n\n"
+                "• `/comando todos <cmd>` : Enviar a toda la flota (excluye al líder)\n"
+                "• `/comando cola <cmd>` : Enviar a la cola al primer worker libre\n"
+                "• `/comando 2 <cmd>` : Enviar directo al dispositivo #2 de `/flota`\n"
+                "• `/comando <nombre> <cmd>` : Enviar directo por nombre registrado\n\n"
+                "👉 _Si solo escribes el comando, te aparecerá un teclado táctil para elegir el celular._"
+            ),
+            "parse_mode": "Markdown"
+        })
+        return
+
+    tokens = raw.split()
+    first_token = tokens[0].lower()
+
+    if first_token in ("todos", "all"):
+        cmd_part = raw[len(tokens[0]):].strip()
+        dispatch_command("todos", "todos", cmd_part, chat_id)
+        return
+
+    if first_token in ("cola", "queue", "any"):
+        cmd_part = raw[len(tokens[0]):].strip()
+        dispatch_command("cola", "any", cmd_part, chat_id)
+        return
+
+    devices = resolve_registered_devices()
+
+    # Comprobar si el primer token es un número de índice (ej. /comando 2 uptime)
+    if first_token.isdigit():
+        idx = int(first_token)
+        if 1 <= idx <= len(devices):
+            target_device = devices[idx - 1]
+            cmd_part = raw[len(tokens[0]):].strip()
+            dispatch_command("device", target_device["seal"], cmd_part, chat_id)
+            return
+
+    # Comprobar si coincide con algún nombre o modelo registrado
+    matched_device = None
+    cmd_start_idx = 1
+    for d in devices:
+        clean_user = d["username"].lower()
+        clean_seal = d["seal"].lower()
+        if raw.lower().startswith(clean_user):
+            matched_device = d
+            cmd_start_idx = len(d["username"])
+            break
+        elif raw.lower().startswith(clean_seal):
+            matched_device = d
+            cmd_start_idx = len(d["seal"])
+            break
+
+    if matched_device:
+        cmd_part = raw[cmd_start_idx:].strip()
+        dispatch_command("device", matched_device["seal"], cmd_part, chat_id)
+        return
+
+    # Si no especificó destino válido, mostrar Teclado Táctil Inline para elegir
+    cmd_b64 = base64.b64encode(raw.encode()).decode()[:50]
+    prompt_id = f"cmd_{int(time.time())}_{os.getpid()}"
+    PENDING_COMMAND_PROMPTS[prompt_id] = raw
+
+    buttons = [
+        [
+            {"text": "⚡ Todos los Workers", "callback_data": f"target_todos_{prompt_id}"},
+            {"text": "📬 A la Cola", "callback_data": f"target_cola_{prompt_id}"}
+        ]
+    ]
+
+    dev_row = []
+    for d in devices:
+        if not d["is_master"]:
+            dev_row.append({"text": f"📱 {d['index']}: {d['username'][:12]}", "callback_data": f"target_dev_{d['seal']}_{prompt_id}"})
+            if len(dev_row) == 2:
+                buttons.append(dev_row)
+                dev_row = []
+    if dev_row:
+        buttons.append(dev_row)
+
+    send_telegram("sendMessage", {
+        "chat_id": chat_id,
+        "text": f"🎯 *¿En qué dispositivo deseas ejecutar el comando?*\n`{raw}`",
+        "parse_mode": "Markdown",
+        "reply_markup": {"inline_keyboard": buttons}
+    })
+
+# ==============================================================================
+# SECCIÓN 4: Despachador de Comandos y Demonio de Telegram 24/7
 # ==============================================================================
 
 def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
-    """Procesa e interactúa con los comandos recibidos en Telegram."""
     seal = get_hardware_seal()
     repo_dir = get_repo_dir()
 
-    if cmd == "/flota":
+    if cmd == "/comando":
+        handle_comando_request(args_text, chat_id)
+
+    elif cmd == "/bateria":
+        bat = get_battery_info()
+        ram = get_ram_info()
+        mfg = getprop("ro.product.manufacturer", "Android")
+        model = getprop("ro.product.model", "Dispositivo")
+
+        txt = (
+            f"🔋 *ESTADO DE ENERGÍA Y HARDWARE*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👑 *Dispositivo:* `{mfg} {model}`\n"
+            f"🏷️ *Sello:* `{seal}`\n"
+            f"⚡ *Batería:* `{bat['text']}`\n"
+            f"🧠 *Memoria RAM:* `{ram}`\n"
+            f"⏰ *Hora:* `{time.strftime('%H:%M:%S')}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        )
+        if bat["percentage"] != -1:
+            if bat["percentage"] < 20 and not bat["is_charging"]:
+                txt += "⚠️ *Alerta:* Batería baja. Builds pesados pausados por seguridad."
+            elif bat["temp"] > 42.0:
+                txt += "⚠️ *Alerta:* Temperatura alta. Escudo térmico activo."
+            else:
+                txt += "✅ Condiciones óptimas para ejecución de tareas."
+        else:
+            txt += "💡 _Instala Termux:API desde F-Droid para telemetría de batería en tiempo real._"
+
+        send_telegram("sendMessage", {"chat_id": chat_id, "text": txt, "parse_mode": "Markdown"})
+
+    elif cmd == "/flota":
         try:
             out = subprocess.check_output(["flota"], stderr=subprocess.DEVNULL).decode("utf-8", errors="replace")
             send_telegram("sendMessage", {
@@ -471,6 +685,7 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
     elif cmd == "/estado":
         ram = get_ram_info()
         ip = get_public_ip()
+        bat = get_battery_info()
         mfg = getprop("ro.product.manufacturer", "Android")
         model = getprop("ro.product.model", "Dispositivo")
         txt = (
@@ -479,11 +694,12 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
             f"👑 *Dispositivo:* `{mfg} {model}`\n"
             f"🏷️ *Sello:* `{seal}`\n"
             f"🧠 *RAM:* `{ram}`\n"
+            f"⚡ *Batería:* `{bat['text']}`\n"
             f"🌐 *IP:* `{ip}`\n"
             f"📦 *Repo:* `{repo_dir}`\n"
             f"⏰ *Hora:* `{time.strftime('%Y-%m-%d %H:%M:%S')}`\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"⚡ Todos los servicios activos y vigilados."
+            f"⚡ Todos los centinelas y demonios activos."
         )
         send_telegram("sendMessage", {"chat_id": chat_id, "text": txt, "parse_mode": "Markdown"})
 
@@ -496,15 +712,13 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
         if not code_to_lint:
             send_telegram("sendMessage", {
                 "chat_id": chat_id,
-                "text": "💡 *Uso del LSP:*\nEnvía `/lint` seguido de tu código o responde a un mensaje con `/lint`.\nEjemplo:\n`/lint #!/bin/bash\necho $VARIABLE`",
+                "text": "💡 *Uso del LSP:*\n`/lint <tu_codigo>` o responde a un mensaje con `/lint`.",
                 "parse_mode": "Markdown"
             })
             return
 
-        # Limpiar comillas triples si el usuario las incluyó
         code_to_lint = re.sub(r'^```[a-zA-Z]*\n', '', code_to_lint)
         code_to_lint = re.sub(r'\n```$', '', code_to_lint)
-
         report = run_lsp_analysis(code_to_lint)
         send_telegram("sendMessage", {"chat_id": chat_id, "text": report, "parse_mode": "Markdown"})
 
@@ -513,22 +727,20 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
         if len(parts) < 2:
             send_telegram("sendMessage", {
                 "chat_id": chat_id,
-                "text": "💡 *Uso del Build Farm:*\n`/build <nombre_job> <comando>`\nEjemplo:\n`/build AppCore echo 'Compilando...' && make`",
+                "text": "💡 *Uso:* `/build <nombre_job> <comando>`",
                 "parse_mode": "Markdown"
             })
             return
-
         jname, jcmd = parts[0], parts[1]
         try:
             cmd_runner = ["termux-runner", "queue", jname, jcmd, "any", "600"]
             subprocess.run(cmd_runner, check=True)
-            # Desencadenar ejecución inmediata en segundo plano
             subprocess.Popen(["termux-runner", "poll"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
-            send_telegram("sendMessage", {"chat_id": chat_id, "text": f"Error al encolar build: {e}"})
+            send_telegram("sendMessage", {"chat_id": chat_id, "text": f"Error: {e}"})
 
-    elif cmd == "/sync_fleet" or cmd == "/sync":
-        send_telegram("sendMessage", {"chat_id": chat_id, "text": "🔄 *Iniciando sincronización GitOps en la flota...*", "parse_mode": "Markdown"})
+    elif cmd in ("/sync_fleet", "/sync"):
+        send_telegram("sendMessage", {"chat_id": chat_id, "text": "🔄 *Sincronizando GitOps con verificación Ed25519...*", "parse_mode": "Markdown"})
         try:
             out = subprocess.check_output(["gitops-sync", "pull"], stderr=subprocess.DEVNULL).decode("utf-8", errors="replace")
             send_telegram("sendMessage", {"chat_id": chat_id, "text": f"```text\n{out}\n```", "parse_mode": "Markdown"})
@@ -547,10 +759,9 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
             job_id = parts[0]
             try:
                 out = subprocess.check_output(["vault-logs", "read", job_id, "--tail", "40"], stderr=subprocess.DEVNULL).decode("utf-8", errors="replace")
-                clean_out = out[-3500:]
                 send_telegram("sendMessage", {
                     "chat_id": chat_id,
-                    "text": f"🔐 *LOGS DESCIFRADOS EN RAM (Job `{job_id}`):*\n```text\n{clean_out}\n```",
+                    "text": f"🔐 *LOGS DESCIFRADOS EN RAM (Job `{job_id}`):*\n```text\n{out[-3500:]}\n```",
                     "parse_mode": "Markdown"
                 })
             except Exception as e:
@@ -569,8 +780,6 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
                     os.remove(tmp_log)
                 except Exception:
                     pass
-            else:
-                send_telegram("sendMessage", {"chat_id": chat_id, "text": "[-] Archivo no disponible."})
         except Exception as e:
             send_telegram("sendMessage", {"chat_id": chat_id, "text": f"Error exportando: {e}"})
 
@@ -579,21 +788,19 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
             send_telegram("sendMessage", {"chat_id": chat_id, "text": "Uso: `/diagnostico <job_id>`", "parse_mode": "Markdown"})
             return
         job_id = args_text.split()[0]
-        send_telegram("sendMessage", {"chat_id": chat_id, "text": f"🧠 *Analizando fallo con Gemini AI para Job `{job_id}`...*", "parse_mode": "Markdown"})
+        send_telegram("sendMessage", {"chat_id": chat_id, "text": f"🧠 *Analizando fallo con Gemini AI para `{job_id}`...*", "parse_mode": "Markdown"})
         diagnosis = ai_diagnose_job(job_id)
-        send_telegram("sendMessage", {"chat_id": chat_id, "text": f"🩺 *DIAGNÓSTICO INTELIGENTE (Gemini AI)*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n{diagnosis}", "parse_mode": "Markdown"})
+        send_telegram("sendMessage", {"chat_id": chat_id, "text": f"🩺 *DIAGNÓSTICO INTELIGENTE*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n{diagnosis}", "parse_mode": "Markdown"})
 
     elif cmd == "/doc":
         if not args_text:
-            send_telegram("sendMessage", {"chat_id": chat_id, "text": "Uso: `/doc <nombre_script_en_bin>`\nEjemplo: `/doc flota`", "parse_mode": "Markdown"})
+            send_telegram("sendMessage", {"chat_id": chat_id, "text": "Uso: `/doc <nombre_script>`", "parse_mode": "Markdown"})
             return
         target = args_text.split()[0]
-        send_telegram("sendMessage", {"chat_id": chat_id, "text": f"🧠 *Generando documentación técnica con Gemini AI para `{target}`...*", "parse_mode": "Markdown"})
+        send_telegram("sendMessage", {"chat_id": chat_id, "text": f"🧠 *Generando documentación con Gemini AI para `{target}`...*", "parse_mode": "Markdown"})
         doc = ai_document_script(target)
-        # Dividir si excede límite de Telegram (4096 caracteres)
         if len(doc) > 3800:
-            doc_parts = [doc[i:i+3800] for i in range(0, len(doc), 3800)]
-            for p in doc_parts:
+            for p in [doc[i:i+3800] for i in range(0, len(doc), 3800)]:
                 send_telegram("sendMessage", {"chat_id": chat_id, "text": p, "parse_mode": "Markdown"})
         else:
             send_telegram("sendMessage", {"chat_id": chat_id, "text": doc, "parse_mode": "Markdown"})
@@ -601,14 +808,10 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
     elif cmd == "/set_ai_key":
         key = args_text.strip()
         if not key:
-            send_telegram("sendMessage", {"chat_id": chat_id, "text": "Uso: `/set_ai_key <tu_api_key_de_gemini>`", "parse_mode": "Markdown"})
+            send_telegram("sendMessage", {"chat_id": chat_id, "text": "Uso: `/set_ai_key <tu_api_key>`", "parse_mode": "Markdown"})
             return
         save_gemini_key(key)
-        send_telegram("sendMessage", {
-            "chat_id": chat_id,
-            "text": "🔐 *API Key de Gemini guardada y cifrada con éxito con la llave de la máquina.*",
-            "parse_mode": "Markdown"
-        })
+        send_telegram("sendMessage", {"chat_id": chat_id, "text": "🔐 *API Key de Gemini guardada y cifrada con éxito.*", "parse_mode": "Markdown"})
 
     elif cmd == "/broadcast":
         msg = args_text.strip()
@@ -639,12 +842,19 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
         except Exception as e:
             send_telegram("sendMessage", {"chat_id": chat_id, "text": f"Error: {e}"})
 
-    elif cmd == "/ayuda" or cmd == "/start":
+    elif cmd in ("/ayuda", "/start"):
         help_text = (
-            f"👑 *COMANDOS DEL SISTEMA DE FLOTA Y CI/CD*\n"
+            f"👑 *SISTEMA DE CONTROL DE FLOTA Y CI/CD*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"⚡ *Ejecución Remota de Comandos:*\n"
+            f"• `/comando todos <cmd>` : Enviar a toda la flota (excluye al Líder)\n"
+            f"• `/comando cola <cmd>` : Enviar a la cola al primer worker libre\n"
+            f"• `/comando 2 <cmd>` : Enviar directo al dispositivo #2 de `/flota`\n"
+            f"• `/comando <cmd>` : Teclado táctil interactivo para elegir destino\n\n"
+            f"🔋 *Energía y Hardware:*\n"
+            f"• `/bateria` : Telemetría de batería, carga y temperatura\n\n"
             f"🔨 *CI/CD & Compilación Distribuida:*\n"
-            f"• `/build <nombre> <cmd>` : Encolar y ejecutar compilación\n"
+            f"• `/build <nombre> <cmd>` : Encolar compilación\n"
             f"• `/logs` : Listar registros cifrados de compilación\n"
             f"• `/logs <job_id>` : Ver logs descifrados en RAM\n"
             f"• `/logs_export <id>` : Exportar log como documento\n\n"
@@ -685,13 +895,50 @@ def bot_daemon_loop():
                 for item in data.get("result", []):
                     offset = item.get("update_id", offset) + 1
                     
-                    # 1. Manejo de Callback Queries (Botones de aprobación/rechazo)
+                    # 1. Manejo de Callback Queries (Botones interactivos)
                     cb = item.get("callback_query")
                     if cb:
                         cb_data = cb.get("data", "")
                         cb_id = cb.get("id")
+                        msg_id = cb.get("message", {}).get("message_id")
                         send_telegram("answerCallbackQuery", {"callback_query_id": cb_id})
-                        if cb_data.startswith("revoke_"):
+
+                        if cb_data.startswith("cancel_job_"):
+                            c_jid = cb_data.replace("cancel_job_", "")
+                            cancel_dir = f"/data/data/com.termux/files/usr/tmp/builds/{c_jid}"
+                            os.makedirs(cancel_dir, exist_ok=True)
+                            with open(os.path.join(cancel_dir, ".cancel"), "w") as cf:
+                                cf.write("cancel")
+                            subprocess.run(["pkill", "-f", c_jid], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            send_telegram("editMessageText", {
+                                "chat_id": authorized_chat,
+                                "message_id": msg_id,
+                                "text": f"🛑 *ORDEN DE CANCELACIÓN ENVIADA*\nTarea `{c_jid}` abortada inmediatamente.",
+                                "parse_mode": "Markdown"
+                            })
+
+                        elif cb_data.startswith("target_todos_"):
+                            pid = cb_data.replace("target_todos_", "")
+                            raw_cmd = PENDING_COMMAND_PROMPTS.pop(pid, "")
+                            if raw_cmd:
+                                dispatch_command("todos", "todos", raw_cmd, authorized_chat)
+
+                        elif cb_data.startswith("target_cola_"):
+                            pid = cb_data.replace("target_cola_", "")
+                            raw_cmd = PENDING_COMMAND_PROMPTS.pop(pid, "")
+                            if raw_cmd:
+                                dispatch_command("cola", "any", raw_cmd, authorized_chat)
+
+                        elif cb_data.startswith("target_dev_"):
+                            # formato: target_dev_<seal>_<prompt_id>
+                            parts = cb_data.split("_")
+                            target_seal = parts[2]
+                            pid = "_".join(parts[3:])
+                            raw_cmd = PENDING_COMMAND_PROMPTS.pop(pid, "")
+                            if raw_cmd:
+                                dispatch_command("device", target_seal, raw_cmd, authorized_chat)
+
+                        elif cb_data.startswith("revoke_"):
                             r_seal = cb_data.replace("revoke_", "")
                             subprocess.run(["flota", "bloquear", r_seal], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                             send_telegram("sendMessage", {
@@ -708,7 +955,7 @@ def bot_daemon_loop():
 
                     sender_chat = str(msg.get("chat", {}).get("id"))
                     if sender_chat != authorized_chat:
-                        continue  # Ignorar cualquier chat no autorizado
+                        continue
 
                     text = msg.get("text", "").strip()
                     if not text:
@@ -717,12 +964,10 @@ def bot_daemon_loop():
                     if text.startswith("/"):
                         parts = text.split(maxsplit=1)
                         raw_cmd = parts[0]
-                        # Quitar el @nombre_del_bot si viene incluido
                         cmd = raw_cmd.split("@")[0].lower()
                         args = parts[1] if len(parts) > 1 else ""
                         handle_telegram_command(cmd, args, msg, sender_chat)
                     elif text.startswith("#!"):
-                        # Si el usuario envía un script crudo sin comando, ejecutar LSP automáticamente
                         report = run_lsp_analysis(text)
                         send_telegram("sendMessage", {"chat_id": sender_chat, "text": report, "parse_mode": "Markdown"})
 
@@ -730,26 +975,30 @@ def bot_daemon_loop():
             time.sleep(3)
 
 # ==============================================================================
-# SECCIÓN 4: Menú Oficial de Telegram (/setMyCommands)
+# SECCIÓN 5: Menú Oficial de Telegram (/setMyCommands)
 # ==============================================================================
 
 def set_bot_menu_commands():
-    """Configura el menú de comandos oficial completo en Telegram."""
+    """Configura el catálogo oficial completo de comandos en Telegram."""
     token, _ = get_tg_creds()
     commands = [
+        {"command": "comando", "description": "⚡ Ejecutar comando en celular, todos o en cola"},
+        {"command": "bateria", "description": "🔋 Nivel de batería, carga y temperatura"},
         {"command": "flota", "description": "👑 Dashboard general de celulares y cuentas"},
-        {"command": "build", "description": "🔨 Encolar y ejecutar compilación distribuida"},
+        {"command": "build", "description": "🔨 Encolar compilación distribuida"},
         {"command": "lint", "description": "🔍 Análisis estático y LSP sin ejecución"},
         {"command": "sync_fleet", "description": "🚀 Sincronizar GitOps con firmas Ed25519"},
-        {"command": "logs", "description": "🔐 Consultar registros cifrados de compilación"},
+        {"command": "logs", "description": "🔐 Consultar registros cifrados en RAM"},
+        {"command": "logs_export", "description": "📄 Exportar log como archivo adjunto"},
         {"command": "diagnostico", "description": "🩺 Autodiagnóstico de fallos con Gemini AI"},
-        {"command": "doc", "description": "📖 Generar documentación técnica con Gemini AI"},
+        {"command": "doc", "description": "📖 Generar documentación técnica con IA"},
+        {"command": "set_ai_key", "description": "🔑 Guardar API Key de Gemini cifrada"},
         {"command": "dispositivos", "description": "📱 Listar dispositivos vinculados"},
         {"command": "bloquear", "description": "🔴 Revocar acceso y ordenar borrado remoto"},
-        {"command": "broadcast", "description": "⚡ Difundir mensaje del Líder a la flota"},
+        {"command": "broadcast", "description": "📢 Difundir mensaje del Líder a la flota"},
         {"command": "respaldo", "description": "💾 Generar respaldo maestro ultra-cifrado"},
-        {"command": "estado", "description": "🛡️ Telemetría, RAM y estado de centinelas"},
-        {"command": "ayuda", "description": "📖 Manual completo de comandos y seguridad"}
+        {"command": "estado", "description": "🛡️ Telemetría y centinelas activos"},
+        {"command": "ayuda", "description": "📖 Manual completo de uso del sistema"}
     ]
     url = f"https://api.telegram.org/bot{token}/setMyCommands"
     data = json.dumps({"commands": commands}).encode("utf-8")
@@ -761,12 +1010,12 @@ def set_bot_menu_commands():
         return {"ok": False, "error": str(e)}
 
 # ==============================================================================
-# SECCIÓN 5: Punto de Entrada CLI
+# SECCIÓN 6: Punto de Entrada CLI
 # ==============================================================================
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: cloud-sentinel [seal|auth-request|auth-poll|notify|set-menu|daemon|lsp|diagnose|doc|set-ai-key]")
+        print("Uso: cloud-sentinel [seal|auth-request|auth-poll|notify|notify-btn|send-doc|set-menu|daemon|lsp|diagnose|doc|set-ai-key]")
         sys.exit(1)
 
     cmd = sys.argv[1]
@@ -797,7 +1046,31 @@ if __name__ == "__main__":
     elif cmd == "notify":
         title = sys.argv[2] if len(sys.argv) > 2 else "Notificación"
         content = sys.argv[3] if len(sys.argv) > 3 else ""
-        notify_general(title, content)
+        _, cid = get_tg_creds()
+        send_telegram("sendMessage", {
+            "chat_id": cid,
+            "text": f"{title}\n━━━━━━━━━━━━━━━━━━━━━━━━━\n{content}",
+            "parse_mode": "Markdown"
+        })
+    elif cmd == "notify-btn":
+        title = sys.argv[2] if len(sys.argv) > 2 else "Notificación"
+        content = sys.argv[3] if len(sys.argv) > 3 else ""
+        markup_json = json.loads(sys.argv[4]) if len(sys.argv) > 4 else {}
+        _, cid = get_tg_creds()
+        send_telegram("sendMessage", {
+            "chat_id": cid,
+            "text": f"{title}\n━━━━━━━━━━━━━━━━━━━━━━━━━\n{content}",
+            "parse_mode": "Markdown",
+            "reply_markup": markup_json
+        })
+    elif cmd == "send-doc":
+        if len(sys.argv) < 3:
+            print("Uso: cloud-sentinel send-doc <file_path> [caption]")
+            sys.exit(1)
+        f_path = sys.argv[2]
+        cap = sys.argv[3] if len(sys.argv) > 3 else ""
+        _, cid = get_tg_creds()
+        print(send_telegram_document(cid, f_path, cap))
     elif cmd == "set-menu":
         print(set_bot_menu_commands())
     elif cmd == "daemon":
