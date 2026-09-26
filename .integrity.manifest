@@ -90,9 +90,9 @@ f941698683bf4fbb09c612177d27879fc242c8a55236a9127ee899acc784adfe  ./data/vscode/
 0ab48b25cba617ed3a4acca0161813b314c095ef63544bb4af60769eb1012977  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db
 30be3243e3fdc4e982b7cf2ec103e3444704cbd225c9a051435414516631cc75  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-shm
 2d817b2f240755c84e9568ff95c2804df52374f04f91bb32f8919a67f8b6784f  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-wal
-ee10fafcd626f0165f3e8607e2c2c624465ff764520a73ffe72c4f7ce42c9a56  ./data/vscode/User/globalStorage/state.vscdb
+d7587e6e28a344c383e8f3864b795583d25d864a2e5824d8097a852f956f188d  ./data/vscode/User/globalStorage/state.vscdb
 f73e8fbc22d48e353bc43363c689e5bf0e575df278d411264a93b6d93b8d6b3c  ./data/vscode/User/globalStorage/state.vscdb.backup
-7797f5ca1953bf337d2f1f592c6623cdc31dcca6babbe640db08d59e5da81447  ./data/vscode/User/globalStorage/storage.json
+9e472a23bd596fcf9441a5b65821aa2612583d897728a022df05109f69d698d8  ./data/vscode/User/globalStorage/storage.json
 8d5bccec199626052664188964f504b6c268b025448c177e8a3c521c37caaa6d  ./data/vscode/User/profiles/builtin/agents/globalStorage/state.vscdb
 508aef7682a2f778313c1837ab0ee682b6f69bcdff138e265974dcadb5746769  ./data/vscode/User/settings.json
 c648a30ceefe9969b2b37a27843fd0389936c5b280cb1311243180469fd7cc17  ./data/vscode/User/workspaceStorage/56c0e868/state.vscdb
@@ -116,7 +116,7 @@ ef69a7d7c72de97eff6d3a1422bca780ebd644adb8cda93a92103169eb5f2757  ./data/vscode/
 b79935759dafa295ebacf6708977b1463b4f6b442f8aeea17277c2e4ddec62ce  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/chatEditingSessions/a47181d1-8cd3-486e-9bbd-06c7f95ba965/state.json
 d110a825b0f18f810a9ee18e62e4751dc56a88888e887e571eab1cd0c2b7fa85  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/chatSessions/8717c41c-4e82-4918-9e71-a07e763a3cd4.jsonl
 b6451d2c5a22fdacd4d827ac94532049d20600721fb6d7e0484248ec7abe80b0  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/chatSessions/a47181d1-8cd3-486e-9bbd-06c7f95ba965.jsonl
-6d5ba9c106b9992274f09a13b7e0b847471f2c7e87f20e871c936da0e82e19cb  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/state.vscdb
+9648e75b31bf399623cc96fb4ca8826bae58c721bed59388f5b1e38d7e1e4636  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/state.vscdb
 79be66da2a862c61d731a74f95df94d88418be0b8a70a25502e03d26746094bc  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/state.vscdb.backup
 208c8b933d2e2c3816b43764b540f9e4445943a9620b923d9a9bf18433b19a04  ./data/vscode/User/workspaceStorage/b53d9585c855ff8fd50655134a43448d/workspace.json
 da2a17c8f8bedb80b2aa1d5e7b8dfe784bbe2f9b145137930feb579a13390466  ./data/vscode/User/workspaceStorage/c867980a3fda79e1bf6e2aa568f09602/state.vscdb

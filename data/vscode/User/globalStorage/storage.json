@@ -60,11 +60,11 @@
             "folder": "file:///data/data/com.termux/files/home",
             "backupPath": "/data/data/com.termux/files/home/.config/Code - OSS/Backups/9e938ebcb8f917a9a64bdab53f8bbee6",
             "uiState": {
-                "mode": 0,
-                "x": 0,
-                "y": 46,
-                "width": 720,
-                "height": 1594
+                "mode": 1,
+                "x": 118,
+                "y": 30,
+                "width": 602,
+                "height": 645
             }
         },
         "openedWindows": []
