@@ -53,7 +53,7 @@ export LP_NUM_THREADS=$(nproc 2>/dev/null || echo 4) # Aceleración CPU multi-hi
 export VSCODE_CLI_USE_FILE_KEYCHAIN=1
 
 # 4. Configurar preferencias de Termux-X11 (Portapapeles, filtrado bilineal de alta nitidez)
-termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:linear >/dev/null 2>&1 || true
+termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear >/dev/null 2>&1 || true
 
 # 5. Iniciar servidor de sonido PulseAudio con salida física Android (OpenSL ES / AAudio)
 if ! pgrep -x "pulseaudio" > /dev/null 2>&1; then

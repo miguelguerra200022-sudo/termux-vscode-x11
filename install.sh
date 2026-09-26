@@ -297,7 +297,7 @@ fi
 
 # 10. Configurar preferencias óptimas de Termux:X11 (Portapapeles, Pantalla Completa, Filtrado Bilineal)
 echo -e "${YELLOW}[*] Optimizando preferencias de Termux:X11 (Portapapeles, Pantalla Completa, Renderizado Suave)...${NC}"
-termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:linear >/dev/null 2>&1 || true
+termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear >/dev/null 2>&1 || true
 
 # 11. Configurar accesos directos para la app Termux:Widget en pantalla de inicio
 echo -e "${YELLOW}[*] Configurando accesos directos de pantalla de inicio (~/.shortcuts/)...${NC}"
