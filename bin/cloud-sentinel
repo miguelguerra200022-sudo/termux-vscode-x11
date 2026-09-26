@@ -1,0 +1,286 @@
+#!/data/data/com.termux/files/usr/bin/python3
+# ==============================================================================
+# cloud-sentinel: Centinela Criptográfico y Gestor de Telegram en Memoria RAM
+# Bot: @CloudNodeSync_bot (Cloud Node Sentinel)
+# ==============================================================================
+
+import os
+import sys
+import json
+import time
+import base64
+import hashlib
+import subprocess
+import urllib.request
+import urllib.parse
+
+# Configuración Cifrada del Bot (Decodificada y descifrada en memoria)
+# Token: 8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls | Chat ID: 1514766577
+ENC_TG = "U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
+HARDCODED_PASS = "09032000Mi."
+LEADER_SEAL = "ums9230-sp_6300-3724801c"
+
+def get_tg_creds():
+    """Descifra las credenciales del bot de Telegram en memoria volátil."""
+    try:
+        cmd = [
+            "openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2",
+            "-pass", f"pass:{HARDCODED_PASS}"
+        ]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        out, _ = proc.communicate(input=ENC_TG.encode())
+        raw = out.decode().strip()
+        token, chat_id = raw.split("|")
+        return token, chat_id
+    except Exception:
+        return "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls", "1514766577"
+
+def get_hardware_seal():
+    """Calcula el sello criptográfico inmutable basado en el hardware físico de la ROM."""
+    try:
+        def getprop(prop, fallback=""):
+            try:
+                res = subprocess.check_output(["getprop", prop], stderr=subprocess.DEVNULL).decode().strip()
+                return res if res else fallback
+            except Exception:
+                return fallback
+
+        mfg = getprop("ro.product.manufacturer", os.uname().machine)
+        mdl = getprop("ro.product.model", os.uname().nodename)
+        soc = getprop("ro.board.platform", os.uname().sysname)
+        hw = getprop("ro.boot.hardware", getprop("ro.hardware", os.uname().machine))
+        bld = getprop("ro.build.fingerprint", str(os.getuid()))
+        raw = f"{mfg}|{mdl}|{soc}|{hw}|{bld}"
+        h = hashlib.sha256(raw.encode()).hexdigest()
+        soc_clean = "".join(c.lower() for c in soc if c.isalnum() or c in "_-")
+        mdl_clean = "".join(c.lower() for c in mdl if c.isalnum() or c in "_-")
+        return f"{soc_clean}-{mdl_clean}-{h[:8]}"
+    except Exception:
+        return "generic-device-00000000"
+
+def get_public_ip():
+    """Obtiene la IP pública del dispositivo de manera rápida y segura."""
+    for service in ["https://api.ipify.org", "https://ifconfig.me/ip", "https://icanhazip.com"]:
+        try:
+            req = urllib.request.Request(service, headers={"User-Agent": "curl/7.88.1"})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                return resp.read().decode().strip()
+        except Exception:
+            continue
+    return "127.0.0.1"
+
+def send_telegram(method, payload):
+    """Envía peticiones directas a la API de Telegram vía TLS."""
+    token, _ = get_tg_creds()
+    url = f"https://api.telegram.org/bot{token}/{method}"
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode())
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+def send_auth_request(username, seal, is_restore=False):
+    """Envía la solicitud interactiva con botones en Telegram."""
+    _, chat_id = get_tg_creds()
+    req_id = f"{int(time.time())}_{seal[:8]}"
+    ip = get_public_ip()
+    model = subprocess.getoutput("getprop ro.product.model 2>/dev/null || uname -m").strip()
+    action_text = "RESTAURACIÓN DE DISPOSITIVO" if is_restore else "AUTORIZACIÓN DE NUEVO DISPOSITIVO"
+
+    msg = (
+        f"🛡️ *SOLICITUD: {action_text}*\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 *Usuario:* `{username}`\n"
+        f"🏷️ *Sello Hardware:* `{seal}`\n"
+        f"📱 *Modelo:* `{model}`\n"
+        f"🌐 *IP:* `{ip}`\n"
+        f"⏰ *Hora:* `{time.strftime('%Y-%m-%d %H:%M:%S')}`\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"¿Deseas autorizar el despliegue y acceso a las credenciales?"
+    )
+
+    markup = {
+        "inline_keyboard": [
+            [
+                {"text": "✅ APROBAR ACCESO", "callback_data": f"auth_approve_{req_id}"},
+                {"text": "❌ RECHAZAR", "callback_data": f"auth_reject_{req_id}"}
+            ]
+        ]
+    }
+
+    res = send_telegram("sendMessage", {
+        "chat_id": chat_id,
+        "text": msg,
+        "parse_mode": "Markdown",
+        "reply_markup": markup
+    })
+    
+    msg_id = res.get("result", {}).get("message_id")
+    return req_id, msg_id
+
+def poll_auth_response(req_id, msg_id, username, seal, timeout=90):
+    """Espera activamente a que el usuario presione APROBAR o RECHAZAR en Telegram."""
+    token, chat_id = get_tg_creds()
+    start_time = time.time()
+    offset = -10
+
+    while time.time() - start_time < timeout:
+        time.sleep(2)
+        url = f"https://api.telegram.org/bot{token}/getUpdates?offset={offset}&timeout=5"
+        try:
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                if not data.get("ok"):
+                    continue
+                for item in data.get("result", []):
+                    offset = item.get("update_id", offset) + 1
+                    cb = item.get("callback_query")
+                    if not cb:
+                        continue
+                    cb_data = cb.get("data", "")
+                    cb_id = cb.get("id")
+
+                    if cb_data == f"auth_approve_{req_id}":
+                        send_telegram("answerCallbackQuery", {
+                            "callback_query_id": cb_id,
+                            "text": "✅ Acceso Aprobado con éxito."
+                        })
+                        panic_markup = {
+                            "inline_keyboard": [
+                                [
+                                    {"text": "🔴 REVOCAR ACCESO / BLOQUEAR", "callback_data": f"revoke_{seal}"}
+                                ]
+                            ]
+                        }
+                        send_telegram("editMessageText", {
+                            "chat_id": chat_id,
+                            "message_id": msg_id,
+                            "text": (
+                                f"✅ *DISPOSITIVO AUTORIZADO*\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"👤 *Usuario:* `{username}`\n"
+                                f"🏷️ *Sello Hardware:* `{seal}`\n"
+                                f"⚡ *Estado:* Instalación autorizada en curso.\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar y bloquear:_"
+                            ),
+                            "parse_mode": "Markdown",
+                            "reply_markup": panic_markup
+                        })
+                        return True
+
+                    elif cb_data == f"auth_reject_{req_id}":
+                        send_telegram("answerCallbackQuery", {
+                            "callback_query_id": cb_id,
+                            "text": "❌ Solicitud rechazada."
+                        })
+                        send_telegram("editMessageText", {
+                            "chat_id": chat_id,
+                            "message_id": msg_id,
+                            "text": (
+                                f"❌ *ACCESO RECHAZADO POR ADMINISTRADOR*\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"👤 *Usuario:* `{username}`\n"
+                                f"🏷️ *Sello Hardware:* `{seal}`\n"
+                                f"🚫 Acceso denegado inmediatamente."
+                            ),
+                            "parse_mode": "Markdown"
+                        })
+                        return False
+
+        except Exception:
+            continue
+
+    return None
+
+def notify_password_login(username, seal, success=True):
+    """Notifica a Telegram cuando se ingresa mediante contraseña manual."""
+    _, chat_id = get_tg_creds()
+    ip = get_public_ip()
+    model = subprocess.getoutput("getprop ro.product.model 2>/dev/null || uname -m").strip()
+    
+    if success:
+        text = (
+            f"🔑 *ACCESO POR CONTRASEÑA DIRECTA*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 *Usuario:* `{username}`\n"
+            f"🏷️ *Sello Hardware:* `{seal}`\n"
+            f"📱 *Modelo:* `{model}`\n"
+            f"🌐 *IP:* `{ip}`\n"
+            f"⏰ *Hora:* `{time.strftime('%Y-%m-%d %H:%M:%S')}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"⚠️ _Autorizado con éxito mediante contraseña maestra en terminal._"
+        )
+    else:
+        text = (
+            f"🚨 *ALERTA: INTENTO FALLIDO DE CONTRASEÑA*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 *Usuario:* `{username}`\n"
+            f"🏷️ *Sello Hardware:* `{seal}`\n"
+            f"📱 *Modelo:* `{model}`\n"
+            f"🌐 *IP:* `{ip}`\n"
+            f"⏰ *Hora:* `{time.strftime('%Y-%m-%d %H:%M:%S')}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"❌ _Contraseña incorrecta ingresada en terminal._"
+        )
+    send_telegram("sendMessage", {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "Markdown"
+    })
+
+def notify_general(title, content):
+    """Envía una notificación general a Telegram."""
+    _, chat_id = get_tg_creds()
+    text = f"{title}\n━━━━━━━━━━━━━━━━━━━━━━━━━\n{content}"
+    send_telegram("sendMessage", {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "Markdown"
+    })
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Uso: cloud-sentinel [seal|auth-request|auth-poll|notify-pass|notify-fail|notify]")
+        sys.exit(1)
+
+    cmd = sys.argv[1]
+    if cmd == "seal":
+        print(get_hardware_seal())
+    elif cmd == "auth-request":
+        user = sys.argv[2] if len(sys.argv) > 2 else "Usuario"
+        seal = sys.argv[3] if len(sys.argv) > 3 else get_hardware_seal()
+        is_restore = sys.argv[4] == "1" if len(sys.argv) > 4 else False
+        req_id, msg_id = send_auth_request(user, seal, is_restore)
+        print(f"{req_id}|{msg_id}")
+    elif cmd == "auth-poll":
+        req_id = sys.argv[2]
+        msg_id = sys.argv[3]
+        user = sys.argv[4]
+        seal = sys.argv[5]
+        timeout = int(sys.argv[6]) if len(sys.argv) > 6 else 90
+        res = poll_auth_response(req_id, msg_id, user, seal, timeout)
+        if res is True:
+            print("APPROVED")
+            sys.exit(0)
+        elif res is False:
+            print("REJECTED")
+            sys.exit(1)
+        else:
+            print("TIMEOUT")
+            sys.exit(2)
+    elif cmd == "notify-pass":
+        user = sys.argv[2] if len(sys.argv) > 2 else "Usuario"
+        seal = sys.argv[3] if len(sys.argv) > 3 else get_hardware_seal()
+        notify_password_login(user, seal, success=True)
+    elif cmd == "notify-fail":
+        user = sys.argv[2] if len(sys.argv) > 2 else "Usuario"
+        seal = sys.argv[3] if len(sys.argv) > 3 else get_hardware_seal()
+        notify_password_login(user, seal, success=False)
+    elif cmd == "notify":
+        title = sys.argv[2] if len(sys.argv) > 2 else "Notificación"
+        content = sys.argv[3] if len(sys.argv) > 3 else ""
+        notify_general(title, content)
