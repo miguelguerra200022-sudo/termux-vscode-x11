@@ -788,14 +788,14 @@
     <decor>no</decor>
   </application>
 
-  <!-- Zen Browser: Maximizado optimizado para aprovechar 100% de pantalla -->
+  <!-- Zen Browser: Con barra de titulo y controles (minimizar, maximizar, cerrar) -->
   <application class="zen-browser" type="normal">
     <maximized>true</maximized>
-    <decor>no</decor>
+    <decor>yes</decor>
   </application>
   <application class="Zen" type="normal">
     <maximized>true</maximized>
-    <decor>no</decor>
+    <decor>yes</decor>
   </application>
 
   <!-- Cuadros de dialogo, alertas y selectores: con decoraciones tactiles y centrados -->

@@ -223,7 +223,7 @@ echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
 echo -e "${YELLOW}[*] Instalando VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff
+pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff feh
 
 # 8. Detección Inteligente e Instalación de APKs (X11 y Widget)
 echo -e "${YELLOW}[*] Comprobando complementos gráficos de Android (Termux:X11 y Termux:Widget)...${NC}"
@@ -404,6 +404,8 @@ fi
 sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/code-oss.png|g' "$PREFIX/share/applications/code-oss.desktop" 2>/dev/null || true
 sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/zen-browser.png|g' "$PREFIX/share/applications/zen-browser.desktop" 2>/dev/null || true
 sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/touch-toggle.png|g' "$PREFIX/share/applications/touch-toggle.desktop" 2>/dev/null || true
+mkdir -p "$HOME/.local/share/applications" "$HOME/.icons"
+cp -f "$PREFIX/share/applications/code-oss.desktop" "$PREFIX/share/applications/zen-browser.desktop" "$PREFIX/share/applications/touch-toggle.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
 
 # 13. Sincronización y Configuración de Bóveda Cifrada en GitHub (Zero Texto Plano)
 TARGET_FOLDER="credenciales/${SELLO_HARDWARE}"

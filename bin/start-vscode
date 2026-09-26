@@ -68,11 +68,11 @@ command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
 # 2. Variables de entorno X11, DBus y Navegador
 export XDG_RUNTIME_DIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
 export DISPLAY=:0
-export PULSE_SERVER=127.0.0.1
-export PULSE_LATENCY_MSEC=30
 export UV_THREADPOOL_SIZE=16
 export BROWSER=zen-browser
 export LP_NUM_THREADS=$(nproc 2>/dev/null || echo 4) # Aceleración CPU multi-hilo
+export XDG_DATA_DIRS="$PREFIX/share:${XDG_DATA_DIRS:-/data/data/com.termux/files/usr/share}"
+export XDG_DATA_HOME="$HOME/.local/share"
 
 # 3. Persistencia de credenciales, sesiones y tokens
 export VSCODE_CLI_USE_FILE_KEYCHAIN=1
@@ -82,7 +82,7 @@ termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displ
 
 # 5. Iniciar servidor de sonido PulseAudio con salida física Android (OpenSL ES / AAudio)
 if ! pgrep -x "pulseaudio" > /dev/null 2>&1; then
-    pulseaudio --start \
+    env -u PULSE_SERVER pulseaudio --start \
         --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" \
         --load="module-sles-sink" \
         --exit-idle-time=-1 >/dev/null 2>&1 || true
@@ -92,6 +92,8 @@ else
         pactl load-module module-sles-sink >/dev/null 2>&1 || true
     fi
 fi
+export PULSE_SERVER=127.0.0.1
+export PULSE_LATENCY_MSEC=30
 
 # 6. Iniciar bus de sesión D-Bus si no está activo
 if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] || ! pgrep -x "dbus-daemon" > /dev/null 2>&1; then
@@ -131,7 +133,18 @@ else
     openbox --reconfigure >/dev/null 2>&1 || true
 fi
 
-# 8.1 Iniciar la barra superior flotante tint2 UI/UX (Safe Area Insets)
+# 8.1 Sincronizar iconos y archivos .desktop locales para tint2 y Openbox
+mkdir -p "$HOME/.local/share/applications" "$HOME/.icons" "$HOME/.local/share/icons"
+[ -f "$PREFIX/share/applications/code-oss.desktop" ] && cp -f "$PREFIX/share/applications/code-oss.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
+[ -f "$PREFIX/share/applications/zen-browser.desktop" ] && cp -f "$PREFIX/share/applications/zen-browser.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
+[ -f "$PREFIX/share/applications/touch-toggle.desktop" ] && cp -f "$PREFIX/share/applications/touch-toggle.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
+for userapp in "$HOME/.local/share/applications/userapp-Zen-"*.desktop; do
+    if [ -f "$userapp" ]; then
+        grep -q "^Icon=" "$userapp" || echo "Icon=/data/data/com.termux/files/usr/share/pixmaps/zen-browser.png" >> "$userapp"
+    fi
+done
+
+# 8.2 Iniciar la barra superior flotante tint2 UI/UX (Safe Area Insets)
 if ! pgrep -x "tint2" > /dev/null 2>&1; then
     echo "[*] Iniciando barra de tareas Ubuntu (tint2)..."
     tint2 >/dev/null 2>&1 &
@@ -139,18 +152,58 @@ if ! pgrep -x "tint2" > /dev/null 2>&1; then
     sleep 0.3
 fi
 
-# 8.2 Iniciar el demonio de sincronización en tiempo real en segundo plano
+# 8.3 Iniciar el demonio de sincronización en tiempo real en segundo plano
 if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
     if command -v watcher-sync >/dev/null 2>&1; then
         nohup watcher-sync >/dev/null 2>&1 &
     fi
 fi
 
-# 8.3 Detección Dinámica de Pantalla y Adaptación UI/UX (Safe Areas y Curvatura)
+# 8.4 Detección Dinámica de Pantalla y Adaptación UI/UX (Safe Areas y Curvatura)
 DISP_W=1080
+DISP_H=0
 if command -v xdotool >/dev/null 2>&1; then
     DISP_GEO=$(DISPLAY=:0 xdotool getdisplaygeometry 2>/dev/null || echo "")
-    [ -n "$DISP_GEO" ] && DISP_W=$(echo "$DISP_GEO" | awk '{print $1}')
+    if [ -n "$DISP_GEO" ]; then
+        DISP_W=$(echo "$DISP_GEO" | awk '{print $1}')
+        DISP_H=$(echo "$DISP_GEO" | awk '{print $2}')
+    fi
+fi
+
+# 8.5 Cargar Fondo de Pantalla Inteligente (Horizontal vs Vertical adaptativo)
+WALLPAPER_DIR="$HOME/.config/termux-vscode"
+WALLPAPER_IMG=""
+if [ -n "$DISP_H" ] && [ "$DISP_H" -gt "$DISP_W" ]; then
+    # Orientación vertical (Portrait)
+    if [ -f "$WALLPAPER_DIR/wallpaper_vertical.jpg" ]; then
+        WALLPAPER_IMG="$WALLPAPER_DIR/wallpaper_vertical.jpg"
+    elif [ -f "$REPO_DIR/data/wallpaper_vertical.jpg" ]; then
+        WALLPAPER_IMG="$REPO_DIR/data/wallpaper_vertical.jpg"
+    fi
+else
+    # Orientación horizontal (Landscape)
+    if [ -f "$WALLPAPER_DIR/wallpaper_horizontal.jpg" ]; then
+        WALLPAPER_IMG="$WALLPAPER_DIR/wallpaper_horizontal.jpg"
+    elif [ -f "$REPO_DIR/data/wallpaper_horizontal.jpg" ]; then
+        WALLPAPER_IMG="$REPO_DIR/data/wallpaper_horizontal.jpg"
+    fi
+fi
+
+# Fallback si no hay específico por orientación
+if [ -z "$WALLPAPER_IMG" ]; then
+    for ext in jpg png jpeg webp; do
+        if [ -f "$WALLPAPER_DIR/wallpaper.$ext" ]; then
+            WALLPAPER_IMG="$WALLPAPER_DIR/wallpaper.$ext"
+            break
+        elif [ -f "$REPO_DIR/data/wallpaper.$ext" ]; then
+            WALLPAPER_IMG="$REPO_DIR/data/wallpaper.$ext"
+            break
+        fi
+    done
+fi
+
+if [ -n "$WALLPAPER_IMG" ] && command -v feh >/dev/null 2>&1; then
+    DISPLAY=:0 feh --bg-fill "$WALLPAPER_IMG" >/dev/null 2>&1 || true
 fi
 
 ZOOM_LEVEL=1
