@@ -1,0 +1,213 @@
+c68259806515ee162fe080f9c8ec3aad07a334aeb338507ae705ead1f9995ac1  ./README.md
+dbbf74468b26298a2f26725ff3c4abea22762c55a3c587e361adf78872a6fbca  ./bin/dev-info
+8f15dd3c0e950efdb12429c4f0ddd6624bdf8654c73b542802dfbb4ae4012f4d  ./bin/fix-phantom-killer
+9b7e93497b501cf59ab620a1387db1223ed7da10de324c9a8298f7b188fa6b2c  ./bin/guia
+9017a237966fd9ea08cdd57af84c6c24a88fe52ef087da5357787852102fdabf  ./bin/new-project
+f838b9fbc9e50efe331313f6124a00b4ed8cd288967e1dac52336a6a2ea51b00  ./bin/notify-done
+7255deda01dd8cda3be088157b51493aa0bc4e956a1c38ebf65833fdb7269f3f  ./bin/restore-vscode
+1635285a530df5072f7064df69a967f05b73c03e7f8b5cdaad93fa2e23846b63  ./bin/set-marketplace
+380dd6868632733647fd172129f6d42d44d5faee983092e74c23b5677fa0bff1  ./bin/setup-swap
+97066022f0c06adda0e96231cba5b0f850d94f98ac3c9bfb028a1ceb1459f0a5  ./bin/share-port
+fb44e73da8abed9ce67b67687a03860b9866d16b525547b0da6d0d905b84726d  ./bin/start-vscode
+603014ef31aab72eb28776431330fb59615b31f417aa86b3eb2c64ad6cca5005  ./bin/start-vscode-web
+50ed8248d2137b97c40e9f4f65e3214e67607f024d6bd6ec80e7e72056b8ad83  ./bin/stop-vscode
+c8885840f69bd248991ee92ceb6f77e24307cdba1ee9483bcfde4c31a547551f  ./bin/sync-vscode
+fd3249aa07abf8794ae985122d035b3ab2610e632a116d03a1ed51e67699e1b4  ./bin/vscode
+1ede96d81648c615ba15be276579c9117e520d5ed296fee571da03b900cc6590  ./bin/watcher-sync
+687a45471ba01d813929b3b5c484d134bbd341461380cb105f9c9b2c5bc0ee88  ./config/argv.json
+5cc855999b4ae29aa477b0039515120d55acbd9f0073302e05b1e34b65afb60c  ./config/menu.xml
+d995a8c1d30c935f343fa6f5ddcff7eb6af7e7b31b8919e7786172aef8b4c384  ./config/rc.xml
+5df344673b52ae5d0488530274d84ba5694108761ef24309d796d27704fe1d69  ./config/settings.json
+17241da9b3cf2f10fdff35b2e84837563377891ba660bba5d8a8c4dbf76cbe17  ./config/tint2rc
+687a45471ba01d813929b3b5c484d134bbd341461380cb105f9c9b2c5bc0ee88  ./data/vscode/User/History/-24874bde/1V2e.json
+6ba7c8f6174f426185520ea24927725d3dac45d9455a21b2198a7a4f0ee7ed75  ./data/vscode/User/agent-sessions.code-workspace
+4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945  ./data/vscode/User/chatLanguageModels.json
+34dd916a815d87a531c215e426bdfb3cd4ecf0c240a71cfd27a0a73117f4d472  ./data/vscode/User/globalStorage/ahefi.ahefi/cache/ahefi_models.json
+0543f6d7851d5f7b416d9b5f11512a615dbee169c40d4581beeb5b66a3126b01  ./data/vscode/User/globalStorage/ahefi.ahefi/cache/openrouter_models.json
+59e3e78be1a7621433c4b1f5748787cc4f3bfc1b975a1c852cdd286c16cfc323  ./data/vscode/User/globalStorage/ahefi.ahefi/cache/vercel-ai-gateway_models.json
+4a1c645bf662aa9aa5ce807b1d10abce1d31294e20bf504f8e14ed9c879c0a68  ./data/vscode/User/globalStorage/ahefi.ahefi/settings/custom_modes.yaml
+ea52afdf63762b71f3b0baf6d39e19bd207b8143593b127572ff3a59d5e48bbe  ./data/vscode/User/globalStorage/ahefi.ahefi/settings/mcp_settings.json
+348ff2571d43d19a54b8b9949d1122d426632b38dd7b49c0084af0dd394adba2  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/01a0d395-35f6-720c-9306-6efc9f2441b2/history_item.json
+95dc1af5822b6163bd14403d63b520840299ddb7558f5d3700b3d619667c3fff  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/01a0d395-35f6-720c-9306-6efc9f2441b2/ui_messages.json
+c6781fb73be2332a0f94ded9ac8ec2f5c742eb60fe17ee9522262ab00fafe908  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/01a0d470-57a2-733b-92e2-d3fe11b74bf8/history_item.json
+51fa34a283ca56ad08e27255bd6563aaa6c18c640a325933f263e66324ce30e2  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/01a0d470-57a2-733b-92e2-d3fe11b74bf8/ui_messages.json
+821ae8e396a8a28d77ba4c00705aa314b7f49d385cd996630a779302247fd6f1  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/01a0d48a-573e-72a1-a9fb-dfb6067dbf68/history_item.json
+641568007e7e1662ea6af3dac9a3b636b1e2ad8bb268e2b235d75b30aefaeda2  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/01a0d48a-573e-72a1-a9fb-dfb6067dbf68/ui_messages.json
+bba6bc59fb3afeb9a88c32e58395383c12e53a714cd4229b1474cd7e52031100  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/01a0db75-6484-7492-81d8-2ddcd2c22b9f/history_item.json
+f8e47b84c40ffc6877c82e92a0e0105d9d9fb06303287a164e133a4ebb375f13  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/01a0db75-6484-7492-81d8-2ddcd2c22b9f/ui_messages.json
+6364e8cfccb08b94c82db0507f8e8dd664395f4b408bd4e2db37ee8dd2ba5b43  ./data/vscode/User/globalStorage/ahefi.ahefi/tasks/_index.json
+3666f6166c283b4ae9bf234b527b896c8833ff57bf8da51fdd973f7b9e054b7d  ./data/vscode/User/globalStorage/emptyWindowChatSessions/31fca518-9630-40bd-a452-35bf65e35a46.jsonl
+e44493b0190f7ca4624ee7bedd54a94911bef0cf73c2f16124367a27dffe3193  ./data/vscode/User/globalStorage/emptyWindowChatSessions/4309e95d-184d-4b7b-a687-c833aaf3a748.jsonl
+e2e196574475f2467bbb482b3cb9325e640bbbebc27d6fde4036e08e00e57b3e  ./data/vscode/User/globalStorage/github.copilot-chat/ask-agent/Ask.agent.md
+def3495b510f66b5f9657d02c21565a3457c326c96ab7e04d8c9fb32fe5ca488  ./data/vscode/User/globalStorage/github.copilot-chat/copilotCli/copilot
+4bcd31d5d20280afc81ea261c81a76d094bd5321e272534cae287a766eacd90a  ./data/vscode/User/globalStorage/github.copilot-chat/copilotCli/copilotCLIShim.js
+74668dc934fc64d7a34946f3f3aea4b90dedb5dcb60c3fe2b6dc16dc3c89013f  ./data/vscode/User/globalStorage/github.copilot-chat/copilotCli/copilotCLIShim.ps1
+df4333a71d9d62b7e8910e0cd657eb204ea532b018a051745ae246e0bc25e3e1  ./data/vscode/User/globalStorage/github.copilot-chat/debugCommand/copilot-debug
+3d33c56bf85d80d51475e6f6a55b1dfd8277dc11a90d273b9a3c72950c69f276  ./data/vscode/User/globalStorage/github.copilot-chat/debugCommand/copilotDebugCommand.js
+74a713e32d5994aa8e5b173325ed2516482bb609707fbcc519fe680c9d9bbd42  ./data/vscode/User/globalStorage/github.copilot-chat/explore-agent/Explore.agent.md
+f941698683bf4fbb09c612177d27879fc242c8a55236a9127ee899acc784adfe  ./data/vscode/User/globalStorage/github.copilot-chat/plan-agent/Plan.agent.md
+0ab48b25cba617ed3a4acca0161813b314c095ef63544bb4af60769eb1012977  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db
+30be3243e3fdc4e982b7cf2ec103e3444704cbd225c9a051435414516631cc75  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-shm
+2d817b2f240755c84e9568ff95c2804df52374f04f91bb32f8919a67f8b6784f  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-wal
+77a61fce1e5a838b757bc5ff6e8aa56af4044ae1842b54fb059d52167ef7cbe9  ./data/vscode/User/globalStorage/state.vscdb
+8c67517704a9e9febb2ec0ba0203b698541c5e643d6ae1e08aa3e5be0ccc1a32  ./data/vscode/User/globalStorage/state.vscdb.backup
+9f0a5f3c94fc4df1457ad4778e2514de46f949daeb421bdbd6b89cc968926eca  ./data/vscode/User/globalStorage/storage.json
+8d5bccec199626052664188964f504b6c268b025448c177e8a3c521c37caaa6d  ./data/vscode/User/profiles/builtin/agents/globalStorage/state.vscdb
+5df344673b52ae5d0488530274d84ba5694108761ef24309d796d27704fe1d69  ./data/vscode/User/settings.json
+c648a30ceefe9969b2b37a27843fd0389936c5b280cb1311243180469fd7cc17  ./data/vscode/User/workspaceStorage/56c0e868/state.vscdb
+274ec98a3f7fee50e9c615a991dbb206ffd1998ba2ff25097bf65ed3c948baf6  ./data/vscode/User/workspaceStorage/56c0e868/workspace.json
+638c88cc8b64d9027b98838f68690b959d848b8040881eb0dbeac85182bd3d40  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatEditingSessions/3ed544e5-c288-4dc6-b14f-9bcf3be89f0d/state.json
+c062451acbdd3a4aa102b0cd4b0d52a76f933d14ca0d43341520524d2b9cd7e7  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatEditingSessions/5e0f9fef-c41d-42b7-886a-d4e16c3ff01f/state.json
+632ac8daf381001efce978c32319012ad4b558ff914a76a7d1e63e2278e319e5  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatEditingSessions/88c9549d-3c1c-4502-88e2-dcfac295680b/state.json
+9d3d8ba20794f86f61c68ee68995229dc06d677d50735f98a3f27cfdb2c1ed11  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatEditingSessions/c707f1da-c25a-42ad-be45-79e8d82a0799/state.json
+0e97bf16ebdcccfe04e55c922b732a8b1484e466a4892773fa8fe1a89951cb85  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatEditingSessions/d0b6daed-370f-4fbb-9e7d-d7079e5f9c8e/state.json
+06371b38a6c00f2d66e06f26eab864f4b23af9f58bc795f502d186de87137bb9  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatEditingSessions/f1b16627-fe19-410f-943d-82b152fbd692/state.json
+9bd2bf86451c6c9bb8d19b57b337e7069026e2a135d9fbbff158ae4cb6d88894  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatSessions/3ed544e5-c288-4dc6-b14f-9bcf3be89f0d.jsonl
+9368e2c5b2939357c57dcbb9062106de4c0b41e20ae14561b64f4b9d50db8a7b  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatSessions/5e0f9fef-c41d-42b7-886a-d4e16c3ff01f.jsonl
+cfddd216dae310dddc2ef28942577edcbadfd35831fdae287c85eb451eb1e73f  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatSessions/88c9549d-3c1c-4502-88e2-dcfac295680b.jsonl
+632b566a0bdaa0dd6d2659ff09b5825326dbab698ee33f6110c4c0c6123c7016  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatSessions/c707f1da-c25a-42ad-be45-79e8d82a0799.jsonl
+4acdc77256d9b53fa1dc1baabb8a76615af7d53811c83f88f822120400d272dd  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatSessions/d0b6daed-370f-4fbb-9e7d-d7079e5f9c8e.jsonl
+bc91bbf0ee04638d70a95a6af9bdf78f3019d147e412a990dbd7833faa49df8b  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatSessions/f1b16627-fe19-410f-943d-82b152fbd692.jsonl
+56bebd75a5750fa44e5e22d6f974b85c88aacafacaa7e3a8ddb038bcd07c9069  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/state.vscdb
+e4ead7dbf8ff1ebf724076a04fc40f203a6f292e6d38a0df5743fdf5d81d9229  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/state.vscdb.backup
+da0f2c5a86145b1aee4a56dad48317a3fb6f07f47522956ab405833336feecde  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/workspace.json
+da2a17c8f8bedb80b2aa1d5e7b8dfe784bbe2f9b145137930feb579a13390466  ./data/vscode/User/workspaceStorage/c867980a3fda79e1bf6e2aa568f09602/state.vscdb
+274ec98a3f7fee50e9c615a991dbb206ffd1998ba2ff25097bf65ed3c948baf6  ./data/vscode/User/workspaceStorage/c867980a3fda79e1bf6e2aa568f09602/workspace.json
+0442992f0d11da926c8418c1ad8b9b6554ab456d0d48407531b322658b25e9f4  ./data/vscode/User/workspaceStorage/f6c923d0222edd678f4737f253e6346d/chatEditingSessions/380610ec-b733-4a94-bedf-2b20fbb64735/state.json
+a7883ea7540b5deefdf90224bf236734a6d52794c14bf3d9586d5a721f7de247  ./data/vscode/User/workspaceStorage/f6c923d0222edd678f4737f253e6346d/chatSessions/380610ec-b733-4a94-bedf-2b20fbb64735.jsonl
+209859b69eef80ac82349f435374ef52c89ea9d5d1b93ab79a5c601f93825c74  ./data/vscode/User/workspaceStorage/f6c923d0222edd678f4737f253e6346d/state.vscdb
+72d386606765ca94bc932af4679ed9daa757ea7280cf4bc3e083bdd7507c15f8  ./data/vscode/User/workspaceStorage/f6c923d0222edd678f4737f253e6346d/workspace.json
+687a45471ba01d813929b3b5c484d134bbd341461380cb105f9c9b2c5bc0ee88  ./data/vscode/argv.json
+f68e7ac1e5a17e952f312009dcb5c49e5f3847a8dcd7f6d14bb219f1449e83c7  ./data/zen/Profile Groups/3a1c5f2b.sqlite
+890c879619faf2d83ead6e4303fa6f56dc0a768170bf3871b3466e33edc8b247  ./data/zen/Profile Groups/3a1c5f2b.sqlite-shm
+ee4e91b22d6347631cbe9be7d0c791a8b17a20df4ec73fd44f92b3372fdc7162  ./data/zen/Profile Groups/3a1c5f2b.sqlite-wal
+bc572bcd2d3170f19912be559b65c2af09c3944135f3f4c8eddbb62db50a8901  ./data/zen/duajl3es.Default Profile/times.json
+757be64eb4a8001ca76f779169ed4caf72059ac1096a07ee5425b8ece098c7c7  ./data/zen/installs.ini
+0fb991ddf95548aa8d020caf9d5d790e346b5f294d87a757da58b912e0e250b1  ./data/zen/profiles.ini
+4d3cdf3b46fb9729603048acb2c2a57546f9eb299e37c432b28be207c7e74503  ./data/zen/qqlfient.Default (release)/AlternateServices.bin
+7d68d7e560fb8b54367653f216210295791773b110cb1691d3006ef9f6fe1c3b  ./data/zen/qqlfient.Default (release)/ExperimentStoreData.json
+c650648a3c10b9661ee3b5fdfc1c2b20a6eec7fba82c7dae6abf69e2c679a09d  ./data/zen/qqlfient.Default (release)/SiteSecurityServiceState.bin
+73a443922aa80114793a5ae1ed6abbc24fc7cf19cff40e035eb30b71ab4ba832  ./data/zen/qqlfient.Default (release)/addonStartup.json.lz4
+b49425b511b7b4014f6ef2112f8421cd01a2f6421e9a099bbb7a166b12858466  ./data/zen/qqlfient.Default (release)/bounce-tracking-protection.sqlite
+7ece91b5cb81b5a5664643d38d8f957a4bd52f1ff819b6ea57f2522743850580  ./data/zen/qqlfient.Default (release)/broadcast-listeners.json
+5c52e8a97930885d92a1bbf98f84bd662778ef73dcbcdba3c09674df673bb2f4  ./data/zen/qqlfient.Default (release)/cert9.db
+085386e5241425c615a84fdcb964c59a145044009ec67e9cf12ef04514cda01f  ./data/zen/qqlfient.Default (release)/chrome/zen-themes.css
+56788355a6c54978be588e98ad31e57e0eb8784ad1c7cade02477598cdebdfa3  ./data/zen/qqlfient.Default (release)/compatibility.ini
+ee22977940eca24fb886d37c18bab2cc1f61ea001a91b2f3a641e4cf929bb9dd  ./data/zen/qqlfient.Default (release)/containers.json
+8b9b2bbf49a40f12a8d17c471def3aa3e3fde0c8fcfc0821887f0d4f0da1de32  ./data/zen/qqlfient.Default (release)/content-prefs.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/content-prefs.sqlite-wal
+70227181eaccc2a3d684ae3a73febd368f718ec211924b1e2ab7fec7441bd328  ./data/zen/qqlfient.Default (release)/cookies.sqlite
+58d148f83a6fdefde7298d437e1067834dea5324c62ca8b1141995f39d3ff876  ./data/zen/qqlfient.Default (release)/cookies.sqlite-wal
+8ecad37f682f58b4669834ff64cb1174a63b0f3b1e2e87527f83e9bab70cfd32  ./data/zen/qqlfient.Default (release)/datareporting/glean/client_id.txt
+fae86bd40b5e7523da38604bb23d3f0a26a2297d29c242ebc2d138baf9cab6b6  ./data/zen/qqlfient.Default (release)/datareporting/glean/db/data.safe.bin
+8a5e6ebb5136c243fd3903d0584e3bcf6e00b84f0fb3c58e51a66c66fe46107d  ./data/zen/qqlfient.Default (release)/datareporting/glean/events/events
+4d50d3b9f9dbbd5edacef0c04f9d68d4d04b4b26ceb8bd989da5036b2e737993  ./data/zen/qqlfient.Default (release)/datareporting/glean/events/nimbus-targeting-context
+03c2fd5df90de8a951a556d9a980b4bf8c4f0a5475ed95903633d6ba2d7278d6  ./data/zen/qqlfient.Default (release)/datareporting/state.json
+cd349a4dbe114d4347153b9e6f09f3e50aaa69b58db6c3cebf07eb97931bbec8  ./data/zen/qqlfient.Default (release)/extension-preferences.json
+91925357a08fdd578eb3c9d1d00b2ed0cc7bd7ad438b8aabb0912456b8965928  ./data/zen/qqlfient.Default (release)/extension-store/data.safe.bin
+cbbd567e297cd1f937bcf5b39d424fb34b7c7fbfdf3cb88826110aeaec4a03e8  ./data/zen/qqlfient.Default (release)/extensions.json
+8efc9701af4754a2a8bafa25b0bc39da52159c311b5c01c00275eda2cf57ea41  ./data/zen/qqlfient.Default (release)/favicons.sqlite
+70b35dce86991c7ae757b99bda31a9e80ea8cd3e336f650d7918b3f46cb11424  ./data/zen/qqlfient.Default (release)/favicons.sqlite-wal
+04d96f05fbc4c88867d6cf4fe2c92cf8c9b43e9664f40194571aea4fbba0e083  ./data/zen/qqlfient.Default (release)/formhistory.sqlite
+fe7686a6281f0ab519c32c788ce0da0d01640425018dcffcfcb81105757f6fe6  ./data/zen/qqlfient.Default (release)/gmp-gmpopenh264/2.6.0/gmpopenh264.info
+d88c0da1322b2ad03005a4656dd63afa4e9dd44b2a5b7d34dfb2ddee3750ce06  ./data/zen/qqlfient.Default (release)/gmp-gmpopenh264/2.6.0/libgmpopenh264.so
+26a56d83b2cdaba5fccd2d0fb84a919bf303deb96365798cea4a7a6c375f34c6  ./data/zen/qqlfient.Default (release)/handlers.json
+2de363b868f73d3a9b901082100cccd9e7b8bb6edb6f1f1a179e7901b7568ef0  ./data/zen/qqlfient.Default (release)/key4.db
+e1be167c45ff09cd3c3dbb5f277d98de30a32c397bc486ac869804b409a39ad8  ./data/zen/qqlfient.Default (release)/logins.db
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/notificationstore.json
+89824f6c0371aa47739ef386aab96f524500d85cd59674c0ce0f0c3679b0d9c7  ./data/zen/qqlfient.Default (release)/permissions.sqlite
+95b094f603e0c35452746404871da02c6d9dedd874f8d2905bf2635e4bf6675a  ./data/zen/qqlfient.Default (release)/pkcs11.txt
+5667d5c65863449faa5819580c3814d01b60ff40fa4752554db9e4911ea61919  ./data/zen/qqlfient.Default (release)/places.sqlite
+5b414ef109f9f0871a39331f90958640481aa28a08069b46e147e254f37beabd  ./data/zen/qqlfient.Default (release)/places.sqlite-wal
+c6382381013ec6a696447ff13652daa6536ff6f2b8cc79bd75f32d12c6e0c86c  ./data/zen/qqlfient.Default (release)/prefs.js
+975a14a7750970486c672a1295dc46c1f69b29aaafbdad6830de817ea57f7281  ./data/zen/qqlfient.Default (release)/protections.sqlite
+a36b7d3155a6778ff4bbc19a1ac27872919f80d7ed2735e3ba8b7d70fb4d487b  ./data/zen/qqlfient.Default (release)/search.json.mozlz4
+8edb0cac1772ec921be842880c74b3bd49abf81c1646a8a98c4a6a1debb30de2  ./data/zen/qqlfient.Default (release)/security_state/20260902-1-default.filter.delta
+5b4ed22f30316dab4185081ab9659ff6b4183f627c357f16917555fa960a80b8  ./data/zen/qqlfient.Default (release)/security_state/20260903-0-default.filter.delta
+2116f34266c926e8d2a18c3736bb9e9472755a4b2aa761311ae245b27892622a  ./data/zen/qqlfient.Default (release)/security_state/20260903-1-default.filter.delta
+156ecea744f4793d399a4404105577a36f31e8e0acc144dabbe1ed50197822f7  ./data/zen/qqlfient.Default (release)/security_state/20260904-0-default.filter.delta
+3a32fcf5f22b5d2bbd5f08a79ba81dffb1ecb0430d84161bfa04d61eb113a82d  ./data/zen/qqlfient.Default (release)/security_state/20260904-1-default.filter.delta
+b199965b2dd63865b6e01d9cf0195869e5d4173522a0fa623efe7364356bbe7c  ./data/zen/qqlfient.Default (release)/security_state/20260905-0-default.filter.delta
+ec6496cd4665251042e77b7bdfbd4f93d4989d5ecab7bdbe56815b048e97c960  ./data/zen/qqlfient.Default (release)/security_state/20260905-1-default.filter.delta
+8ae0ce366d6c8254aaf959935ec8888a8d855d22b8bd945b956ba394bb206aeb  ./data/zen/qqlfient.Default (release)/security_state/20260906-0-default.filter.delta
+54bd0fa59e11bfb447e2b95c527c060b305b601b637223879d0bad61821a5278  ./data/zen/qqlfient.Default (release)/security_state/20260906-1-default.filter.delta
+93bb45648707f37fb8f37fc381b3f21583fb5bb28e66451978c8dea360d1fb68  ./data/zen/qqlfient.Default (release)/security_state/20260907-0-default.filter.delta
+a1fd19b5f41aaaceb7b2839337926dd45de7010019f7b19f389a072c84072e2f  ./data/zen/qqlfient.Default (release)/security_state/20260907-1-default.filter.delta
+7de6932be6087a45a2da30c6f45b896302dd45501070181f68978c96d353cc24  ./data/zen/qqlfient.Default (release)/security_state/20260908-0-default.filter.delta
+257dbf5a58adb0121d519e8d11c4c75a4cc9e5fa63e896293302787065febfa0  ./data/zen/qqlfient.Default (release)/security_state/20260908-1-default.filter.delta
+227120c1558dd36f019aab9e06e0b39602ed69b8b73d4898a54e8f2014963464  ./data/zen/qqlfient.Default (release)/security_state/20260909-0-default.filter.delta
+6432e79d6c0a0227d767199d4457c3a1dc6cfbc0fa28d09c8a2c31f7a7aed51d  ./data/zen/qqlfient.Default (release)/security_state/20260909-1-default.filter.delta
+a83d6b7681fc294e61d4c4769182878a87286c08d9105b8f62bac590a21e8b0e  ./data/zen/qqlfient.Default (release)/security_state/20260910-0-default.filter.delta
+69525530c889056bacc4d202ca1d9f776314202703ba91e07143fc0ec760d4b0  ./data/zen/qqlfient.Default (release)/security_state/20260910-1-default.filter.delta
+1f336d0cc1535addcf0bd7ab8d9409dd0b409211e0f668ac99d77cca233200d7  ./data/zen/qqlfient.Default (release)/security_state/20260911-0-default.filter.delta
+b26dbb49d4357239ecdb9d4afec60784b6946343e127d1124d20c80b13f90f15  ./data/zen/qqlfient.Default (release)/security_state/20260911-1-default.filter.delta
+3663b3fb95c6c22f0f90e878556f43cea6083f78aed275429a6ade70c82eb03a  ./data/zen/qqlfient.Default (release)/security_state/20260912-0-default.filter.delta
+04b0240f7d4f503fe4fb4c18df71a46434c7c32a0a28f618f9a26cfb637448b1  ./data/zen/qqlfient.Default (release)/security_state/20260912-1-default.filter.delta
+7424cefd7048f7dc373c88a0e91521bb288220b703b940dfb32fbd43ec055cfe  ./data/zen/qqlfient.Default (release)/security_state/20260913-0-default.filter.delta
+b9dc95def5c7ee2f2d08d1d5e3fe2f9838c8ea460896d1aae339b865d9b9eb5f  ./data/zen/qqlfient.Default (release)/security_state/20260913-1-default.filter.delta
+245ef95a5413b0daf909e34a787801252451c0bc3e1f164afd4b84aaf6803091  ./data/zen/qqlfient.Default (release)/security_state/20260914-0-default.filter.delta
+f38784a393a0e901228596b139a2e3b6fc005b51b6d58952806da405e2427207  ./data/zen/qqlfient.Default (release)/security_state/20260914-1-default.filter.delta
+fc5120c4de4b9815ef1b59b343f3ee81bfc4c22335fb06919050d4b9a92c9889  ./data/zen/qqlfient.Default (release)/security_state/20260915-0-default.filter.delta
+54ed5d396024521373ade4e6ef9bb94b117a770301b9c206fbbb17c8d8de29d7  ./data/zen/qqlfient.Default (release)/security_state/20260915-1-default.filter.delta
+3cf23919ac43ddb3379fc8156663f4f96e7fa5f12f47fa5cf908db21a868c225  ./data/zen/qqlfient.Default (release)/security_state/20260916-0-default.filter.delta
+329effdb19a8f2f8fc24e0ce79351a30b00b13c137ba9bb8c2fd14b11ccedd0e  ./data/zen/qqlfient.Default (release)/security_state/20260916-1-default.filter.delta
+04823ad551ad1b915610685ddb2f82e88cda71d2cb0a23972010de6b446b41de  ./data/zen/qqlfient.Default (release)/security_state/20260917-0-default.filter.delta
+ace096607b8f01eef7e5fbe1438475211745e811eba9997543b421e68a9451bb  ./data/zen/qqlfient.Default (release)/security_state/20260917-1-default.filter.delta
+0354330c5820ea31d018595ddf0707399b503079121372c07926808833ab0914  ./data/zen/qqlfient.Default (release)/security_state/20260918-0-default.filter.delta
+96d8862d4f695214e4d81996e4f38625a6600d7444ddef63696f945734e2d5de  ./data/zen/qqlfient.Default (release)/security_state/20260918-1-default.filter.delta
+67e5761fb5056247cc9fd5e23128f196fac34c59289a6d4b9d16f913d9d5a0b0  ./data/zen/qqlfient.Default (release)/security_state/20260919-0-default.filter.delta
+90d0eeed1cad1efc8b6203370fd215c4ca5e79af2bca17bda4fad60d6fc9a969  ./data/zen/qqlfient.Default (release)/security_state/20260919-1-default.filter.delta
+4c972fb8f7dc5fccf999e42691da9348c06c2fd4eafe1e274756dd1f50f0d896  ./data/zen/qqlfient.Default (release)/security_state/20260920-0-default.filter.delta
+361f0473728a59a76002551dba12e2335937af7ad5c822faf2dbb27a9cb85c48  ./data/zen/qqlfient.Default (release)/security_state/20260920-1-default.filter.delta
+edc8a8a3656d09dcbe1a7f3130d3e104c6c8219e0ad135ee768cc37180f5e528  ./data/zen/qqlfient.Default (release)/security_state/20260921-0-default.filter.delta
+a54f851496dad5cdd6ecd8665018648cf07f65e00579d4e4e8e01e709a404b74  ./data/zen/qqlfient.Default (release)/security_state/20260921-1-default.filter.delta
+9e345a8e1031d7087ffaffcc7c83b4b6150659124b8ce5369ef3d451bfbc16b7  ./data/zen/qqlfient.Default (release)/security_state/20260922-0-default.filter.delta
+b2626ae16ba908ac4f543c08a58d9c2b1ba73ef5e853b974853eba025a895d51  ./data/zen/qqlfient.Default (release)/security_state/20260922-1-default.filter.delta
+18f32f7a36f9c8751776019d953e741c21c0bb9378913bd7e4516b21415eb482  ./data/zen/qqlfient.Default (release)/security_state/20260923-0-default.filter.delta
+df59ab89d82300086478a237cfe80a42a6c65b235b1f2c00314eea8c6b9ce23e  ./data/zen/qqlfient.Default (release)/security_state/20260923-1-default.filter.delta
+790723c269506120b46ed7939a7b5e8fe9236585c6cfcc48034e54fce6ec2e72  ./data/zen/qqlfient.Default (release)/security_state/20260924-0-default.filter.delta
+fa4f06242a9e2661d337ffaefec6f5665db4f6d884b0fabf613fd23d956e2859  ./data/zen/qqlfient.Default (release)/security_state/20260924-1-default.filter.delta
+be3e0483afd6a4d5472311e320dbc00d3f4e8fb36bf93c674f2ed713d1bb4a9b  ./data/zen/qqlfient.Default (release)/security_state/20260925-0-default.filter.delta
+b256d8f6a59728c588222ad67a273c1a83e225689e23b2d00163f4bdcdde02e7  ./data/zen/qqlfient.Default (release)/security_state/20260925-1-default.filter.delta
+ae61548dfbeb6881a878c387ccf43e97a5d96abe68fc08c7282e1fdb6ca31e37  ./data/zen/qqlfient.Default (release)/security_state/crlite.filter
+5d49fcd5d05c1589d4cef3702ed31ef9c836ac92fa3b24f863f42045cb816d35  ./data/zen/qqlfient.Default (release)/security_state/data.safe.bin
+a1fb50e6c86fae1679ef3351296fd6713411a08cf8dd1790a4fd05fae8688164  ./data/zen/qqlfient.Default (release)/serviceworker.txt
+00ad9799527c3fd21f3a85012565eae817490f3e0d417413bf9567bb5909f6a2  ./data/zen/qqlfient.Default (release)/sessionCheckpoints.json
+4c1f3b281501f70708a64ca2875a73622836bc126d1a45b0d2a504a01749a6d2  ./data/zen/qqlfient.Default (release)/sessionstore-backups/recovery.baklz4
+288e6ba92670c10ecea75621d566e2bdb6cdf205b2fdd71c3348e8f7cc203c16  ./data/zen/qqlfient.Default (release)/sessionstore-backups/recovery.jsonlz4
+9b25c93ad79c9866d015eeb439620af6f08fb7b29f3daa0b82b065dcc66d0aa7  ./data/zen/qqlfient.Default (release)/settings/data.safe.bin
+704d28223a4320a853df4a19d48c7015cf79d56a5317cc3475b6305fa43dcc05  ./data/zen/qqlfient.Default (release)/shield-preference-experiments.json
+26b22cdb605152c99fc2ed50c0405705412a8506a0f39ce16d929a621694bc32  ./data/zen/qqlfient.Default (release)/storage.sqlite
+d344253b227ebf9794d9e0494215229093fe3826cf4454a11485fb908f9bb8ad  ./data/zen/qqlfient.Default (release)/storage/ls-archive.sqlite
+5e5c312df6d51b550a928984b90462ef0a68ba2671fd635bb7f4463ac00864e8  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/.metadata-v2
+8bf7713a76638e0326c11a023c3aa6bd407c1ba262747de4f48a3f581a71e5da  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/1451318868ntouromlalnodry--epcr.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/1451318868ntouromlalnodry--epcr.sqlite-wal
+ef8db4d4ccdfa0a3cae795c88a8b26648c3b68008d8d020af29550a4ba6497ac  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/1657114595AmcateirvtiSty.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/1657114595AmcateirvtiSty.sqlite-wal
+9ca605a762365725cd928e1dca7667016ee597c609f406d22af96c7132de2ca8  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/1974846527meornoittso-r.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/1974846527meornoittso-r.sqlite-wal
+8d68e9772464ac200b2770d3c1a62f79f760bfc162d4caff4b65f821f6d7d4b1  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/2823318777ntouromlalnodry--naod.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/2823318777ntouromlalnodry--naod.sqlite-wal
+be8aabf06899258e4dfad8963dde7bc5222581dc1ef768bc14288972bab0550c  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/2918063365piupsah.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/2918063365piupsah.sqlite-wal
+4b1752a8451b92d66110533f620c1d98ee59943c488eeb56a48af27f9ead4754  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/3561288849sdhlie.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/3561288849sdhlie.sqlite-wal
+272b248a3cd8d97581f7634e814c189925b0fda84335852e79cb14700050190a  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/1
+3eae64d4821a2224fedc26e4ca4ded1394fff8ae1b0acd4d5482016eda83f885  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/2
+77b58351b9f57ca4f663812879efb28988da716038b9cf22ad9c3af7fcdeee39  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/53
+d2348c794811c2657b3e4860d4db755878574413afa3c3583d50c40128891672  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.sqlite-wal
+46903d8bf48488cd4f6cc1bd061984a888a21853143082db03a2324b2e8e9057  ./data/zen/qqlfient.Default (release)/times.json
+645b2e2c23a53d763abf3ce4cb02f8f9c59bafc01009dbaa6543bbd6f6716a05  ./data/zen/qqlfient.Default (release)/webappsstore.sqlite
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/qqlfient.Default (release)/webappsstore.sqlite-wal
+c2be4c6515c312abd0eb8673ffc4b674f34be862e9b3b53d0d31deb4e7e76a32  ./data/zen/qqlfient.Default (release)/xulstore.json
+e5893ad05f997e6c8b7cd5b070b572d7a09aab7843ddfe1173c147c7ce970f03  ./data/zen/qqlfient.Default (release)/zen-keyboard-shortcuts.json
+0dd22af73bf7560a8bc72ee90aba611c1241c2054d488f75d90a4afc27309efb  ./data/zen/qqlfient.Default (release)/zen-live-folders.jsonlz4
+9c7308b3529996f4cdaf4aa4131f463dc191cc2a684b709fd6725e8db674047b  ./data/zen/qqlfient.Default (release)/zen-sessions-backup/clean.jsonlz4
+9c7308b3529996f4cdaf4aa4131f463dc191cc2a684b709fd6725e8db674047b  ./data/zen/qqlfient.Default (release)/zen-sessions-backup/recovery.baklz4
+dcf1b156d69a55000bc544c010a85aaac64c9c9541fb00f8ff8f9b1043bb92ea  ./data/zen/qqlfient.Default (release)/zen-sessions.jsonlz4
+44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a  ./data/zen/qqlfient.Default (release)/zen-themes.json
+a39ca57624ff36ea946acb2aaf721eafbaf1e2b3cefa55dd7d6ab67733a0f23f  ./docs/GUIA_RAPIDA.md
+99f9638bc9d0c0659b033e65ac4718aa04c0ec2e0f4241f303c5580a8fe32b57  ./instalar
+1f60c06a9eb6caaa5b4d38bd72214b7095aa20f7176e15b3f69ced6a2c79e01f  ./install.sh
+a18dea5410b968f9d54202db54ba502e1cf16457b28aa89cb7ca1d50985f3cd6  ./uninstall.sh
