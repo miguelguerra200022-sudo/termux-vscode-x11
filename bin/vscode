@@ -452,7 +452,14 @@ def main():
         # Dibujar pantalla limpia
         sys.stdout.write("\033[H\033[J")
         print(f"{BLUE}╔" + "═" * (cols - 2) + f"╗{NC}")
-        title_text = "TERMUX VS CODE  -  GESTOR DE PROYECTOS"
+        active_file = os.path.expanduser("~/.config/termux-vscode/active_identity")
+        active_user = "Miguel (Líder)"
+        if os.path.exists(active_file):
+            try:
+                active_user = open(active_file).read().strip().split('_')[0]
+            except Exception:
+                pass
+        title_text = f"VS CODE PRO  •  👑 {active_user.upper()}"
         print(f"{BLUE}║{WHITE}{BOLD} {title_text.center(cols - 4)} {BLUE}║{NC}")
         print(f"{BLUE}╚" + "═" * (cols - 2) + f"╝{NC}")
 
@@ -553,7 +560,7 @@ def main():
             print(f" • {YELLOW}[1-9]{NC}               : Salto numérico     • {YELLOW}[ / ]{NC}          : Buscar / Filtrar")
             print(f" • {YELLOW}[E]{NC}                 : Poner descripción  • {YELLOW}TAB{NC}            : Ver Historial")
             print(div_line)
-            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {BOLD}{WHITE}c{NC}{GRAY} Identidad  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
 
         # ------------------ CONTENIDO PESTAÑA 1: HISTORIAL ------------------
         else:
@@ -639,6 +646,11 @@ def main():
         if action == 'QUIT':
             print(f"\n{YELLOW}[*] Cancelado. Saliendo sin abrir VS Code.{NC}\n")
             sys.exit(0)
+
+        if action == 'SWITCH_IDENTITY':
+            subprocess.run(["switch-identity"])
+            status_msg = "Identidad actualizada."
+            continue
 
         # ------------------ EVENTOS: EXPLORADOR ------------------
         if active_tab == 0:
