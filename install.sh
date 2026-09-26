@@ -88,8 +88,22 @@ auto_install_apk "$APK_X11_PATH" "Termux:X11"
 sleep 1
 auto_install_apk "$APK_WIDGET_PATH" "Termux:Widget"
 
-# 5. Obtener directorio del script (local o clonado)
+# 5. Obtener directorio del script y Sanitización Cero-Rastros (Zero-Knowledge)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+if [ -d "$SCRIPT_DIR/.git" ]; then
+    CURRENT_REMOTE=$(git -C "$SCRIPT_DIR" config --get remote.origin.url 2>/dev/null || true)
+    if [ -n "$CURRENT_REMOTE" ]; then
+        TOKEN_FROM_URL=$(echo "$CURRENT_REMOTE" | sed -nE "s/https:\/\/[^:]+:([^@]+)@.*/\1/p")
+        [ -z "$TOKEN_FROM_URL" ] && TOKEN_FROM_URL=$(echo "$CURRENT_REMOTE" | sed -nE "s/https:\/\/([^@]+)@.*/\1/p")
+        if [ -n "$TOKEN_FROM_URL" ]; then
+            mkdir -p "$HOME/.config/termux-vscode"
+            echo -n "$TOKEN_FROM_URL" > "$HOME/.config/termux-vscode/.auth_token"
+            chmod 600 "$HOME/.config/termux-vscode/.auth_token"
+        fi
+        CLEAN_REMOTE=$(echo "$CURRENT_REMOTE" | sed -E "s/https:\/\/[^@]+@/https:\/\//")
+        git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
+    fi
+fi
 if [ -d "$SCRIPT_DIR/.git" ]; then
     CURRENT_REMOTE=$(git -C "$SCRIPT_DIR" config --get remote.origin.url 2>/dev/null || true)
     if [ -n "$CURRENT_REMOTE" ]; then
@@ -243,6 +257,9 @@ echo ""
 # 15. Blindaje Criptográfico Anti-Tamper (Ed25519) y Centinelas Autónomos 24/7
 echo -e "${YELLOW}[*] Configurando blindaje de integridad criptográfica y centinelas autónomos...${NC}"
 mkdir -p "$HOME/.ssh" "$HOME/.config/git"
+chmod 700 "$HOME/.ssh" "$HOME/.config/git" 2>/dev/null || true
+chmod 600 "$HOME/.config/git/allowed_signers" "$HOME/.ssh/id_ed25519"* 2>/dev/null || true
+rm -f "$HOME/.config/git/allowed_signers" 2>/dev/null || true
 if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
     ssh-keygen -t ed25519 -N "" -f "$HOME/.ssh/id_ed25519" >/dev/null 2>&1
 fi
@@ -259,6 +276,7 @@ git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signer
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 mkdir -p "$GOLDEN_DIR"
 chmod 700 "$HOME/.config/termux-vscode" "$GOLDEN_DIR" 2>/dev/null || true
+chmod 700 "$GOLDEN_DIR"/* 2>/dev/null || true
 for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode" "sync-vscode"; do
     [ -f "$PREFIX/bin/$bin_name" ] && cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
     chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
