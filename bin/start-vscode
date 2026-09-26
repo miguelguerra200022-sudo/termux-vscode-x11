@@ -207,6 +207,9 @@ echo -e "[+] Lanzando VS Code [Perfil: ${USER_NAME_DISPLAY}]..."
 shift || true
 ELECTRON_FLAGS="--no-sandbox --disable-gpu --password-store=basic --enable-features=NetworkServiceInProcess,ParallelDownloading --disable-renderer-backgrounding --disable-background-timer-throttling --disable-backgrounding-occluded-windows --js-flags=--max-old-space-size=2048"
 
+# Filtrar avisos internos inofensivos de Electron/Chromium en terminal
+exec 2> >(grep -v -E "(is not in the list of known options|Warning: ')" >&2)
+
 if [ -f "$TARGET_DIR/GUIA_RAPIDA.md" ]; then
     exec code-oss $ELECTRON_FLAGS "$TARGET_DIR" "$TARGET_DIR/GUIA_RAPIDA.md" "$@"
 else
