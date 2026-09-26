@@ -17,6 +17,7 @@ done
 
 # 4. Forzar el cierre de procesos restantes si quedó alguno colgado
 pkill -9 -f "code-oss" 2>/dev/null
+pkill -9 -x "tint2" 2>/dev/null
 pkill -9 -x "openbox" 2>/dev/null
 pkill -9 -f "termux-x11" 2>/dev/null
 pulseaudio --kill 2>/dev/null || true

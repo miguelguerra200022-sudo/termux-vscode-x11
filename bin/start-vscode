@@ -52,12 +52,23 @@ else
     echo "[+] Servidor Termux-X11 ya en ejecución."
 fi
 
-# 8. Iniciar el gestor de ventanas Openbox en segundo plano
+# 8. Iniciar o recargar el gestor de ventanas Openbox en segundo plano
 if ! pgrep -x "openbox" > /dev/null 2>&1; then
     echo "[*] Iniciando gestor de ventanas Openbox..."
     openbox >/dev/null 2>&1 &
     disown
     sleep 0.5
+else
+    # Si Openbox ya estaba activo, recargar limpiamente la configuración
+    openbox --reconfigure >/dev/null 2>&1 || true
+fi
+
+# 8.1 Iniciar la barra de tareas inferior tint2 (estilo Ubuntu)
+if ! pgrep -x "tint2" > /dev/null 2>&1; then
+    echo "[*] Iniciando barra de tareas Ubuntu (tint2)..."
+    tint2 >/dev/null 2>&1 &
+    disown
+    sleep 0.3
 fi
 
 # 9. Traer la app Termux:X11 al frente en la pantalla del teléfono

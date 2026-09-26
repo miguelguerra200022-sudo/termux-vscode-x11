@@ -83,7 +83,17 @@ Bienvenido a tu entorno de desarrollo nativo. Esta guía se genera automáticame
 
 ---
 
-## 💻 5. Modo Dual: Usar VS Code en tu PC o Tablet Remota
+## 🖥️ 5. Barra de Tareas Estilo Ubuntu (Multitarea y Control de Ventanas)
+
+En la parte inferior de la pantalla gráfica (Termux-X11) cuentas con una barra de tareas inspirada en Ubuntu:
+* **Clic o Toque en el botón de la ventana**: Minimiza la ventana activa o la restaura inmediatamente a pantalla completa si estaba minimizada o en segundo plano.
+* **Múltiples ventanas de VS Code**: Si abres varias carpetas o ventanas a la vez, cada una tendrá su propio botón con icono y nombre para alternar entre ellas al instante.
+* **Clic derecho / Presión prolongada**: Alterna entre maximizar y restaurar tamaño de ventana.
+* **Reloj integrado**: Muestra la hora local en la esquina inferior derecha.
+
+---
+
+## 💻 6. Modo Dual: Usar VS Code en tu PC o Tablet Remota
 
 * **`start-vscode-web`**:
   Ejecuta este comando para compartir la pantalla de tu VS Code en tu red Wi-Fi. Te mostrará un enlace como:
@@ -94,7 +104,7 @@ Bienvenido a tu entorno de desarrollo nativo. Esta guía se genera automáticame
 
 ---
 
-## 🛡️ 6. Protección y Estabilidad
+## 🛡️ 7. Protección y Estabilidad
 
 * **`fix-phantom-killer`**:
   Desactiva el límite de 32 subprocesos de Android 12, 13, 14 y 15 para evitar que el sistema cierre tus terminales.
@@ -103,7 +113,7 @@ Bienvenido a tu entorno de desarrollo nativo. Esta guía se genera automáticame
 
 ---
 
-## 📱 7. Accesos Directos en Pantalla de Inicio
+## 📱 8. Accesos Directos en Pantalla de Inicio
 
 Si instalas la app **Termux:Widget** desde F-Droid, tendrás botones directos en la pantalla de inicio de tu celular para abrir VS Code (`VS-Code`) o cerrarlo y respaldarlo (`Cerrar-VS-Code`) con un solo toque.
 

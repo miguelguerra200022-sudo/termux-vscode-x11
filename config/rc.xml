@@ -778,8 +778,12 @@
   </application>
 
   -->
-  <application class="*">
+  <application class="*" type="normal">
     <maximized>true</maximized>
+    <decor>no</decor>
+  </application>
+  <application type="dock">
+    <layer>top</layer>
     <decor>no</decor>
   </application>
   </applications>

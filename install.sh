@@ -47,8 +47,8 @@ pkg upgrade -y
 echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
-echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, X11, Openbox y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip
+echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, X11, Openbox, Tint2 y utilidades...${NC}"
+pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip
 
 # 4. Obtener dinámicamente la última versión de Termux:X11 desde GitHub Releases
 echo -e "${YELLOW}[*] Consultando la última versión oficial de Termux:X11 en GitHub...${NC}"
@@ -129,6 +129,22 @@ if [ -f "$SCRIPT_DIR/config/rc.xml" ]; then
     cp "$SCRIPT_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml"
 else
     curl "${CURL_OPTS[@]}" "$BASE_RAW/config/rc.xml" -o "$HOME/.config/openbox/rc.xml"
+fi
+
+# 8.1 Configuración de Barra de Tareas tint2 (Estilo Ubuntu Yaru Dark)
+echo -e "${YELLOW}[*] Configurando barra de tareas inferior tint2 (estilo Ubuntu)...${NC}"
+mkdir -p "$HOME/.config/tint2"
+if [ -f "$SCRIPT_DIR/config/tint2rc" ]; then
+    cp "$SCRIPT_DIR/config/tint2rc" "$HOME/.config/tint2/tint2rc"
+else
+    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/tint2rc" -o "$HOME/.config/tint2/tint2rc"
+fi
+
+# 8.2 Configurar iconos del sistema para la barra de tareas
+mkdir -p "$PREFIX/share/pixmaps"
+if [ -f "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" ]; then
+    cp "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" "$PREFIX/share/pixmaps/com.visualstudio.code.oss.png" 2>/dev/null || true
+    cp "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" "$PREFIX/share/pixmaps/code-oss.png" 2>/dev/null || true
 fi
 
 # 9. Configuración de variables en ~/.bashrc
