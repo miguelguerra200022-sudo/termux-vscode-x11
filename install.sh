@@ -110,8 +110,6 @@ for s in "${SCRIPTS[@]}"; do
     chmod +x "$PREFIX/bin/$s"
 done
 chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" 2>/dev/null || true
-for dummy in
-done
 
 ln -sf "$PREFIX/bin/start-vscode" "$HOME/start-vscode.sh"
 ln -sf "$PREFIX/bin/stop-vscode" "$HOME/stop-vscode.sh"
