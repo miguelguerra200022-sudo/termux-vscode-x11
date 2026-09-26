@@ -1,20 +1,28 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ==============================================================================
-# toggle-touch-mode: Alterna entre Modo Cursor (Trackpad) y Táctil Directo
+# toggle-touch-mode: Alterna instantaneamente entre Modo Trackpad y Tactil Directo
 # ==============================================================================
 
-CURRENT=$(timeout 1 termux-x11-preference list 2>/dev/null | grep '"touchMode"' | cut -d'"' -f4)
+STATE_FILE="$HOME/.config/termux-vscode/.touch_mode"
+mkdir -p "$HOME/.config/termux-vscode"
 
-if [ "$CURRENT" = "Trackpad" ] || [ -z "$CURRENT" ]; then
+CURRENT="Trackpad"
+[ -f "$STATE_FILE" ] && CURRENT=$(cat "$STATE_FILE" 2>/dev/null || echo "Trackpad")
+
+if [ "$CURRENT" = "Trackpad" ]; then
+    echo "Direct touch" > "$STATE_FILE"
     ( termux-x11-preference touchMode:"Direct touch" >/dev/null 2>&1 & )
-    MSG="Modo Táctil Directo Activado"
+    MSG="Modo Tactil Directo Activado"
 else
+    echo "Trackpad" > "$STATE_FILE"
     ( termux-x11-preference touchMode:Trackpad >/dev/null 2>&1 & )
     MSG="Modo Trackpad (Cursor) Activado"
 fi
 
 if command -v termux-toast >/dev/null 2>&1; then
     ( timeout 2 termux-toast -s "$MSG" >/dev/null 2>&1 & )
+elif command -v termux-notification >/dev/null 2>&1; then
+    ( timeout 2 termux-notification --title "Termux-X11" --content "$MSG" >/dev/null 2>&1 & )
 fi
 
 echo "$MSG"
