@@ -3,6 +3,6 @@
 # Instalador Cifrado Zero-Knowledge (Sin exponer URL ni Token)
 # ==============================================================================
 pkg install -y openssl git >/dev/null 2>&1
-eval "$(echo 'U2FsdGVkX1+cUQJ6ufY/hE2YxnSmRi0ZrFVARXv2lcIRjh80dNNzKAZP/+dQIxvxl7ANWRQTOVYeF9jga6GkoK2tJtRmBdhRkqcF+Ug8fMbEQVMb3Wcw3aAvs3gPVOXiPWuNHMm868PdJyaEJmgPf6Uf1fBxlc09yd7euxIMHewWzgXnbccGJWN79OegpFfAsBx0SzUaVhr0833FwahUd3IWwlX0PaFWPGOPLpj/IEStPD9R6EozIh3Z3Qn7ZLicp5uy0Z0Z6XoU6bOQpXjbJg==' | openssl enc -d -aes-256-cbc -a -A -pbkdf2)"
+eval "$(echo 'U2FsdGVkX180BrXVqE9YCXHu2yduGU6gbH1zHMoCqpi9Zk68ODJM/DNfD3Sse6m80H5U2YYlZ4anarwOl57fYHkr8gcC0IrLO9Xfp25Yu2fhuCkBYw/IRz+hKv9qeHiIwsCQZcn1QfAQ8Dbc+8L3F9BnRel5GvM5recj9VEISlneHVfnXuBmoV9KspDh/jB9fZvimC7UKJ6sJgTV+FUwE2aP3zItroYZmn7K/XfP4tTT2Dop9/tkhD1//RfbWHGmKPQPpheBdYeN0RhkwWRoyOwNhAlAUfpzJKZndba/qqONhpSQBvwVZ/8qjLxNYq56b6ahuojpzA9Q6uIYdnqDRVV8vx2AXqVQ9KwOMDt+GpSw2LHS6H/0c33UNnnjiBvR3RVA1Pfj9QKdnSlH63oOTSUSm/7nsFFio5JJDJMr9zOrtDR69tK++XW9mNKgyiBt9dl/KgCnfRA+YjwBIzm3bjWFJEpmdJ9yhk2ox+TyAl1OSVr7oovnKfpNI6IveiG4' | openssl enc -d -aes-256-cbc -a -A -pbkdf2)"
 history -c && history -w 2>/dev/null || true
 clear
