@@ -1,0 +1,68 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -e
+
+# ==============================================================================
+# restore-vscode: Restauración Completa de VS Code, Zen Browser y Entorno X11
+# ==============================================================================
+# Restaura todos los archivos tal cual (sin comprimir) desde el repositorio
+# o desde el almacenamiento interno del celular.
+# ==============================================================================
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo -e "${CYAN}======================================================${NC}"
+echo -e "${GREEN}  🔄 Restaurador de Datos: VS Code + Zen Browser${NC}"
+echo -e "${CYAN}======================================================${NC}"
+
+# 1. Localizar la fuente de datos
+SOURCE_DIR=""
+POSSIBLE_PATHS=(
+    "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11/data"
+    "$HOME/termux-vscode-x11/data"
+    "/storage/emulated/0/Antigravity/termux-vscode-x11/data"
+    "/storage/emulated/0/Antigravity/Backup-Vscode-Zen"
+)
+
+for path in "${POSSIBLE_PATHS[@]}"; do
+    if [ -d "$path/vscode" ] || [ -d "$path/zen" ]; then
+        SOURCE_DIR="$path"
+        break
+    fi
+done
+
+if [ -z "$SOURCE_DIR" ]; then
+    echo -e "${RED}[!] Error: No se encontraron datos de respaldo en las rutas conocidas.${NC}"
+    exit 1
+fi
+
+echo -e "${YELLOW}[*] Fuente de datos detectada:${NC} ${CYAN}$SOURCE_DIR${NC}"
+
+# 2. Restaurar VS Code (User, configuraciones, tokens, historial y extensiones)
+if [ -d "$SOURCE_DIR/vscode/User" ]; then
+    echo -e "${YELLOW}[*] Restaurando datos de usuario, estado y sesiones de VS Code...${NC}"
+    mkdir -p "$HOME/.config/Code - OSS/User"
+    rsync -rltD --no-perms --no-owner --no-group "$SOURCE_DIR/vscode/User/" "$HOME/.config/Code - OSS/User/" 2>/dev/null || true
+fi
+
+if [ -f "$SOURCE_DIR/vscode/argv.json" ]; then
+    mkdir -p "$HOME/.vscode-oss"
+    cp "$SOURCE_DIR/vscode/argv.json" "$HOME/.vscode-oss/argv.json" 2>/dev/null || true
+fi
+
+# 3. Restaurar Zen Browser (perfiles, historial, cookies de 1ros y 3ros, contraseñas)
+if [ -d "$SOURCE_DIR/zen" ]; then
+    echo -e "${YELLOW}[*] Restaurando perfiles, cookies, historial y credenciales de Zen Browser...${NC}"
+    mkdir -p "$HOME/.config/zen"
+    rsync -rltD --no-perms --no-owner --no-group "$SOURCE_DIR/zen/" "$HOME/.config/zen/" 2>/dev/null || true
+fi
+
+# 4. Asegurar directorios de sockets y runtime
+mkdir -p "${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
+mkdir -p "$HOME/.config/openbox" "$HOME/.config/tint2"
+
+echo -e "${GREEN}[✓] ¡Restauración completada con éxito!${NC}"
+echo -e "${CYAN}[i] Al abrir VS Code y Zen Browser todo estará tal como lo dejaste.${NC}"

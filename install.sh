@@ -47,8 +47,8 @@ pkg upgrade -y
 echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
-echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, X11, Openbox, Tint2 y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip
+echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
+pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip
 
 # 4. Obtener dinámicamente la última versión de Termux:X11 desde GitHub Releases
 echo -e "${YELLOW}[*] Consultando la última versión oficial de Termux:X11 en GitHub...${NC}"
@@ -87,6 +87,7 @@ SCRIPTS=(
     "dev-info"
     "notify-done"
     "sync-vscode"
+    "restore-vscode"
     "setup-swap"
     "set-marketplace"
     "fix-phantom-killer"
@@ -122,16 +123,18 @@ else
     curl "${CURL_OPTS[@]}" "$BASE_RAW/config/argv.json" -o "$HOME/.vscode-oss/argv.json"
 fi
 
-# 8. Configuración de Openbox (Optimización de pantalla completa sin bordes)
+# 8. Configuración de Openbox (Optimización de pantalla completa y menú contextual)
 echo -e "${YELLOW}[*] Configurando gestor de ventanas Openbox para pantallas táctiles...${NC}"
 mkdir -p "$HOME/.config/openbox"
 if [ -f "$SCRIPT_DIR/config/rc.xml" ]; then
     cp "$SCRIPT_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml"
+    [ -f "$SCRIPT_DIR/config/menu.xml" ] && cp "$SCRIPT_DIR/config/menu.xml" "$HOME/.config/openbox/menu.xml"
 else
     curl "${CURL_OPTS[@]}" "$BASE_RAW/config/rc.xml" -o "$HOME/.config/openbox/rc.xml"
+    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/menu.xml" -o "$HOME/.config/openbox/menu.xml" || true
 fi
 
-# 8.1 Configuración de Barra de Tareas tint2 (Estilo Ubuntu Yaru Dark)
+# 8.1 Configuración de Barra de Tareas tint2 (Estilo Ubuntu Yaru Dark con Lanzadores)
 echo -e "${YELLOW}[*] Configurando barra de tareas inferior tint2 (estilo Ubuntu)...${NC}"
 mkdir -p "$HOME/.config/tint2"
 if [ -f "$SCRIPT_DIR/config/tint2rc" ]; then
@@ -146,12 +149,22 @@ if [ -f "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" ]; then
     cp "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" "$PREFIX/share/pixmaps/com.visualstudio.code.oss.png" 2>/dev/null || true
     cp "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" "$PREFIX/share/pixmaps/code-oss.png" 2>/dev/null || true
 fi
+if [ -f "$PREFIX/share/icons/hicolor/48x48/apps/zen-browser.png" ]; then
+    cp "$PREFIX/share/icons/hicolor/48x48/apps/zen-browser.png" "$PREFIX/share/pixmaps/zen-browser.png" 2>/dev/null || true
+fi
+
+# 8.3 Restauración de datos y sesiones (VS Code y Zen Browser)
+echo -e "${YELLOW}[*] Restaurando datos guardados (sesiones, cookies, historial, extensiones)...${NC}"
+if [ -f "$PREFIX/bin/restore-vscode" ]; then
+    "$PREFIX/bin/restore-vscode" || true
+fi
 
 # 9. Configuración de variables en ~/.bashrc
 echo -e "${YELLOW}[*] Configurando variables de entorno en ~/.bashrc...${NC}"
 touch "$HOME/.bashrc"
 grep -q "VSCODE_CLI_USE_FILE_KEYCHAIN" "$HOME/.bashrc" || echo "export VSCODE_CLI_USE_FILE_KEYCHAIN=1" >> "$HOME/.bashrc"
-grep -q "BROWSER=termux-open-url" "$HOME/.bashrc" || echo "export BROWSER=termux-open-url" >> "$HOME/.bashrc"
+sed -i 's/export BROWSER=termux-open-url/export BROWSER=zen-browser/g' "$HOME/.bashrc" 2>/dev/null || true
+grep -q "BROWSER=zen-browser" "$HOME/.bashrc" || echo "export BROWSER=zen-browser" >> "$HOME/.bashrc"
 
 # 10. Configurar preferencias óptimas de Termux:X11
 echo -e "${YELLOW}[*] Optimizando preferencias de Termux:X11 (Portapapeles, Pantalla Completa)...${NC}"

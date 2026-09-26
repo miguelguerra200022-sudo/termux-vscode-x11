@@ -11,7 +11,7 @@ command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
 export XDG_RUNTIME_DIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
 export DISPLAY=:0
 export PULSE_SERVER=127.0.0.1
-export BROWSER=termux-open-url
+export BROWSER=zen-browser
 export LP_NUM_THREADS=$(nproc 2>/dev/null || echo 4) # Aceleración CPU multi-hilo
 
 # 3. Persistencia de credenciales, sesiones y tokens

@@ -22,22 +22,20 @@ Bienvenido a tu entorno de desarrollo nativo. Esta guía se genera automáticame
 | Comando | Para qué sirve |
 | :--- | :--- |
 | **`vscode`** | Explorador interactivo con pestañas (`Explorador` e `Historial`), navegación con flechas `↑/↓`, cambio de páginas con `←/→`, buscador rápido (`/`), indicador `[git]`, descripciones y permisos automáticos de Android. |
-| **`start-vscode`** | Arranca directo en la carpeta actual con el entorno gráfico, escudo anti-cierres (Wakelock), aceleración multi-hilo y tema OLED. |
-| **`stop-vscode`** | Cierra de forma limpia, guarda tus pestañas y sesiones, y **respalda automáticamente tus configuraciones a GitHub**. |
+| **`start-vscode`** | Arranca directo en la carpeta actual con el entorno gráfico, barra Ubuntu, escudo anti-cierres (Wakelock), aceleración multi-hilo y tema OLED. |
+| **`stop-vscode`** | Cierra de forma limpia VS Code y Zen Browser, guarda tus pestañas y sesiones, y **respalda automáticamente todos los datos a GitHub y al celular**. |
+| **`sync-vscode`** | Sincroniza al instante historial, cookies de terceros, credenciales, extensiones y configuraciones sin comprimir a tu repositorio privado. |
+| **`restore-vscode`** | Restaura todo idéntico en un clic en cualquier celular recién instalado desde tu respaldo. |
 | **`guia`** | Abre inmediatamente la copia maestra de esta guía en VS Code. |
 
 ---
 
-## 🌐 2. Navegador del Celular y Servidores Locales
+## 🌐 2. Zen Browser Integrado (Navegación Desktop Nativa)
 
-* **Abrir enlaces en tu navegador de Android**:
-  Haz `Ctrl + Clic` en cualquier enlace web dentro de un archivo o en la terminal integrada. Se abrirá automáticamente en tu navegador predeterminado (Chrome, Brave, Firefox, etc.).
-* **Probar webs y APIs en tu teléfono**:
-  Cualquier servidor local que inicies en VS Code (ej: `python -m http.server 8080`, `npm run dev`, `vite`, `flask`) está disponible de inmediato en tu navegador ingresando a:
-  ```
-  http://localhost:8080
-  ```
-  *(Termux comparte la red nativa de tu teléfono, sin túneles ni configuraciones extra).*
+* **Navegador dentro de la pantalla gráfica (Termux-X11)**:
+  Cualquier enlace en el que hagas `Ctrl + Clic` dentro de VS Code, o cualquier servidor local que abras (`http://localhost:3000`, `8080`, etc.), se abre directamente en **Zen Browser** dentro de tu misma pantalla gráfica. ¡No te saca al navegador de Android!
+* **Historial, Cookies y Credenciales Persistentes**:
+  Todo lo que navegues, tus inicios de sesión en webs y tus extensiones de Zen se guardan de forma permanente y se respaldan automáticamente al cerrar.
 
 ---
 
@@ -83,13 +81,15 @@ Bienvenido a tu entorno de desarrollo nativo. Esta guía se genera automáticame
 
 ---
 
-## 🖥️ 5. Barra de Tareas Estilo Ubuntu (Multitarea y Control de Ventanas)
+## 🖥️ 5. Barra de Tareas Estilo Ubuntu (Multitarea y Lanzadores Fijos)
 
 En la parte inferior de la pantalla gráfica (Termux-X11) cuentas con una barra de tareas inspirada en Ubuntu:
-* **Clic o Toque en el botón de la ventana**: Minimiza la ventana activa o la restaura inmediatamente a pantalla completa si estaba minimizada o en segundo plano.
-* **Múltiples ventanas de VS Code**: Si abres varias carpetas o ventanas a la vez, cada una tendrá su propio botón con icono y nombre para alternar entre ellas al instante.
-* **Clic derecho / Presión prolongada**: Alterna entre maximizar y restaurar tamaño de ventana.
-* **Reloj integrado**: Muestra la hora local en la esquina inferior derecha.
+* **Iconos Fijos (Lanzadores):** A la izquierda de la barra tienes siempre visibles los iconos de 🟦 **VS Code** y 🌐 **Zen Browser**. Si accidentalmente cierras alguna ventana con la "X", solo toca el icono en la barra y se abrirá de nuevo al instante.
+* **Menú al tocar la pantalla negra:** Si cierras todo y tocas cualquier parte del fondo de pantalla, se abre un menú contextual para abrir VS Code, Zen Browser o recargar la interfaz.
+* **Clic o Toque en el botón de la ventana:** Minimiza la ventana activa o la restaura inmediatamente si estaba minimizada o detrás.
+* **Múltiples ventanas:** Si abres varios proyectos en VS Code o múltiples ventanas de Zen, cada una tendrá su propio botón con icono y nombre.
+* **Clic derecho / Presión prolongada:** Alterna entre maximizar y restaurar tamaño de ventana.
+* **Reloj integrado:** Muestra la hora local en la esquina inferior derecha.
 
 ---
 

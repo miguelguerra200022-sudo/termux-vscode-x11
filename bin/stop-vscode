@@ -4,12 +4,13 @@ echo "[*] Guardando sesión y cerrando VS Code..."
 # 1. Liberar wakelock de Android para ahorrar batería
 command -v termux-wake-unlock >/dev/null 2>&1 && termux-wake-unlock
 
-# 2. Enviar señal de cierre limpio (SIGTERM) para que VS Code guarde estado, pestañas y credenciales
+# 2. Enviar señal de cierre limpio (SIGTERM) para que VS Code y Zen Browser guarden estado, cookies y credenciales
 pkill -15 -f "code-oss" 2>/dev/null
+pkill -15 -f "zen-browser" 2>/dev/null
 
-# 3. Esperar a que los procesos de VS Code finalicen limpiamente y guarden en disco
+# 3. Esperar a que los procesos finalicen limpiamente y guarden en disco
 for i in {1..12}; do
-    if ! pgrep -f "code-oss" >/dev/null 2>&1; then
+    if ! pgrep -f "code-oss" >/dev/null 2>&1 && ! pgrep -f "zen-browser" >/dev/null 2>&1; then
         break
     fi
     sleep 0.5
@@ -17,6 +18,7 @@ done
 
 # 4. Forzar el cierre de procesos restantes si quedó alguno colgado
 pkill -9 -f "code-oss" 2>/dev/null
+pkill -9 -f "zen-browser" 2>/dev/null
 pkill -9 -x "tint2" 2>/dev/null
 pkill -9 -x "openbox" 2>/dev/null
 pkill -9 -f "termux-x11" 2>/dev/null

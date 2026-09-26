@@ -1,8 +1,19 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -e
+
 # ==============================================================================
-# sync-vscode: Sincronización automática de configuraciones locales a GitHub
+# sync-vscode: Sincronización Automática e Incremental de VS Code y Zen Browser
 # ==============================================================================
+# Guarda archivos tal cual como se crean (sin comprimir) para que Git detecte
+# exactamente qué archivos se modificaron o son nuevos, y los sube a GitHub.
+# También mantiene una réplica en el almacenamiento del celular.
+# ==============================================================================
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m'
 
 # 1. Localizar el repositorio del proyecto
 REPO_DIR=""
@@ -24,35 +35,99 @@ if [ -z "$REPO_DIR" ]; then
 fi
 
 if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    echo -e "\033[1;33m[!] Aviso: No se encontró el repositorio Git local para respaldar configuraciones.\033[0m"
+    echo -e "${YELLOW}[!] Aviso: No se encontró el repositorio Git local para respaldar datos.${NC}"
     exit 0
 fi
 
-# 2. Copiar configuraciones locales actuales al repositorio
-mkdir -p "$REPO_DIR/config" "$REPO_DIR/bin"
-[ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json"
-[ -f "$HOME/.vscode-oss/argv.json" ] && cp "$HOME/.vscode-oss/argv.json" "$REPO_DIR/config/argv.json"
-[ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml"
+echo -e "${CYAN}[*] Preparando sincronización incremental de VS Code y Zen Browser...${NC}"
 
-for script in start-vscode stop-vscode share-port dev-info notify-done sync-vscode setup-swap; do
-    [ -f "$PREFIX/bin/$script" ] && cp "$PREFIX/bin/$script" "$REPO_DIR/bin/$script"
+# 2. Asegurar directorios de destino en el repositorio
+mkdir -p "$REPO_DIR/data/vscode/User"
+mkdir -p "$REPO_DIR/data/zen"
+mkdir -p "$REPO_DIR/config"
+mkdir -p "$REPO_DIR/bin"
+
+# 3. Sincronizar VS Code (User data, snippets, configuraciones, estado global y pestañas)
+if [ -d "$HOME/.config/Code - OSS/User" ]; then
+    rsync -rltD --no-perms --no-owner --no-group --delete \
+        --exclude="*.log" \
+        --exclude="*.tmp" \
+        --exclude="*.sock" \
+        --exclude="*.cpuprofile" \
+        --exclude="*.heapsnapshot" \
+        "$HOME/.config/Code - OSS/User/" "$REPO_DIR/data/vscode/User/" 2>/dev/null || true
+fi
+
+[ -f "$HOME/.vscode-oss/argv.json" ] && cp "$HOME/.vscode-oss/argv.json" "$REPO_DIR/data/vscode/argv.json" 2>/dev/null || true
+
+# 4. Sincronizar Zen Browser (perfiles, historial, cookies, credenciales y sesiones)
+if [ -d "$HOME/.config/zen" ]; then
+    rsync -rltD --no-perms --no-owner --no-group --delete \
+        --exclude="cache2" \
+        --exclude="startupCache" \
+        --exclude="lock" \
+        --exclude=".parentlock" \
+        --exclude="*.tmp" \
+        --exclude="*.log" \
+        --exclude="Crash Reports" \
+        --exclude="minidumps" \
+        "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
+fi
+
+# 5. Sincronizar configuraciones visuales (Openbox, Tint2 y VS Code)
+[ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
+[ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
+[ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
+[ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
+
+# 6. Sincronizar scripts del sistema
+SCRIPTS=(
+    "start-vscode"
+    "stop-vscode"
+    "share-port"
+    "dev-info"
+    "notify-done"
+    "sync-vscode"
+    "restore-vscode"
+    "setup-swap"
+    "set-marketplace"
+    "fix-phantom-killer"
+    "new-project"
+    "start-vscode-web"
+    "guia"
+    "vscode"
+)
+
+for s in "${SCRIPTS[@]}"; do
+    [ -f "$PREFIX/bin/$s" ] && cp "$PREFIX/bin/$s" "$REPO_DIR/bin/$s" 2>/dev/null || true
 done
 
+# 7. Mantener réplica local inmediata en el almacenamiento del celular
+PHONE_BACKUP="/storage/emulated/0/Antigravity/Backup-Vscode-Zen"
+if [ -d "/storage/emulated/0" ]; then
+    mkdir -p "$PHONE_BACKUP"
+    rsync -rltD --no-perms --no-owner --no-group --delete "$REPO_DIR/data/" "$PHONE_BACKUP/" 2>/dev/null || true
+fi
+
+# 8. Detectar cambios en Git y subir incrementalmente
 cd "$REPO_DIR"
 
-# 3. Comprobar si hay cambios
-if [ -z "$(git status --porcelain)" ]; then
-    echo -e "\033[0;32m[+] Configuraciones al día (sin cambios nuevos).\033[0m"
+CHANGES=$(git status --porcelain data/ config/ bin/ docs/ 2>/dev/null || true)
+
+if [ -z "$CHANGES" ]; then
+    echo -e "${GREEN}[✓] Todo al día: no hay archivos nuevos ni modificados para subir.${NC}"
     exit 0
 fi
 
-echo -e "\033[1;33m[*] Guardando y subiendo cambios automáticamente a GitHub...\033[0m"
-git add .
-git commit -m "auto-sync: respaldo automático de configuraciones ($(date '+%Y-%m-%d %H:%M:%S'))"
+echo -e "${YELLOW}[*] Detectados archivos nuevos o modificados en VS Code / Zen Browser...${NC}"
+git add data/ config/ bin/ docs/ install.sh 2>/dev/null || true
 
-# Subir con timeout de seguridad para no colgar si no hay internet
-if timeout 15 git push origin main; then
-    echo -e "\033[0;32m[+] ¡Configuraciones respaldadas y subidas a GitHub con éxito!\033[0m"
+COMMIT_MSG="sync: actualización de datos, cookies e historial ($(date '+%Y-%m-%d %H:%M:%S'))"
+git commit -m "$COMMIT_MSG" 2>/dev/null || true
+
+echo -e "${YELLOW}[*] Subiendo cambios a GitHub...${NC}"
+if timeout 30 git push origin main 2>/dev/null; then
+    echo -e "${GREEN}[✓] ¡Todo respaldado y subido a GitHub con éxito!${NC}"
 else
-    echo -e "\033[1;33m[!] Cambios guardados localmente. (No se pudo subir a GitHub ahora, se subirá en la próxima conexión).\033[0m"
+    echo -e "${YELLOW}[!] Cambios guardados localmente. (No se pudo conectar a GitHub, se subirá en el próximo cierre).${NC}"
 fi

@@ -1,0 +1,107 @@
+{
+    "telemetry.sqmId": "",
+    "telemetry.machineId": "6d1f0672-01a9-43f4-89c2-2204d6265a55",
+    "telemetry.devDeviceId": "018d3a95-228a-4948-b979-9404736d8c44",
+    "backupWorkspaces": {
+        "workspaces": [],
+        "folders": [
+            {
+                "folderUri": "file:///storage/emulated/0/Antigravity"
+            }
+        ],
+        "emptyWindows": []
+    },
+    "windowControlHeight": 35,
+    "profileAssociations": {
+        "workspaces": {
+            "file:///storage/emulated/0/Antigravity/IdeasMillonarias": "__default__profile__",
+            "file:///storage/emulated/0/Antigravity": "__default__profile__"
+        },
+        "emptyWindows": {}
+    },
+    "theme": "vs-dark",
+    "themeBackground": "#000000",
+    "windowSplash": {
+        "zoomLevel": 0,
+        "baseTheme": "vs-dark",
+        "colorInfo": {
+            "foreground": "#cccccc",
+            "background": "#000000",
+            "editorBackground": "#000000",
+            "titleBarBackground": "#000000",
+            "titleBarBorder": "#2b2b2b",
+            "activityBarBackground": "#000000",
+            "activityBarBorder": "#2b2b2b",
+            "sideBarBackground": "#000000",
+            "sideBarBorder": "#2b2b2b",
+            "panelBackground": "#181818",
+            "editorGroupBorder": "rgba(255, 255, 255, 0.09)",
+            "agentsPanelBackground": "#000000",
+            "agentsPanelBorder": "#303031",
+            "statusBarBackground": "#000000",
+            "statusBarBorder": "#2b2b2b",
+            "statusBarNoFolderBackground": "#1f1f1f"
+        },
+        "layoutInfo": {
+            "sideBarSide": "left",
+            "editorPartMinWidth": 220,
+            "titleBarHeight": 35,
+            "activityBarWidth": 48,
+            "sideBarWidth": 0,
+            "auxiliaryBarWidth": 0,
+            "statusBarHeight": 22,
+            "windowBorder": false,
+            "modernUI": false
+        }
+    },
+    "windowsState": {
+        "lastActiveWindow": {
+            "folder": "file:///storage/emulated/0/Antigravity",
+            "backupPath": "/data/data/com.termux/files/home/.config/Code - OSS/Backups/de0fdc20470c6a3076a4c4782295365c",
+            "uiState": {
+                "mode": 0,
+                "x": 328,
+                "y": 30,
+                "width": 602,
+                "height": 645
+            }
+        },
+        "openedWindows": []
+    },
+    "windowSplashWorkspaceOverride": {
+        "layoutInfo": {
+            "sideBarWidth": 372,
+            "auxiliaryBarWidth": 180,
+            "workspaces": {
+                "9f27a2cbc28b43acaa15f77d4c838de9": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "c867980a3fda79e1bf6e2aa568f09602": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                },
+                "f6c923d0222edd678f4737f253e6346d": {
+                    "sideBarVisible": false,
+                    "auxiliaryBarVisible": false
+                }
+            }
+        }
+    },
+    "userDataProfiles": [
+        {
+            "location": "builtin/agents",
+            "name": "Agents",
+            "useDefaultFlags": {
+                "settings": true,
+                "keybindings": true,
+                "prompts": true,
+                "mcp": true,
+                "languageModels": true,
+                "snippets": true,
+                "tasks": true,
+                "extensions": true
+            }
+        }
+    ]
+}
