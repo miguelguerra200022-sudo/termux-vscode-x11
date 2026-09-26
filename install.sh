@@ -189,6 +189,7 @@ SCRIPTS=(
     "vscode"
     "desinstalar-vscode"
     "desinstalar"
+    "toggle-touch-mode"
 )
 rm -f "$PREFIX/bin/bloquear-vscode" "$PREFIX/bin/desbloquear-vscode" 2>/dev/null || true
 
@@ -239,14 +240,32 @@ else
     curl "${CURL_OPTS[@]}" "$BASE_RAW/config/tint2rc" -o "$HOME/.config/tint2/tint2rc"
 fi
 
-# 8.2 Configurar iconos del sistema para la barra de tareas
+# 8.2 Configurar iconos oficiales de alta resolución para la barra de tareas y el sistema
+echo -e "${YELLOW}[*] Instalando iconos oficiales (VS Code, Zen Browser, Selector Táctil)...${NC}"
 mkdir -p "$PREFIX/share/pixmaps"
-if [ -f "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" ]; then
-    cp "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" "$PREFIX/share/pixmaps/com.visualstudio.code.oss.png" 2>/dev/null || true
-    cp "$PREFIX/lib/code-oss/resources/app/resources/linux/code.png" "$PREFIX/share/pixmaps/code-oss.png" 2>/dev/null || true
+mkdir -p "$PREFIX/share/icons/hicolor/scalable/apps"
+mkdir -p "$PREFIX/share/applications"
+
+if [ -d "$SCRIPT_DIR/data/icons" ]; then
+    for size in 16 24 32 48 64 128 256; do
+        mkdir -p "$PREFIX/share/icons/hicolor/${size}x${size}/apps"
+        [ -f "$SCRIPT_DIR/data/icons/code-oss-${size}.png" ] && cp "$SCRIPT_DIR/data/icons/code-oss-${size}.png" "$PREFIX/share/icons/hicolor/${size}x${size}/apps/code-oss.png" 2>/dev/null || true
+        [ -f "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss-${size}.png" ] && cp "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss-${size}.png" "$PREFIX/share/icons/hicolor/${size}x${size}/apps/com.visualstudio.code.oss.png" 2>/dev/null || true
+        [ -f "$SCRIPT_DIR/data/icons/zen-browser-${size}.png" ] && cp "$SCRIPT_DIR/data/icons/zen-browser-${size}.png" "$PREFIX/share/icons/hicolor/${size}x${size}/apps/zen-browser.png" 2>/dev/null || true
+        [ -f "$SCRIPT_DIR/data/icons/touch-toggle-${size}.png" ] && cp "$SCRIPT_DIR/data/icons/touch-toggle-${size}.png" "$PREFIX/share/icons/hicolor/${size}x${size}/apps/touch-toggle.png" 2>/dev/null || true
+    done
+    [ -f "$SCRIPT_DIR/data/icons/code-oss.svg" ] && cp "$SCRIPT_DIR/data/icons/code-oss.svg" "$PREFIX/share/icons/hicolor/scalable/apps/code-oss.svg" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss.svg" ] && cp "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss.svg" "$PREFIX/share/icons/hicolor/scalable/apps/com.visualstudio.code.oss.svg" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/data/icons/zen-browser.svg" ] && cp "$SCRIPT_DIR/data/icons/zen-browser.svg" "$PREFIX/share/icons/hicolor/scalable/apps/zen-browser.svg" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/data/icons/touch-toggle.svg" ] && cp "$SCRIPT_DIR/data/icons/touch-toggle.svg" "$PREFIX/share/icons/hicolor/scalable/apps/touch-toggle.svg" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/data/icons/code-oss-48.png" ] && cp "$SCRIPT_DIR/data/icons/code-oss-48.png" "$PREFIX/share/pixmaps/code-oss.png" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss-48.png" ] && cp "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss-48.png" "$PREFIX/share/pixmaps/com.visualstudio.code.oss.png" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/data/icons/zen-browser-48.png" ] && cp "$SCRIPT_DIR/data/icons/zen-browser-48.png" "$PREFIX/share/pixmaps/zen-browser.png" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/data/icons/touch-toggle-48.png" ] && cp "$SCRIPT_DIR/data/icons/touch-toggle-48.png" "$PREFIX/share/pixmaps/touch-toggle.png" 2>/dev/null || true
 fi
-if [ -f "$PREFIX/share/icons/hicolor/48x48/apps/zen-browser.png" ]; then
-    cp "$PREFIX/share/icons/hicolor/48x48/apps/zen-browser.png" "$PREFIX/share/pixmaps/zen-browser.png" 2>/dev/null || true
+
+if [ -f "$SCRIPT_DIR/data/applications/touch-toggle.desktop" ]; then
+    cp "$SCRIPT_DIR/data/applications/touch-toggle.desktop" "$PREFIX/share/applications/touch-toggle.desktop" 2>/dev/null || true
 fi
 
 # 8.3 Restauración de datos y sesiones (VS Code y Zen Browser)
@@ -255,16 +274,30 @@ if [ -f "$PREFIX/bin/restore-vscode" ]; then
     "$PREFIX/bin/restore-vscode" || true
 fi
 
-# 9. Configuración de variables en ~/.bashrc
-echo -e "${YELLOW}[*] Configurando variables de entorno en ~/.bashrc...${NC}"
+# 9. Configuración de variables en ~/.bashrc (Audio nativo, red acelerada y llaves)
+echo -e "${YELLOW}[*] Configurando variables de entorno y aceleración de red en ~/.bashrc...${NC}"
 touch "$HOME/.bashrc"
 grep -q "VSCODE_CLI_USE_FILE_KEYCHAIN" "$HOME/.bashrc" || echo "export VSCODE_CLI_USE_FILE_KEYCHAIN=1" >> "$HOME/.bashrc"
 sed -i 's/export BROWSER=termux-open-url/export BROWSER=zen-browser/g' "$HOME/.bashrc" 2>/dev/null || true
 grep -q "BROWSER=zen-browser" "$HOME/.bashrc" || echo "export BROWSER=zen-browser" >> "$HOME/.bashrc"
+grep -q "PULSE_SERVER" "$HOME/.bashrc" || echo "export PULSE_SERVER=127.0.0.1" >> "$HOME/.bashrc"
+grep -q "PULSE_LATENCY_MSEC" "$HOME/.bashrc" || echo "export PULSE_LATENCY_MSEC=30" >> "$HOME/.bashrc"
+grep -q "UV_THREADPOOL_SIZE" "$HOME/.bashrc" || echo "export UV_THREADPOOL_SIZE=16" >> "$HOME/.bashrc"
 
-# 10. Configurar preferencias óptimas de Termux:X11
-echo -e "${YELLOW}[*] Optimizando preferencias de Termux:X11 (Portapapeles, Pantalla Completa)...${NC}"
-termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true >/dev/null 2>&1 || true
+# 9.1 Optimización de DNS multi-servidor de alta velocidad (Cloudflare + Google)
+if [ -d "$PREFIX/etc" ]; then
+    cat <<'DNS_CONF' > "$PREFIX/etc/resolv.conf"
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+nameserver 1.0.0.1
+nameserver 8.8.4.4
+options timeout:1 attempts:2 rotate
+DNS_CONF
+fi
+
+# 10. Configurar preferencias óptimas de Termux:X11 (Portapapeles, Pantalla Completa, Filtrado Bilineal)
+echo -e "${YELLOW}[*] Optimizando preferencias de Termux:X11 (Portapapeles, Pantalla Completa, Renderizado Suave)...${NC}"
+termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:linear >/dev/null 2>&1 || true
 
 # 11. Configurar accesos directos para la app Termux:Widget en pantalla de inicio
 echo -e "${YELLOW}[*] Configurando accesos directos de pantalla de inicio (~/.shortcuts/)...${NC}"

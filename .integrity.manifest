@@ -19,7 +19,7 @@ e1e3ab460d5e8c5606443c6f77191c64503d5b31599eb909388162b7cf696569  ./bin/restore-
 dfda73e38f37816b2120c8bd3b865d2b88733256be481030314b8b34f83b764c  ./bin/toggle-touch-mode
 fd3249aa07abf8794ae985122d035b3ab2610e632a116d03a1ed51e67699e1b4  ./bin/vscode
 5e24ccaf157203bac93e0b8e6e9f97987c4b02698f9f3f1ab18d7dc415f55131  ./bin/watcher-sync
-687a45471ba01d813929b3b5c484d134bbd341461380cb105f9c9b2c5bc0ee88  ./config/argv.json
+cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./config/argv.json
 5cc855999b4ae29aa477b0039515120d55acbd9f0073302e05b1e34b65afb60c  ./config/menu.xml
 50c194da9977ca9db72883121cbd9efbb72af43d9bffa2e2a16b03aa1bd733af  ./config/rc.xml
 f22eecebd113162df1a8967b94a75ba2edf5b030b82b112dcd5b67c618986be3  ./config/settings.json
@@ -122,7 +122,7 @@ da2a17c8f8bedb80b2aa1d5e7b8dfe784bbe2f9b145137930feb579a13390466  ./data/vscode/
 a7883ea7540b5deefdf90224bf236734a6d52794c14bf3d9586d5a721f7de247  ./data/vscode/User/workspaceStorage/f6c923d0222edd678f4737f253e6346d/chatSessions/380610ec-b733-4a94-bedf-2b20fbb64735.jsonl
 209859b69eef80ac82349f435374ef52c89ea9d5d1b93ab79a5c601f93825c74  ./data/vscode/User/workspaceStorage/f6c923d0222edd678f4737f253e6346d/state.vscdb
 72d386606765ca94bc932af4679ed9daa757ea7280cf4bc3e083bdd7507c15f8  ./data/vscode/User/workspaceStorage/f6c923d0222edd678f4737f253e6346d/workspace.json
-687a45471ba01d813929b3b5c484d134bbd341461380cb105f9c9b2c5bc0ee88  ./data/vscode/argv.json
+cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./data/vscode/argv.json
 f68e7ac1e5a17e952f312009dcb5c49e5f3847a8dcd7f6d14bb219f1449e83c7  ./data/zen/Profile Groups/3a1c5f2b.sqlite
 fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb  ./data/zen/Profile Groups/3a1c5f2b.sqlite-shm
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/zen/Profile Groups/3a1c5f2b.sqlite-wal
@@ -407,5 +407,5 @@ ec241d3b04f47472047752a7589587539764a813d6937a818369af73051001e6  ./data/zen/qql
 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a  ./data/zen/qqlfient.Default (release)/zen-themes.json
 a39ca57624ff36ea946acb2aaf721eafbaf1e2b3cefa55dd7d6ab67733a0f23f  ./docs/GUIA_RAPIDA.md
 99f9638bc9d0c0659b033e65ac4718aa04c0ec2e0f4241f303c5580a8fe32b57  ./instalar
-50ca25e9b83ac08801ac9ac3342ab499fa33be047791a8783a1c4c43544383fb  ./install.sh
+a98d9eddeeb7017155e3180aad4c73092fc3dbe62bc2fd901d906fb2f9057e10  ./install.sh
 a18dea5410b968f9d54202db54ba502e1cf16457b28aa89cb7ca1d50985f3cd6  ./uninstall.sh
