@@ -1,26 +1,26 @@
 # ==============================================================================
-# tint2rc - Barra Superior Flotante Estilo Ubuntu Yaru UI/UX (Safe Area Insets)
+# tint2rc - Barra Superior Flotante Ergonómica (Notch & Safe Area Insets)
 # ==============================================================================
 # Características:
-#  - Posición SUPERIOR (top center horizontal) para despejar la base de la pantalla
-#    y evitar colisiones con la barra de teclas de Termux-X11 y gestos de Android.
-#  - Diseño flotante (96% de ancho) con esquinas redondeadas (10px) y márgenes de
-#    seguridad laterales (Safe Areas) para respetar la curvatura física del celular
-#    y evitar cortes en los extremos del cristal.
-#  - Iconos nítidos de 28px (VS Code, Zen Browser y Conmutador Táctil/Cursor).
-#  - Botones de ventanas con tipografía Sans Bold 10 e indicador naranja Ubuntu (#e95420).
+#  - Posición SUPERIOR Flotante (top center horizontal).
+#  - Margen superior de 38px (Safe Top Inset) para descender por debajo del orificio
+#    físico de la cámara frontal (Punch Hole / Notch), evitando cualquier solapamiento.
+#  - Ancho flotante (94%) con radio de curvatura de 12px y márgenes laterales (14px)
+#    para que ningún icono o reloj colisione con las esquinas curvas del cristal.
+#  - Iconos oficiales nítidos cargados directamente desde rutas absolutas.
+#  - Selector de modo: Trackpad (Precisión) <-> Simulated Touchscreen (Pulsación Larga = Clic Derecho).
 # ==============================================================================
 
-# Background 1: Panel principal flotante (Fondo oscuro con curvatura de pantalla)
-rounded = 10
+# Background 1: Panel principal flotante (Curvatura adaptada al teléfono)
+rounded = 12
 border_width = 1
 border_sides = TBLR
 background_color = #181818 100
-border_color = #303030 100
+border_color = #333333 100
 background_color_hover = #181818 100
-border_color_hover = #303030 100
+border_color_hover = #333333 100
 background_color_pressed = #181818 100
-border_color_pressed = #303030 100
+border_color_pressed = #333333 100
 
 # Background 2: Ventana inactiva
 rounded = 6
@@ -89,11 +89,11 @@ background_color_pressed = #151515 100
 border_color_pressed = #3d3d3d 100
 
 # ------------------------------------------------------------------------------
-# Panel Principal (Posición SUPERIOR Flotante con Safe Area Insets)
+# Panel Principal (Posición SUPERIOR Flotante por debajo de la Cámara)
 # ------------------------------------------------------------------------------
 panel_items = LTSC
-panel_size = 96% 42
-panel_margin = 12 4
+panel_size = 94% 42
+panel_margin = 14 38
 panel_padding = 6 2 6
 panel_background_id = 1
 wm_menu = 0
@@ -110,14 +110,15 @@ mouse_effects = 1
 font_shadow = 0
 
 # ------------------------------------------------------------------------------
-# Lanzadores Fijos de Aplicaciones (Launcher)
+# Lanzadores Fijos de Aplicaciones (Launcher con Rutas Absolutas)
 # ------------------------------------------------------------------------------
 launcher_padding = 4 2 6
 launcher_background_id = 0
 launcher_icon_background_id = 0
 launcher_icon_size = 28
 launcher_icon_asb = 100 0 0
-launcher_icon_theme_override = 0
+launcher_icon_theme_override = 1
+launcher_icon_theme = hicolor
 startup_notifications = 0
 launcher_tooltip = 1
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/code-oss.desktop
@@ -148,7 +149,7 @@ task_text = 1
 task_icon = 1
 task_centered = 0
 urgent_nb_of_blink = 100000
-task_maximum_size = 220 34
+task_maximum_size = 200 34
 task_padding = 6 2 4
 task_font = Sans Bold 10
 task_tooltip = 1

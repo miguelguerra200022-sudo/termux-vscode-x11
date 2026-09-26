@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ==============================================================================
-# toggle-touch-mode: Alterna instantaneamente entre Modo Trackpad y Tactil Directo
+# toggle-touch-mode: Alterna instantáneamente entre Trackpad y Simulated Touchscreen
 # ==============================================================================
 
 STATE_FILE="$HOME/.config/termux-vscode/.touch_mode"
@@ -10,13 +10,13 @@ CURRENT="Trackpad"
 [ -f "$STATE_FILE" ] && CURRENT=$(cat "$STATE_FILE" 2>/dev/null || echo "Trackpad")
 
 if [ "$CURRENT" = "Trackpad" ]; then
-    echo "Direct touch" > "$STATE_FILE"
-    ( termux-x11-preference touchMode:"Direct touch" >/dev/null 2>&1 & )
-    MSG="Modo Tactil Directo Activado"
+    echo "Simulated touchscreen" > "$STATE_FILE"
+    ( nice -n -20 termux-x11-preference touchMode:"Simulated touchscreen" >/dev/null 2>&1 & )
+    MSG="Modo Táctil Activo (Pulsación Larga = Clic Derecho)"
 else
     echo "Trackpad" > "$STATE_FILE"
-    ( termux-x11-preference touchMode:Trackpad >/dev/null 2>&1 & )
-    MSG="Modo Trackpad (Cursor) Activado"
+    ( nice -n -20 termux-x11-preference touchMode:Trackpad >/dev/null 2>&1 & )
+    MSG="Modo Trackpad Activo (Cursor de Precisión)"
 fi
 
 if command -v termux-toast >/dev/null 2>&1; then

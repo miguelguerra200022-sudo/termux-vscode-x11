@@ -16,15 +16,15 @@ f64125b870ff13521de3c65179f6cf25ff8e60cc6d81fbe3cd57916c0ca5549a  ./bin/start-vs
 603014ef31aab72eb28776431330fb59615b31f417aa86b3eb2c64ad6cca5005  ./bin/start-vscode-web
 4ff6c64de8f7c5b9c5c1f8ffa97a8a8d377b8d62cbff5b48ebe087913ea7fc39  ./bin/stop-vscode
 8903eedb544871279ab481f4518d15a190e6fc63b661e223720b0d1f95668df4  ./bin/sync-vscode
-ac25c06d4fa596a63c488769068feb1a01d37479b113ffaea49ccc4832c0707a  ./bin/toggle-touch-mode
+d7227adeaeb79fd1c7a1c55f7084a2ef4d2b845a77b11d7ba9ff300a856dceaf  ./bin/toggle-touch-mode
 fd3249aa07abf8794ae985122d035b3ab2610e632a116d03a1ed51e67699e1b4  ./bin/vscode
 5e24ccaf157203bac93e0b8e6e9f97987c4b02698f9f3f1ab18d7dc415f55131  ./bin/watcher-sync
 cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./config/argv.json
 5cc855999b4ae29aa477b0039515120d55acbd9f0073302e05b1e34b65afb60c  ./config/menu.xml
 50c194da9977ca9db72883121cbd9efbb72af43d9bffa2e2a16b03aa1bd733af  ./config/rc.xml
-e12f8e78b56ed33ea5f79eb5576e2ff52d7ccd910d9eb2f0c9b00f6410bc4f15  ./config/settings.json
-fe38cd971b37b47a34d817cf06651aa1c402ac5c943e123eaccd46f6cecaa82d  ./config/tint2rc
-3fd3da96197b9ab00120d30c861aa6e9874bc7c3aa2bd51d51a6f2807d88be2f  ./data/applications/touch-toggle.desktop
+508aef7682a2f778313c1837ab0ee682b6f69bcdff138e265974dcadb5746769  ./config/settings.json
+90f112865cde876e11c340760f97ea531f2c271bfb20f40847f66676e12685d8  ./config/tint2rc
+e87ba641d25f2e5c24c0574e707b6738233acaf1003c262d62498317613883b7  ./data/applications/touch-toggle.desktop
 8ddfcbc6c36dbf6d49099df772995db3c5d794fb094bc91c23df7ca6adc68c5a  ./data/icons/code-oss-128.png
 d21e8851bff8bb77770a6b96eab6eec583ec4feafdbf5409e1e8dc13b353cda5  ./data/icons/code-oss-16.png
 cbd441f66eb09733fec0f4549aad279ad1971eb7f4be5a0cf73cf5a5fd4b537c  ./data/icons/code-oss-24.png
@@ -94,7 +94,7 @@ ee10fafcd626f0165f3e8607e2c2c624465ff764520a73ffe72c4f7ce42c9a56  ./data/vscode/
 f73e8fbc22d48e353bc43363c689e5bf0e575df278d411264a93b6d93b8d6b3c  ./data/vscode/User/globalStorage/state.vscdb.backup
 7797f5ca1953bf337d2f1f592c6623cdc31dcca6babbe640db08d59e5da81447  ./data/vscode/User/globalStorage/storage.json
 8d5bccec199626052664188964f504b6c268b025448c177e8a3c521c37caaa6d  ./data/vscode/User/profiles/builtin/agents/globalStorage/state.vscdb
-e12f8e78b56ed33ea5f79eb5576e2ff52d7ccd910d9eb2f0c9b00f6410bc4f15  ./data/vscode/User/settings.json
+508aef7682a2f778313c1837ab0ee682b6f69bcdff138e265974dcadb5746769  ./data/vscode/User/settings.json
 c648a30ceefe9969b2b37a27843fd0389936c5b280cb1311243180469fd7cc17  ./data/vscode/User/workspaceStorage/56c0e868/state.vscdb
 274ec98a3f7fee50e9c615a991dbb206ffd1998ba2ff25097bf65ed3c948baf6  ./data/vscode/User/workspaceStorage/56c0e868/workspace.json
 638c88cc8b64d9027b98838f68690b959d848b8040881eb0dbeac85182bd3d40  ./data/vscode/User/workspaceStorage/9f27a2cbc28b43acaa15f77d4c838de9/chatEditingSessions/3ed544e5-c288-4dc6-b14f-9bcf3be89f0d/state.json
@@ -427,5 +427,5 @@ abd9e49638060c228777916f8be20de7f79e389419fae6e4275293935ed26b08  ./data/zen/qql
 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a  ./data/zen/qqlfient.Default (release)/zen-themes.json
 a39ca57624ff36ea946acb2aaf721eafbaf1e2b3cefa55dd7d6ab67733a0f23f  ./docs/GUIA_RAPIDA.md
 99f9638bc9d0c0659b033e65ac4718aa04c0ec2e0f4241f303c5580a8fe32b57  ./instalar
-a39f3a5f1a0371d4909dec59f98338e884c7383a02b8022a6a87f05eb2ef6dad  ./install.sh
+2826138ffb3f3345a78bd1db2983c3a84eb88e0870c4d86d108dfbb38f3574c3  ./install.sh
 a18dea5410b968f9d54202db54ba502e1cf16457b28aa89cb7ca1d50985f3cd6  ./uninstall.sh

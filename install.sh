@@ -268,6 +268,11 @@ if [ -f "$SCRIPT_DIR/data/applications/touch-toggle.desktop" ]; then
     cp "$SCRIPT_DIR/data/applications/touch-toggle.desktop" "$PREFIX/share/applications/touch-toggle.desktop" 2>/dev/null || true
 fi
 
+# Asegurar rutas absolutas en los lanzadores para garantizar carga inmediata de iconos en Tint2
+sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/code-oss.png|g' "$PREFIX/share/applications/code-oss.desktop" 2>/dev/null || true
+sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/zen-browser.png|g' "$PREFIX/share/applications/zen-browser.desktop" 2>/dev/null || true
+sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/touch-toggle.png|g' "$PREFIX/share/applications/touch-toggle.desktop" 2>/dev/null || true
+
 # 8.3 Restauración de datos y sesiones (VS Code y Zen Browser)
 echo -e "${YELLOW}[*] Restaurando datos guardados (sesiones, cookies, historial, extensiones)...${NC}"
 if [ -f "$PREFIX/bin/restore-vscode" ]; then
