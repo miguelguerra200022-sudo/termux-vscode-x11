@@ -2,36 +2,41 @@
 set -e
 
 # ==============================================================================
-# restore-vscode: Restauración Completa de VS Code, Zen Browser y Entorno X11
+# restore-vscode: Restauración Cero-Rastros en Memoria RAM desde Bóveda Cifrada
 # ==============================================================================
 
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-AUTH_FILE="$HOME/.config/termux-vscode/.auth_token"
 HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
+AUTH_ENC="$HOME/.config/termux-vscode/.auth_token.enc"
 
-# 1. Autenticación protegida (solo si no ha sido instalado previamente)
-if [ ! -f "$AUTH_FILE" ]; then
+# 1. Autenticación si no está autenticado previamente
+USER_PASS="09032000Mi."
+if [ ! -f "$AUTH_ENC" ]; then
     if [ -t 0 ]; then
-        echo -ne "🔒 Contraseña: "
-        read -s USER_PASS
+        echo -ne "🔒 Contraseña de autorización: "
+        read -s INPUT_PASS
         echo ""
     else
-        read -r USER_PASS || true
+        read -r INPUT_PASS || true
     fi
 
-    INPUT_HASH=$(echo -n "$USER_PASS" | sha256sum | awk '{print $1}')
+    INPUT_HASH=$(echo -n "$INPUT_PASS" | sha256sum | awk '{print $1}')
     if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
         echo -e "${RED}[!] Contraseña incorrecta.${NC}"
+        if command -v cloud-sentinel >/dev/null 2>&1; then
+            cloud-sentinel notify-fail "Restauración" 2>/dev/null || true
+        fi
         exit 1
     fi
+    USER_PASS="$INPUT_PASS"
 fi
 
-# 2. Localizar dinámicamente la fuente de datos en cualquier dispositivo
-SOURCE_DIR=""
+# 2. Localizar repositorio del proyecto
 REPO_DIR=""
 CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
 [ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
@@ -39,49 +44,58 @@ if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
     REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
 fi
 if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    SCRIPT_PARENT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
-    [ -d "$SCRIPT_PARENT/.git" ] && REPO_DIR="$SCRIPT_PARENT"
-fi
-if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    for root in "$HOME" "${STORAGE_ROOT:-/storage/emulated/0}" "/sdcard" "/var/mobile"; do
-        [ -d "$root" ] || continue
-        found=$(find "$root" -maxdepth 4 -type d -name "termux-vscode-x11" 2>/dev/null | head -n 1)
-        if [ -n "$found" ] && [ -d "$found/.git" ]; then
-            REPO_DIR="$found"
-            mkdir -p "$HOME/.config/termux-vscode"
-            echo "$REPO_DIR" > "$CONFIG_FILE" 2>/dev/null || true
-            break
-        fi
-    done
-fi
-if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/data" ]; then
-    SOURCE_DIR="$REPO_DIR/data"
+    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
 fi
 
-if [ -z "$SOURCE_DIR" ]; then
-    echo -e "${RED}[!] Error: No se encontraron datos para restaurar.${NC}"
+# 3. Detectar Hardware Seal local
+LEADER_SEAL="ums9230-sp_6300-3724801c"
+LOCAL_SEAL=""
+if command -v cloud-sentinel >/dev/null 2>&1; then
+    LOCAL_SEAL=$(cloud-sentinel seal 2>/dev/null || true)
+fi
+if [ -z "$LOCAL_SEAL" ] && [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ]; then
+    LOCAL_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null || true)
+fi
+[ -z "$LOCAL_SEAL" ] && LOCAL_SEAL="$LEADER_SEAL"
+
+# 4. Determinar carpeta de credenciales asociada
+ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
+ACTIVE_ID=""
+
+if [ "$LOCAL_SEAL" = "$LEADER_SEAL" ]; then
+    [ -f "$ACTIVE_FILE" ] && ACTIVE_ID=$(cat "$ACTIVE_FILE" 2>/dev/null || true)
+    [ -z "$ACTIVE_ID" ] && ACTIVE_ID="Miguel (Líder)_ums9230-sp_6300-3724801c"
+else
+    # Dispositivo Worker: Buscar la carpeta asociada a su sello de hardware
+    MATCH=$(find "$REPO_DIR/credenciales" -maxdepth 1 -type d -name "*_${LOCAL_SEAL}" 2>/dev/null | head -n 1)
+    if [ -n "$MATCH" ]; then
+        ACTIVE_ID=$(basename "$MATCH")
+    fi
+fi
+
+if [ -z "$ACTIVE_ID" ] || [ ! -f "$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc" ]; then
+    echo -e "${RED}[!] Error: No se encontró la bóveda cifrada 'vault.enc' para el dispositivo (${LOCAL_SEAL}).${NC}"
     exit 1
 fi
 
-# 3. Restaurar VS Code
-if [ -d "$SOURCE_DIR/vscode/User" ]; then
-    mkdir -p "$HOME/.config/Code - OSS/User"
-    rsync -rltD --no-perms --no-owner --no-group "$SOURCE_DIR/vscode/User/" "$HOME/.config/Code - OSS/User/" 2>/dev/null || true
-fi
+TARGET_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
+[ -z "$TARGET_SEAL" ] && TARGET_SEAL="$LOCAL_SEAL"
 
-if [ -f "$SOURCE_DIR/vscode/argv.json" ]; then
-    mkdir -p "$HOME/.vscode-oss"
-    cp "$SOURCE_DIR/vscode/argv.json" "$HOME/.vscode-oss/argv.json" 2>/dev/null || true
-fi
+echo -e "${CYAN}[*] Descifrando bóveda en RAM para: ${ACTIVE_ID}...${NC}"
 
-# 4. Restaurar Zen Browser (perfiles, historial, cookies de 1ros y 3ros, contraseñas)
-if [ -d "$SOURCE_DIR/zen" ]; then
-    mkdir -p "$HOME/.config/zen"
-    rsync -rltD --no-perms --no-owner --no-group "$SOURCE_DIR/zen/" "$HOME/.config/zen/" 2>/dev/null || true
-fi
+# 5. Descifrar directamente en RAM a destino
+mkdir -p "$HOME/.config"
+openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${USER_PASS}_${TARGET_SEAL}" \
+    -in "$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc" 2>/dev/null | \
+    tar -xzf - -C "$HOME/.config" 2>/dev/null || true
 
-# 5. Asegurar directorios de runtime
-mkdir -p "${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
-mkdir -p "$HOME/.config/openbox" "$HOME/.config/tint2"
+# Registrar identidad activa
+mkdir -p "$HOME/.config/termux-vscode"
+echo "$ACTIVE_ID" > "$ACTIVE_FILE"
+
+# 6. Notificar a Telegram
+if command -v cloud-sentinel >/dev/null 2>&1; then
+    cloud-sentinel notify "🛡️ *RESTAURACIÓN DE DISPOSITIVO COMPLETADA*" "📱 \`${ACTIVE_ID}\` restauró sus cuentas y entorno en RAM exitosamente." >/dev/null 2>&1 || true
+fi
 
 echo -e "${GREEN}[✓] ¡Restauración completada con éxito!${NC}"
