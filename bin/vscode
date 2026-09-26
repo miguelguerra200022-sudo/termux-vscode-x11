@@ -150,20 +150,22 @@ def get_subdirs(path):
         return []
 
 def get_key():
-    """Lee una tecla o secuencia de escape de forma no bloqueante y robusta en Termux."""
+    """Lee una tecla o secuencia de escape directamente desde el descriptor del SO sin buffer de Python."""
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     try:
         tty.setraw(fd)
-        ch = sys.stdin.read(1)
-        if ch == '\x1b':
-            # Esperar hasta 200ms para capturar la secuencia de escape completa en Android
-            r, _, _ = select.select([sys.stdin], [], [], 0.20)
+        first_b = os.read(fd, 1)
+        if not first_b:
+            return ''
+        if first_b == b'\x1b':
+            # Esperar hasta 80ms para recibir los caracteres restantes de la secuencia ANSI
+            r, _, _ = select.select([fd], [], [], 0.08)
             if r:
-                rest = os.read(fd, 32).decode('utf-8', errors='ignore')
-                return '\x1b' + rest
+                rest_b = os.read(fd, 32)
+                return (first_b + rest_b).decode('utf-8', errors='ignore')
             return '\x1b'
-        return ch
+        return first_b.decode('utf-8', errors='ignore')
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
@@ -175,17 +177,17 @@ def classify_key(k):
         return 'TAB'
     if k in ('q', 'Q', '\x03'):
         return 'QUIT'
-    # Flecha Arriba, W o K
-    if k in ('w', 'W', 'k', 'K') or (k.startswith('\x1b') and k.endswith('A')):
+    # Flecha Arriba, W o K (soporta \x1b[A, \x1bOA, etc.)
+    if k in ('w', 'W', 'k', 'K') or '[A' in k or 'OA' in k or (k.startswith('\x1b') and k.endswith('A')):
         return 'UP'
-    # Flecha Abajo, S o J
-    if k in ('s', 'S', 'j', 'J') or (k.startswith('\x1b') and k.endswith('B')):
+    # Flecha Abajo, S o J (soporta \x1b[B, \x1bOB, etc.)
+    if k in ('s', 'S', 'j', 'J') or '[B' in k or 'OB' in k or (k.startswith('\x1b') and k.endswith('B')):
         return 'DOWN'
-    # ENTER o Flecha Derecha
-    if k in ('\r', '\n') or (k.startswith('\x1b') and k.endswith('C')):
+    # ENTER o Flecha Derecha (soporta \x1b[C, \x1bOC, etc.)
+    if k in ('\r', '\n') or '[C' in k or 'OC' in k or (k.startswith('\x1b') and k.endswith('C')):
         return 'ENTER'
-    # Flecha Izquierda, Backspace, A o ESC
-    if k in ('a', 'A', 'h', 'H', '\x7f', '\b', '\x1b') or (k.startswith('\x1b') and k.endswith('D')):
+    # Flecha Izquierda, Backspace, A o ESC (soporta \x1b[D, \x1bOD, etc.)
+    if k in ('a', 'A', 'h', 'H', '\x7f', '\b') or '[D' in k or 'OD' in k or (k.startswith('\x1b') and k.endswith('D')) or k == '\x1b':
         return 'BACK'
     # Paginación
     if k in ('p', 'P'):
@@ -196,7 +198,7 @@ def classify_key(k):
     if k in ('e', 'E'):
         return 'EDIT'
     # Borrar
-    if k in ('d', 'D', '\x1b[3~'):
+    if k in ('d', 'D') or '[3~' in k:
         return 'DELETE'
     # Entrada numérica directa
     if k.isdigit():
