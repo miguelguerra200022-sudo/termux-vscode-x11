@@ -777,7 +777,7 @@
     # 'Horizontal', 'Vertical' or boolean (yes/no)
   </application>
 
-  # end of the example
+  -->
   <application class="*">
     <maximized>true</maximized>
     <decor>no</decor>

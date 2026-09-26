@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import time
 
-# Colores ANSI
+# Colores ANSI estándar y fondos para resaltado de cursor
 BLUE = "\033[1;34m"
 GREEN = "\033[1;32m"
 CYAN = "\033[1;36m"
@@ -19,9 +19,13 @@ WHITE = "\033[1;37m"
 GRAY = "\033[0;90m"
 RED = "\033[1;31m"
 BOLD = "\033[1m"
-DIM = "\033[2m"
-REVERSE = "\033[7m"
 NC = "\033[0m"
+
+# Fondos brillantes con texto oscuro para máximo contraste en pantallas táctiles
+HL_CYAN = "\033[1;30;46m"
+HL_GREEN = "\033[1;30;42m"
+HL_YELLOW = "\033[1;30;43m"
+HL_TAB = "\033[1;37;44m"
 
 STORAGE_ROOT = "/storage/emulated/0"
 TERMUX_HOME = os.path.expanduser("~")
@@ -29,7 +33,7 @@ CONFIG_DIR = os.path.expanduser("~/.config/termux-vscode")
 DATA_FILE = os.path.join(CONFIG_DIR, "proyectos.json")
 
 def get_term_cols():
-    """Obtiene el ancho actual del terminal."""
+    """Obtiene el ancho actual de la pantalla del terminal."""
     try:
         return shutil.get_terminal_size((80, 24)).columns
     except Exception:
@@ -68,7 +72,6 @@ def request_storage_permission():
         except Exception:
             pass
         
-        # Esperar hasta 15 segundos verificando si el usuario aceptó
         for i in range(15):
             time.sleep(1)
             if check_storage_permission():
@@ -123,7 +126,6 @@ def add_to_history(path, desc=None):
     if desc is not None and desc.strip():
         data["descriptions"][norm_path] = desc.strip()
     
-    # Filtrar si ya estaba para ponerlo de primero
     history = [item for item in data.get("history", []) if item.get("path") != norm_path]
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     
@@ -133,7 +135,7 @@ def add_to_history(path, desc=None):
         "last_opened": now_str
     })
     
-    data["history"] = history[:30] # Guardar hasta 30 proyectos recientes
+    data["history"] = history[:30]
     save_data(data)
 
 def get_subdirs(path):
@@ -148,31 +150,58 @@ def get_subdirs(path):
         return []
 
 def get_key():
-    """Lee una tecla o secuencia de escape de forma no bloqueante."""
+    """Lee una tecla o secuencia de escape de forma no bloqueante y robusta en Termux."""
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     try:
         tty.setraw(fd)
         ch = sys.stdin.read(1)
         if ch == '\x1b':
-            r, _, _ = select.select([sys.stdin], [], [], 0.05)
+            # Esperar hasta 200ms para capturar la secuencia de escape completa en Android
+            r, _, _ = select.select([sys.stdin], [], [], 0.20)
             if r:
-                ch2 = sys.stdin.read(1)
-                if ch2 in ('[', 'O'):
-                    r2, _, _ = select.select([sys.stdin], [], [], 0.05)
-                    if r2:
-                        ch3 = sys.stdin.read(1)
-                        if ch3.isdigit() or ch3 == ';':
-                            r3, _, _ = select.select([sys.stdin], [], [], 0.05)
-                            if r3:
-                                ch4 = sys.stdin.read(1)
-                                return f"\x1b{ch2}{ch3}{ch4}"
-                        return f"\x1b{ch2}{ch3}"
-                return f"\x1b{ch2}"
+                rest = os.read(fd, 32).decode('utf-8', errors='ignore')
+                return '\x1b' + rest
             return '\x1b'
         return ch
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+def classify_key(k):
+    """Clasifica cualquier combinación de teclas física, virtual o secuencia ANSI."""
+    if not k:
+        return 'NONE'
+    if k in ('\t', '\x1b[Z'):
+        return 'TAB'
+    if k in ('q', 'Q', '\x03'):
+        return 'QUIT'
+    # Flecha Arriba, W o K
+    if k in ('w', 'W', 'k', 'K') or (k.startswith('\x1b') and k.endswith('A')):
+        return 'UP'
+    # Flecha Abajo, S o J
+    if k in ('s', 'S', 'j', 'J') or (k.startswith('\x1b') and k.endswith('B')):
+        return 'DOWN'
+    # ENTER o Flecha Derecha
+    if k in ('\r', '\n') or (k.startswith('\x1b') and k.endswith('C')):
+        return 'ENTER'
+    # Flecha Izquierda, Backspace, A o ESC
+    if k in ('a', 'A', 'h', 'H', '\x7f', '\b', '\x1b') or (k.startswith('\x1b') and k.endswith('D')):
+        return 'BACK'
+    # Paginación
+    if k in ('p', 'P'):
+        return 'PREV'
+    if k in ('n', 'N'):
+        return 'NEXT'
+    # Editar descripción
+    if k in ('e', 'E'):
+        return 'EDIT'
+    # Borrar
+    if k in ('d', 'D', '\x1b[3~'):
+        return 'DELETE'
+    # Entrada numérica directa
+    if k.isdigit():
+        return f'DIGIT_{k}'
+    return 'OTHER'
 
 def launch_vscode_with_desc(target_path):
     """Pide descripción si es la primera vez y lanza start-vscode."""
@@ -181,7 +210,6 @@ def launch_vscode_with_desc(target_path):
     bname = os.path.basename(target_path) or target_path
     saved_desc = data.get("descriptions", {}).get(target_path, "")
 
-    # Si no tiene descripción previa, pedirla de forma amigable
     if not saved_desc:
         sys.stdout.write("\033[H\033[J")
         cols = min(get_term_cols(), 72)
@@ -236,8 +264,9 @@ def edit_description_dialog(target_path, item_name):
 
 def main():
     # 1. Si se pasó una ruta directa como argumento, abrirla de inmediato
-    if len(sys.argv) > 1:
-        target = sys.argv[1]
+    raw_args = [a for a in sys.argv[1:] if not a.startswith('-')]
+    if raw_args:
+        target = raw_args[0]
         if os.path.exists(target):
             launch_vscode_with_desc(os.path.abspath(target))
             return
@@ -261,10 +290,13 @@ def main():
             current_dir = STORAGE_ROOT
 
     active_tab = 0  # 0: Explorador, 1: Historial
-    cursor_idx = 0
     page_size = 10
     current_page = 0
     status_msg = ""
+
+    # Determinar posición inicial del cursor (en la primera carpeta si existen)
+    initial_subdirs = get_subdirs(current_dir)
+    cursor_idx = 2 if initial_subdirs else 0
 
     while True:
         cols = min(get_term_cols(), 72)
@@ -311,7 +343,7 @@ def main():
             if cursor_idx < 0:
                 cursor_idx = 0
 
-        # Dibujar pantalla
+        # Dibujar pantalla limpia
         sys.stdout.write("\033[H\033[J")
         print(f"{BLUE}╔" + "═" * (cols - 2) + f"╗{NC}")
         title_text = "TERMUX VS CODE  -  GESTOR DE PROYECTOS"
@@ -321,11 +353,11 @@ def main():
         # Pestañas de navegación interactiva
         hist_badge = f" ({len(history)})" if history else ""
         if active_tab == 0:
-            tab_exp = f"{REVERSE}{CYAN}{BOLD} [ 📁 Explorador ] {NC}"
+            tab_exp = f"{HL_TAB} [ 📁 Explorador ] {NC}"
             tab_his = f"{GRAY}   [ 🕒 Historial{hist_badge} ]   {NC}"
         else:
             tab_exp = f"{GRAY}   [ 📁 Explorador ]   {NC}"
-            tab_his = f"{REVERSE}{CYAN}{BOLD} [ 🕒 Historial{hist_badge} ] {NC}"
+            tab_his = f"{HL_TAB} [ 🕒 Historial{hist_badge} ] {NC}"
 
         print(f" {tab_exp}  {tab_his}")
         print(div_line)
@@ -337,20 +369,27 @@ def main():
             print(div_line)
 
             # Opción 0: Abrir en VS Code
-            p0 = f"{GREEN} > [ 0]{NC} " if cursor_idx == 0 else "   [ 0] "
-            s0 = f"{REVERSE}{GREEN}" if cursor_idx == 0 else f"{BOLD}{GREEN}"
-            print(f"{p0}{s0}🚀 [ ABRIR ESTA CARPETA EN VS CODE ]{NC}")
+            if cursor_idx == 0:
+                line_0 = " > [ 0] 🚀 [ ABRIR ESTA CARPETA EN VS CODE ]".ljust(cols - 2)
+                print(f"{HL_GREEN} {line_0}{NC}")
+            else:
+                print(f"{GREEN}   [ 0] 🚀 [ ABRIR ESTA CARPETA EN VS CODE ]{NC}")
             print(f"        {GRAY}└─ Inicia el editor VS Code en este directorio{NC}")
 
             # Opción 1: Subir de nivel
-            p1 = f"{YELLOW} > [..]{NC} " if cursor_idx == 1 else "   [..] "
-            s1 = f"{REVERSE}{YELLOW}" if cursor_idx == 1 else f"{YELLOW}"
             if is_storage_root:
-                print(f"{p1}{s1}⬆️  [..] Raíz del teléfono (Límite del almacenamiento){NC}")
-                print(f"        {GRAY}└─ Límite de carpetas alcanzado en Android{NC}")
+                up_text = "⬆️  [..] Raíz del teléfono (Límite del almacenamiento)"
+                sub_text = "└─ Límite de carpetas alcanzado en Android"
             else:
-                print(f"{p1}{s1}⬆️  Subir un nivel (Volver atrás){NC}")
-                print(f"        {GRAY}└─ Regresa a la carpeta superior{NC}")
+                up_text = "⬆️  Subir un nivel (Volver atrás)"
+                sub_text = "└─ Regresa a la carpeta superior"
+
+            if cursor_idx == 1:
+                line_1 = f" > [..] {up_text}".ljust(cols - 2)
+                print(f"{HL_YELLOW} {line_1}{NC}")
+            else:
+                print(f"{YELLOW}   [..] {up_text}{NC}")
+            print(f"        {GRAY}{sub_text}{NC}")
             print(div_line)
 
             # Listado de subcarpetas (1 a 10)
@@ -367,20 +406,21 @@ def main():
                     full_p = os.path.join(current_dir, dname)
                     desc = descriptions.get(full_p, "")
                     
-                    prefix = f"{CYAN} > [{num:2d}]{NC}" if is_sel else f"   [{num:2d}]"
-                    style = f"{REVERSE}{WHITE}" if is_sel else f"{WHITE}"
-                    
                     display_name = dname if len(dname) <= name_w else (dname[:name_w - 3] + "...")
                     padded_name = display_name.ljust(name_w)
-                    
                     rem = cols - 10 - name_w - 3
-                    if desc:
-                        display_desc = desc if len(desc) <= rem else (desc[:rem - 3] + "...")
-                        desc_part = f"{GRAY}│{NC} {YELLOW}\"{display_desc}\"{NC}"
+
+                    if is_sel:
+                        desc_text = f"│ {desc}" if desc else "│"
+                        raw_line = f" > [{num:2d}] 📁 {padded_name} {desc_text}".ljust(cols - 2)
+                        print(f"{HL_CYAN} {raw_line}{NC}")
                     else:
-                        desc_part = f"{GRAY}│ —{NC}"
-                    
-                    print(f"{prefix} {style}📁 {padded_name}{NC} {desc_part}")
+                        if desc:
+                            display_desc = desc if len(desc) <= rem else (desc[:rem - 3] + "...")
+                            desc_part = f"{GRAY}│{NC} {YELLOW}\"{display_desc}\"{NC}"
+                        else:
+                            desc_part = f"{GRAY}│ —{NC}"
+                        print(f"   [{num:2d}] 📁 {padded_name} {desc_part}")
 
             print(div_line)
 
@@ -393,10 +433,10 @@ def main():
 
             # Guía explicativa
             print(f"💡 {BOLD}Guía de navegación:{NC}")
-            print(f" • {YELLOW}Flechas ↑/↓{NC}: Mover cursor       • {YELLOW}ENTER o →{NC}: Entrar / Abrir opción")
-            print(f" • {YELLOW}← o ESC{NC}    : Subir un nivel     • {YELLOW}TAB{NC}      : Ver Historial")
-            print(f" • {YELLOW}[1-10]{NC}     : Acceso directo     • {YELLOW}[E]{NC}      : Poner/Editar descripción")
-            print(f" • {YELLOW}[P / N]{NC}    : Cambiar de página  • {YELLOW}[Q]{NC}      : Salir")
+            print(f" • {YELLOW}Flechas ↑/↓ o W/S{NC}: Mover cursor  • {YELLOW}ENTER o →{NC}: Entrar / Abrir")
+            print(f" • {YELLOW}← o ESC o A{NC}      : Subir nivel   • {YELLOW}TAB{NC}      : Ver Historial")
+            print(f" • {YELLOW}[1-10]{NC}            : Salto directo • {YELLOW}[E]{NC}      : Poner descripción")
+            print(f" • {YELLOW}[P / N]{NC}           : Cambiar pág   • {YELLOW}[Q]{NC}      : Salir")
             print(div_line)
             print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {BOLD}{WHITE}esc/←{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Moverse  {BOLD}{WHITE}e{NC}{GRAY} Descrip  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
 
@@ -419,25 +459,24 @@ def main():
                     last_t = item.get("last_opened", "")
                     desc = descriptions.get(p, "")
                     
-                    prefix = f"{CYAN} > [{num:2d}]{NC}" if is_sel else f"   [{num:2d}]"
-                    style = f"{REVERSE}{WHITE}" if is_sel else f"{WHITE}"
-                    
                     display_name = name if len(name) <= name_w else (name[:name_w - 3] + "...")
                     padded_name = display_name.ljust(name_w)
-                    
                     rem = cols - 10 - name_w - 3
-                    if desc:
-                        display_desc = desc if len(desc) <= rem else (desc[:rem - 3] + "...")
-                        desc_part = f"{GRAY}│{NC} {YELLOW}\"{display_desc}\"{NC}"
-                    else:
-                        desc_part = f"{GRAY}│ —{NC}"
-                    
-                    print(f"{prefix} {style}📁 {padded_name}{NC} {desc_part}")
-                    
+
                     if is_sel:
+                        desc_text = f"│ {desc}" if desc else "│"
+                        raw_line = f" > [{num:2d}] 📁 {padded_name} {desc_text}".ljust(cols - 2)
+                        print(f"{HL_CYAN} {raw_line}{NC}")
                         short_p = p if len(p) <= cols - 12 else ("..." + p[-(cols - 15):])
                         time_str = f" • Última vez: {last_t}" if last_t else ""
                         print(f"        {GRAY}└─ {short_p}{time_str}{NC}")
+                    else:
+                        if desc:
+                            display_desc = desc if len(desc) <= rem else (desc[:rem - 3] + "...")
+                            desc_part = f"{GRAY}│{NC} {YELLOW}\"{display_desc}\"{NC}"
+                        else:
+                            desc_part = f"{GRAY}│ —{NC}"
+                        print(f"   [{num:2d}] 📁 {padded_name} {desc_part}")
 
             print(div_line)
 
@@ -450,12 +489,12 @@ def main():
 
             # Guía Historial
             print(f"💡 {BOLD}Guía de Historial:{NC}")
-            print(f" • {YELLOW}Flechas ↑/↓ + ENTER{NC}: Abre el proyecto seleccionado en VS Code")
-            print(f" • {YELLOW}[1-{min(len(visible_hist), 10)}]{NC}        : Abre directo ese número del historial")
-            print(f" • {YELLOW}[E]{NC}                 : Editar la descripción de este proyecto")
-            print(f" • {YELLOW}[D]{NC}                 : Eliminar este proyecto del historial")
-            print(f" • {YELLOW}TAB o [0]{NC}          : Volver al Explorador de carpetas")
-            print(f" • {YELLOW}[Q]{NC}                 : Salir sin abrir nada")
+            print(f" • {YELLOW}Flechas ↑/↓ o W/S + ENTER{NC}: Abre el proyecto seleccionado en VS Code")
+            print(f" • {YELLOW}[1-{min(len(visible_hist), 10)}]{NC}              : Abre directo ese número")
+            print(f" • {YELLOW}[E]{NC}                       : Editar la descripción de este proyecto")
+            print(f" • {YELLOW}[D]{NC}                       : Eliminar este proyecto del historial")
+            print(f" • {YELLOW}TAB o [0]{NC}                : Volver al Explorador de carpetas")
+            print(f" • {YELLOW}[Q]{NC}                       : Salir sin abrir nada")
             print(div_line)
             print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}↑/↓{NC}{GRAY} Moverse  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
 
@@ -465,27 +504,29 @@ def main():
 
         sys.stdout.flush()
 
-        # Captura de teclado
-        k = get_key()
+        # Captura de teclado robusta
+        raw_key = get_key()
+        action = classify_key(raw_key)
 
-        # Teclas Globales:
-        # Tab o Shift-Tab: Cambiar de pestaña
-        if k in ('\t', '\x1b[Z'):
+        # Acciones Globales
+        if action == 'TAB':
             active_tab = 1 - active_tab
-            cursor_idx = 0
             current_page = 0
+            if active_tab == 0:
+                subdirs = get_subdirs(current_dir)
+                cursor_idx = 2 if subdirs else 0
+            else:
+                cursor_idx = 0
             status_msg = ""
             continue
 
-        # Salir
-        if k in ('q', 'Q', '\x03'):
+        if action == 'QUIT':
             print(f"\n{YELLOW}[*] Cancelado. Saliendo sin abrir VS Code.{NC}\n")
             sys.exit(0)
 
         # ------------------ EVENTOS: EXPLORADOR ------------------
         if active_tab == 0:
-            # Flecha Arriba
-            if k in ('\x1b[A', '\x1bOA', 'k'):
+            if action == 'UP':
                 cursor_idx -= 1
                 if cursor_idx < 0:
                     if current_page > 0:
@@ -494,8 +535,7 @@ def main():
                     else:
                         cursor_idx = 0
 
-            # Flecha Abajo
-            elif k in ('\x1b[B', '\x1bOB', 'j'):
+            elif action == 'DOWN':
                 cursor_idx += 1
                 if cursor_idx >= items_on_screen:
                     if current_page < total_pages - 1:
@@ -504,18 +544,17 @@ def main():
                     else:
                         cursor_idx = items_on_screen - 1
 
-            # Flecha Izquierda / Backspace / ESC: Subir de nivel
-            elif k in ('\x1b[D', '\x1bOD', 'h', 'b', '\x7f', '\b', '\x1b'):
+            elif action == 'BACK':
                 if is_storage_root:
                     status_msg = "Límite alcanzado: Raíz del teléfono (/storage/emulated/0)."
                 else:
                     parent = os.path.dirname(os.path.abspath(current_dir))
                     current_dir = normalize_path(parent)
-                    cursor_idx = 0
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
                     current_page = 0
 
-            # Flecha Derecha / ENTER: Abrir o Entrar
-            elif k in ('\r', '\n', '\x1b[C', '\x1bOC'):
+            elif action == 'ENTER':
                 if cursor_idx == 0:
                     launch_vscode_with_desc(current_dir)
                     return
@@ -525,30 +564,31 @@ def main():
                     else:
                         parent = os.path.dirname(os.path.abspath(current_dir))
                         current_dir = normalize_path(parent)
-                        cursor_idx = 0
+                        subdirs_now = get_subdirs(current_dir)
+                        cursor_idx = 2 if subdirs_now else 0
                         current_page = 0
                 else:
                     folder_selected = visible_subdirs[cursor_idx - 2]
                     current_dir = normalize_path(os.path.join(current_dir, folder_selected))
-                    cursor_idx = 0
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
                     current_page = 0
 
-            # Paginación
-            elif k in ('n', 'N'):
+            elif action == 'NEXT':
                 if current_page < total_pages - 1:
                     current_page += 1
                     cursor_idx = 2
                 else:
                     status_msg = "Ya estás en la última página."
-            elif k in ('p', 'P'):
+
+            elif action == 'PREV':
                 if current_page > 0:
                     current_page -= 1
                     cursor_idx = 2
                 else:
                     status_msg = "Ya estás en la primera página."
 
-            # Editar descripción
-            elif k in ('e', 'E'):
+            elif action == 'EDIT':
                 if cursor_idx >= 2:
                     folder_selected = visible_subdirs[cursor_idx - 2]
                     target_edit = os.path.join(current_dir, folder_selected)
@@ -556,42 +596,33 @@ def main():
                 elif cursor_idx == 0:
                     edit_description_dialog(current_dir, os.path.basename(current_dir) or current_dir)
 
-            # Historial directo con tecla H
-            elif k in ('h', 'H'):
-                active_tab = 1
-                cursor_idx = 0
-                current_page = 0
-
-            # Entrada numérica directa
-            elif k.isdigit():
-                val = int(k)
+            elif action.startswith('DIGIT_'):
+                val = int(action.split('_')[1])
                 if val == 0:
                     launch_vscode_with_desc(current_dir)
                     return
                 elif 1 <= val <= len(visible_subdirs):
                     folder_selected = visible_subdirs[val - 1]
                     current_dir = normalize_path(os.path.join(current_dir, folder_selected))
-                    cursor_idx = 0
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
                     current_page = 0
 
         # ------------------ EVENTOS: HISTORIAL ------------------
         else:
-            # Flecha Arriba
-            if k in ('\x1b[A', '\x1bOA', 'k'):
+            if action == 'UP':
                 cursor_idx = max(0, cursor_idx - 1)
 
-            # Flecha Abajo
-            elif k in ('\x1b[B', '\x1bOB', 'j'):
+            elif action == 'DOWN':
                 cursor_idx = min(len(visible_hist) - 1, cursor_idx + 1)
 
-            # Flecha Izquierda / Backspace / ESC: Volver al explorador
-            elif k in ('\x1b[D', '\x1bOD', 'h', 'b', '\x7f', '\b', '\x1b', '0'):
+            elif action == 'BACK':
                 active_tab = 0
-                cursor_idx = 0
+                subdirs_now = get_subdirs(current_dir)
+                cursor_idx = 2 if subdirs_now else 0
                 current_page = 0
 
-            # ENTER / Flecha Derecha: Abrir proyecto seleccionado
-            elif k in ('\r', '\n', '\x1b[C', '\x1bOC'):
+            elif action == 'ENTER':
                 if visible_hist:
                     target = visible_hist[cursor_idx].get("path")
                     if os.path.exists(target):
@@ -600,29 +631,12 @@ def main():
                     else:
                         status_msg = f"La carpeta ya no existe: {target}"
 
-            # Entrada numérica directa
-            elif k.isdigit():
-                val = int(k)
-                if val == 0:
-                    active_tab = 0
-                    cursor_idx = 0
-                    current_page = 0
-                elif 1 <= val <= len(visible_hist):
-                    target = visible_hist[val - 1].get("path")
-                    if os.path.exists(target):
-                        launch_vscode_with_desc(target)
-                        return
-                    else:
-                        status_msg = f"La carpeta ya no existe: {target}"
-
-            # Editar descripción
-            elif k in ('e', 'E'):
+            elif action == 'EDIT':
                 if visible_hist:
                     item = visible_hist[cursor_idx]
                     edit_description_dialog(item.get("path"), item.get("name"))
 
-            # Eliminar del historial
-            elif k in ('d', 'D', '\x1b[3~'):
+            elif action == 'DELETE':
                 if visible_hist:
                     item = visible_hist[cursor_idx]
                     p_del = item.get("path")
@@ -640,19 +654,34 @@ def main():
                         status_msg = f"Proyecto '{name_del}' eliminado del historial."
                         cursor_idx = max(0, cursor_idx - 1)
 
-            # Paginación Historial
-            elif k in ('n', 'N'):
+            elif action == 'NEXT':
                 if current_page < total_pages - 1:
                     current_page += 1
                     cursor_idx = 0
                 else:
                     status_msg = "Ya estás en la última página."
-            elif k in ('p', 'P'):
+
+            elif action == 'PREV':
                 if current_page > 0:
                     current_page -= 1
                     cursor_idx = 0
                 else:
                     status_msg = "Ya estás en la primera página."
+
+            elif action.startswith('DIGIT_'):
+                val = int(action.split('_')[1])
+                if val == 0:
+                    active_tab = 0
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
+                    current_page = 0
+                elif 1 <= val <= len(visible_hist):
+                    target = visible_hist[val - 1].get("path")
+                    if os.path.exists(target):
+                        launch_vscode_with_desc(target)
+                        return
+                    else:
+                        status_msg = f"La carpeta ya no existe: {target}"
 
 if __name__ == "__main__":
     try:

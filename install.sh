@@ -97,6 +97,7 @@ SCRIPTS=(
 )
 
 for s in "${SCRIPTS[@]}"; do
+    rm -f "$PREFIX/bin/$s"
     if [ -f "$SCRIPT_DIR/bin/$s" ]; then
         cp "$SCRIPT_DIR/bin/$s" "$PREFIX/bin/$s"
     else

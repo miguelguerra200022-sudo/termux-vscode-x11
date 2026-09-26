@@ -82,8 +82,9 @@ fi
 
 # 11. Iniciar VS Code abriendo la carpeta y la Guía Rápida como primera pestaña activa
 echo "[+] Lanzando VS Code con sesión persistente..."
+shift || true
 if [ -f "$TARGET_DIR/GUIA_RAPIDA.md" ]; then
-    exec code --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$TARGET_DIR" "$TARGET_DIR/GUIA_RAPIDA.md" "$@"
+    exec code-oss --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$TARGET_DIR" "$TARGET_DIR/GUIA_RAPIDA.md" "$@"
 else
-    exec code --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$@"
+    exec code-oss --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$TARGET_DIR" "$@"
 fi
