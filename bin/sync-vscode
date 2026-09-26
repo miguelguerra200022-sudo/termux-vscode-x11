@@ -152,6 +152,9 @@ SCRIPTS=(
     "start-vscode-web"
     "guia"
     "vscode"
+    "toggle-touch-mode"
+    "desinstalar-vscode"
+    "desinstalar"
 )
 
 for s in "${SCRIPTS[@]}"; do
@@ -187,6 +190,7 @@ if [ -n "$UNPUSHED" ]; then
         else
             timeout 30 git push origin main >/dev/null 2>&1 || true
         fi
+        git update-ref refs/remotes/origin/main "$(git rev-parse HEAD 2>/dev/null)" 2>/dev/null || true
     fi
 fi
 
