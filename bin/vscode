@@ -205,8 +205,86 @@ def classify_key(k):
         return f'DIGIT_{k}'
     return 'OTHER'
 
+def prompt_text_with_esc(prompt_str):
+    """
+    Permite ingresar texto en la terminal interceptando la tecla ESC para cancelar.
+    Retorna:
+      - str: El texto ingresado (puede ser vacío si presionó ENTER).
+      - None: Si el usuario presionó ESC o Ctrl+C para volver atrás.
+    """
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    buf = []
+    cursor_pos = 0
+
+    sys.stdout.write(prompt_str)
+    sys.stdout.flush()
+
+    try:
+        tty.setraw(fd)
+        while True:
+            first_b = os.read(fd, 1)
+            if not first_b:
+                continue
+
+            # Tecla ESC o secuencia de escape
+            if first_b == b'\x1b':
+                r, _, _ = select.select([fd], [], [], 0.08)
+                if r:
+                    rest_b = os.read(fd, 32)
+                    seq = (first_b + rest_b).decode('utf-8', errors='ignore')
+                    if '[D' in seq or 'OD' in seq:
+                        if cursor_pos > 0:
+                            cursor_pos -= 1
+                            sys.stdout.write('\033[D')
+                            sys.stdout.flush()
+                    elif '[C' in seq or 'OC' in seq:
+                        if cursor_pos < len(buf):
+                            cursor_pos += 1
+                            sys.stdout.write('\033[C')
+                            sys.stdout.flush()
+                    elif '[3~' in seq:
+                        if cursor_pos < len(buf):
+                            buf.pop(cursor_pos)
+                            tail = ''.join(buf[cursor_pos:]) + ' '
+                            sys.stdout.write(tail + '\b' * len(tail))
+                            sys.stdout.flush()
+                    continue
+                else:
+                    return None  # ESC presionado solo -> Cancelar
+
+            if first_b in (b'\r', b'\n'):
+                return ''.join(buf)
+
+            if first_b == b'\x03':
+                return None
+
+            if first_b in (b'\x7f', b'\x08'):
+                if cursor_pos > 0:
+                    cursor_pos -= 1
+                    buf.pop(cursor_pos)
+                    tail = ''.join(buf[cursor_pos:]) + ' '
+                    sys.stdout.write('\b' + tail + '\b' * len(tail))
+                    sys.stdout.flush()
+                continue
+
+            try:
+                ch = first_b.decode('utf-8', errors='ignore')
+                if ch and ord(ch) >= 32:
+                    buf.insert(cursor_pos, ch)
+                    cursor_pos += 1
+                    tail = ''.join(buf[cursor_pos - 1:])
+                    sys.stdout.write(tail + ('\b' * (len(tail) - 1) if len(tail) > 1 else ''))
+                    sys.stdout.flush()
+            except Exception:
+                pass
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
 def launch_vscode_with_desc(target_path):
-    """Pide descripción si es la primera vez y lanza start-vscode."""
+    """Pide descripción si es la primera vez y lanza start-vscode. Retorna False si se canceló con ESC."""
     target_path = normalize_path(target_path)
     data = load_data()
     bname = os.path.basename(target_path) or target_path
@@ -220,14 +298,17 @@ def launch_vscode_with_desc(target_path):
         print(f"{BLUE}" + "═" * cols + f"{NC}")
         print(f"Ruta: {CYAN}{target_path}{NC}\n")
         print("Escribe una breve descripción para recordar de qué trata este proyecto:")
-        print(f"{GRAY}(Ejemplo: 'Bot de trading', 'Tienda web con React', 'Scripts de trabajo'){NC}")
-        print(f"{YELLOW}Presiona ENTER directamente si prefieres no poner descripción.{NC}\n")
+        print(f"{GRAY}(Ejemplo: 'Bot de trading', 'Tienda web con React', 'Scripts de trabajo'){NC}\n")
+        print(f" • {YELLOW}ENTER{NC} : Abrir en VS Code (sin descripción si lo dejas vacío).")
+        print(f" • {YELLOW}ESC{NC}   : Volver al explorador (cancelar apertura).\n")
         
-        try:
-            nueva_desc = input(f"{BOLD}👉 Descripción:{NC} ").strip()
-        except (KeyboardInterrupt, EOFError):
-            nueva_desc = ""
+        nueva_desc = prompt_text_with_esc(f"{BOLD}👉 Descripción:{NC} ")
         
+        # Si canceló con ESC o Ctrl+C
+        if nueva_desc is None:
+            return False
+        
+        nueva_desc = nueva_desc.strip()
         if nueva_desc:
             add_to_history(target_path, nueva_desc)
         else:
@@ -237,6 +318,7 @@ def launch_vscode_with_desc(target_path):
 
     print(f"\n{GREEN}[✓] Abriendo en VS Code:{NC} {CYAN}{target_path}{NC}\n")
     os.execvp("start-vscode", ["start-vscode", target_path])
+    return True
 
 def edit_description_dialog(target_path, item_name):
     """Diálogo interactivo para modificar la descripción de una carpeta o proyecto."""
@@ -254,12 +336,15 @@ def edit_description_dialog(target_path, item_name):
         print(f"Descripción actual: {YELLOW}\"{current_desc}\"{NC}")
     else:
         print(f"Descripción actual: {GRAY}(Sin descripción){NC}")
-    print(f"\nEscribe la nueva descripción (ENTER para mantenerla):")
-    try:
-        nueva = input(f"{BOLD}👉 Nueva descripción:{NC} ").strip()
-    except (KeyboardInterrupt, EOFError):
+    print(f"\nEscribe la nueva descripción:")
+    print(f" • {YELLOW}ENTER{NC} : Guardar nueva descripción.")
+    print(f" • {YELLOW}ESC{NC}   : Cancelar sin hacer cambios.\n")
+    
+    nueva = prompt_text_with_esc(f"{BOLD}👉 Nueva descripción:{NC} ")
+    if nueva is None:
         return
     
+    nueva = nueva.strip()
     if nueva:
         data["descriptions"][target_path] = nueva
         save_data(data)
@@ -558,8 +643,10 @@ def main():
 
             elif action == 'ENTER':
                 if cursor_idx == 0:
-                    launch_vscode_with_desc(current_dir)
-                    return
+                    if launch_vscode_with_desc(current_dir):
+                        return
+                    else:
+                        status_msg = "Apertura cancelada."
                 elif cursor_idx == 1:
                     if is_storage_root:
                         status_msg = "Límite alcanzado: No se puede subir más en Android."
@@ -601,8 +688,10 @@ def main():
             elif action.startswith('DIGIT_'):
                 val = int(action.split('_')[1])
                 if val == 0:
-                    launch_vscode_with_desc(current_dir)
-                    return
+                    if launch_vscode_with_desc(current_dir):
+                        return
+                    else:
+                        status_msg = "Apertura cancelada."
                 elif 1 <= val <= len(visible_subdirs):
                     folder_selected = visible_subdirs[val - 1]
                     current_dir = normalize_path(os.path.join(current_dir, folder_selected))
@@ -628,8 +717,10 @@ def main():
                 if visible_hist:
                     target = visible_hist[cursor_idx].get("path")
                     if os.path.exists(target):
-                        launch_vscode_with_desc(target)
-                        return
+                        if launch_vscode_with_desc(target):
+                            return
+                        else:
+                            status_msg = "Apertura cancelada."
                     else:
                         status_msg = f"La carpeta ya no existe: {target}"
 
@@ -680,8 +771,10 @@ def main():
                 elif 1 <= val <= len(visible_hist):
                     target = visible_hist[val - 1].get("path")
                     if os.path.exists(target):
-                        launch_vscode_with_desc(target)
-                        return
+                        if launch_vscode_with_desc(target):
+                            return
+                        else:
+                            status_msg = "Apertura cancelada."
                     else:
                         status_msg = f"La carpeta ya no existe: {target}"
 
