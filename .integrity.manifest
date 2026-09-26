@@ -20,7 +20,7 @@ a541e8b35e04b5b330b00b10557376bfed4bac7f8ef4b154a6bb855eeca2b48b  ./bin/switch-i
 009d7c7961cae702bafee299baf02054efd5e7be2daca511349b70bc87b6bf54  ./bin/sync-vscode
 d7227adeaeb79fd1c7a1c55f7084a2ef4d2b845a77b11d7ba9ff300a856dceaf  ./bin/toggle-touch-mode
 3e869598469aefb9ea17d5a56f08237b98d4a72c147f473e871403b3d4f850aa  ./bin/vscode
-5e24ccaf157203bac93e0b8e6e9f97987c4b02698f9f3f1ab18d7dc415f55131  ./bin/watcher-sync
+bfa1cb9553afac6375e5a84de51a4e78e17ea6e4c5ba02bcbcb5a158fa34ef5e  ./bin/watcher-sync
 cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./config/argv.json
 5cc855999b4ae29aa477b0039515120d55acbd9f0073302e05b1e34b65afb60c  ./config/menu.xml
 50c194da9977ca9db72883121cbd9efbb72af43d9bffa2e2a16b03aa1bd733af  ./config/rc.xml

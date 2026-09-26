@@ -61,7 +61,7 @@ init_golden_vault() {
     chmod 700 "$HOME/.config/termux-vscode" "$GOLDEN_DIR" 2>/dev/null || true
 
     # Respaldar binarios de defensa originales en bóveda dorada protegida
-    for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode"; do
+    for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel"; do
         if [ -f "$PREFIX/bin/$bin_name" ] && [ ! -f "$GOLDEN_DIR/$bin_name" ]; then
             cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
             chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
