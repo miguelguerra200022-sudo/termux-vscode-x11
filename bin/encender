@@ -1,0 +1,868 @@
+#!/data/data/com.termux/files/usr/bin/python3
+import os
+import sys
+import json
+import tty
+import termios
+import select
+import datetime
+import shutil
+import subprocess
+import time
+
+# Colores ANSI estándar y fondos para resaltado de cursor
+BLUE = "\033[1;34m"
+GREEN = "\033[1;32m"
+CYAN = "\033[1;36m"
+YELLOW = "\033[1;33m"
+WHITE = "\033[1;37m"
+GRAY = "\033[0;90m"
+RED = "\033[1;31m"
+BOLD = "\033[1m"
+NC = "\033[0m"
+
+# Fondos brillantes con texto oscuro para máximo contraste en pantallas táctiles
+HL_CYAN = "\033[1;30;46m"
+HL_GREEN = "\033[1;30;42m"
+HL_YELLOW = "\033[1;30;43m"
+HL_TAB = "\033[1;37;44m"
+
+STORAGE_ROOT = "/storage/emulated/0"
+TERMUX_HOME = os.path.expanduser("~")
+CONFIG_DIR = os.path.expanduser("~/.config/termux-vscode")
+DATA_FILE = os.path.join(CONFIG_DIR, "proyectos.json")
+
+def get_term_cols():
+    """Obtiene el ancho actual de la pantalla del terminal."""
+    try:
+        return shutil.get_terminal_size((80, 24)).columns
+    except Exception:
+        return 80
+
+def check_storage_permission():
+    """Verifica si Termux tiene acceso a las carpetas de Android (/storage/emulated/0)."""
+    if not os.path.exists(STORAGE_ROOT):
+        return False
+    try:
+        os.listdir(STORAGE_ROOT)
+        return True
+    except Exception:
+        return False
+
+def request_storage_permission():
+    """Pide permiso de almacenamiento al usuario y monitorea la aprobación en Android."""
+    sys.stdout.write("\033[H\033[J")
+    cols = min(get_term_cols(), 72)
+    print(f"{BLUE}" + "═" * cols + f"{NC}")
+    print(f"{GREEN}  📱 PERMISO DE ALMACENAMIENTO DE ANDROID (PRIMER INICIO){NC}")
+    print(f"{BLUE}" + "═" * cols + f"{NC}")
+    print("Para que VS Code pueda explorar y abrir las carpetas de tu teléfono")
+    print("(como Descargas, Documentos, Proyectos, etc.), Termux necesita permiso.")
+    print(f"{GRAY}" + "─" * cols + f"{NC}")
+    try:
+        resp = input(f"{BOLD}¿Deseas conceder permiso a Termux para ver las carpetas del teléfono? [S/n]: {NC}").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        resp = "n"
+    
+    if resp in ('', 's', 'si', 'y', 'yes'):
+        print(f"\n{CYAN}⚡ Solicitando permiso al sistema Android...{NC}")
+        print(f"{YELLOW}👉 Pulsa 'PERMITIR' en la ventana emergente en pantalla.{NC}\n")
+        try:
+            subprocess.run(["termux-setup-storage"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+        
+        for i in range(15):
+            time.sleep(1)
+            if check_storage_permission():
+                print(f"{GREEN}[✓] ¡Permiso concedido con éxito! Entrando a las carpetas del teléfono...{NC}\n")
+                time.sleep(1)
+                return True
+            sys.stdout.write(f"\r{GRAY}Esperando aprobación del sistema ({15 - i}s)...{NC} ")
+            sys.stdout.flush()
+        
+        print(f"\n\n{YELLOW}[!] No se detectó la aprobación o se agotó el tiempo.{NC}")
+        print(f"{GRAY}Se continuará en el almacenamiento local de Termux (~).{NC}\n")
+        time.sleep(1.5)
+        return False
+    else:
+        print(f"\n{YELLOW}[*] Permiso omitido. Se usará el directorio local de Termux (~).{NC}\n")
+        time.sleep(1)
+        return False
+
+def load_data():
+    """Carga el historial y las descripciones privadas locales."""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"descriptions": {}, "history": []}
+
+def save_data(data):
+    """Guarda el historial y descripciones en el teléfono (nunca en Git)."""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+def normalize_path(path):
+    """Evita caer en trampas del sistema como /storage o /storage/emulated."""
+    real = os.path.abspath(path)
+    if real in ('/storage', '/storage/emulated', '/'):
+        return STORAGE_ROOT
+    return real
+
+def add_to_history(path, desc=None):
+    """Registra una carpeta en el historial de proyectos recientes."""
+    data = load_data()
+    norm_path = normalize_path(path)
+    bname = os.path.basename(norm_path) or norm_path
+    
+    if desc is not None and desc.strip():
+        data["descriptions"][norm_path] = desc.strip()
+    
+    history = [item for item in data.get("history", []) if item.get("path") != norm_path]
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    
+    history.insert(0, {
+        "path": norm_path,
+        "name": bname,
+        "last_opened": now_str
+    })
+    
+    data["history"] = history[:30]
+    save_data(data)
+
+def get_subdirs(path):
+    """Lista subdirectorios legibles, protegiendo contra errores de permisos de Android."""
+    try:
+        entries = sorted([
+            d for d in os.listdir(path)
+            if not d.startswith('.') and os.path.isdir(os.path.join(path, d))
+        ], key=lambda s: s.lower())
+        return entries
+    except Exception:
+        return []
+
+def get_key():
+    """Lee una tecla o secuencia de escape directamente desde el descriptor del SO sin buffer de Python."""
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        first_b = os.read(fd, 1)
+        if not first_b:
+            return ''
+        if first_b == b'\x1b':
+            # Esperar hasta 80ms para recibir los caracteres restantes de la secuencia ANSI
+            r, _, _ = select.select([fd], [], [], 0.08)
+            if r:
+                rest_b = os.read(fd, 32)
+                return (first_b + rest_b).decode('utf-8', errors='ignore')
+            return '\x1b'
+        return first_b.decode('utf-8', errors='ignore')
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+def classify_key(k):
+    """Clasifica cualquier combinación de teclas física, virtual o secuencia ANSI sin conflictos."""
+    if not k:
+        return 'NONE'
+    if k in ('\t', '\x1b[Z'):
+        return 'TAB'
+    if k in ('q', 'Q', '\x03'):
+        return 'QUIT'
+    # Flecha Arriba, W o K (soporta \x1b[A, \x1bOA, \x1b[1;5A, etc.)
+    if k in ('w', 'W', 'k', 'K') or '[A' in k or 'OA' in k or (k.startswith('\x1b') and k.endswith('A')):
+        return 'UP'
+    # Flecha Abajo, S o J (soporta \x1b[B, \x1bOB, \x1b[1;5B, etc.)
+    if k in ('s', 'S', 'j', 'J') or '[B' in k or 'OB' in k or (k.startswith('\x1b') and k.endswith('B')):
+        return 'DOWN'
+    # ENTER EXCLUSIVO (Entrar a carpeta o abrir proyecto seleccionado)
+    if k in ('\r', '\n'):
+        return 'ENTER'
+    # Flecha Derecha o N: Siguiente página (desplazar hacia siguientes carpetas)
+    if k in ('n', 'N') or '[C' in k or 'OC' in k or (k.startswith('\x1b') and k.endswith('C')):
+        return 'NEXT'
+    # Flecha Izquierda o P: Página anterior (desplazar hacia carpetas anteriores)
+    if k in ('p', 'P') or '[D' in k or 'OD' in k or (k.startswith('\x1b') and k.endswith('D')):
+        return 'PREV'
+    # Volver / Subir nivel: ESC o Backspace (o letra A)
+    if k in ('\x7f', '\b', '\x1b', 'a', 'A'):
+        return 'BACK'
+    # Conmutar Identidad Multi-dispositivo (Líder)
+    if k in ('c', 'C', 'i', 'I'):
+        return 'SWITCH_IDENTITY'
+    # Búsqueda / Filtro rápido por nombre
+    if k in ('/', 'f', 'F'):
+        return 'SEARCH'
+    # Editar descripción
+    if k in ('e', 'E'):
+        return 'EDIT'
+    # Borrar del historial
+    if k in ('d', 'D') or '[3~' in k:
+        return 'DELETE'
+    # Entrada numérica directa
+    if k.isdigit():
+        return f'DIGIT_{k}'
+    return 'OTHER'
+
+def prompt_text_with_esc(prompt_str):
+    """
+    Permite ingresar texto en la terminal interceptando la tecla ESC para cancelar.
+    Retorna:
+      - str: El texto ingresado (puede ser vacío si presionó ENTER).
+      - None: Si el usuario presionó ESC o Ctrl+C para volver atrás.
+    """
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    buf = []
+    cursor_pos = 0
+
+    sys.stdout.write(prompt_str)
+    sys.stdout.flush()
+
+    try:
+        tty.setraw(fd)
+        while True:
+            first_b = os.read(fd, 1)
+            if not first_b:
+                continue
+
+            # Tecla ESC o secuencia de escape
+            if first_b == b'\x1b':
+                r, _, _ = select.select([fd], [], [], 0.08)
+                if r:
+                    rest_b = os.read(fd, 32)
+                    seq = (first_b + rest_b).decode('utf-8', errors='ignore')
+                    if '[D' in seq or 'OD' in seq:
+                        if cursor_pos > 0:
+                            cursor_pos -= 1
+                            sys.stdout.write('\033[D')
+                            sys.stdout.flush()
+                    elif '[C' in seq or 'OC' in seq:
+                        if cursor_pos < len(buf):
+                            cursor_pos += 1
+                            sys.stdout.write('\033[C')
+                            sys.stdout.flush()
+                    elif '[3~' in seq:
+                        if cursor_pos < len(buf):
+                            buf.pop(cursor_pos)
+                            tail = ''.join(buf[cursor_pos:]) + ' '
+                            sys.stdout.write(tail + '\b' * len(tail))
+                            sys.stdout.flush()
+                    continue
+                else:
+                    return None  # ESC presionado solo -> Cancelar
+
+            if first_b in (b'\r', b'\n'):
+                return ''.join(buf)
+
+            if first_b == b'\x03':
+                return None
+
+            if first_b in (b'\x7f', b'\x08'):
+                if cursor_pos > 0:
+                    cursor_pos -= 1
+                    buf.pop(cursor_pos)
+                    tail = ''.join(buf[cursor_pos:]) + ' '
+                    sys.stdout.write('\b' + tail + '\b' * len(tail))
+                    sys.stdout.flush()
+                continue
+
+            try:
+                ch = first_b.decode('utf-8', errors='ignore')
+                if ch and ord(ch) >= 32:
+                    buf.insert(cursor_pos, ch)
+                    cursor_pos += 1
+                    tail = ''.join(buf[cursor_pos - 1:])
+                    sys.stdout.write(tail + ('\b' * (len(tail) - 1) if len(tail) > 1 else ''))
+                    sys.stdout.flush()
+            except Exception:
+                pass
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+def launch_vscode_with_desc(target_path):
+    """Pide descripción si es la primera vez y lanza start-vscode. Retorna False si se canceló con ESC."""
+    target_path = normalize_path(target_path)
+    data = load_data()
+    bname = os.path.basename(target_path) or target_path
+    saved_desc = data.get("descriptions", {}).get(target_path, "")
+
+    if not saved_desc:
+        sys.stdout.write("\033[H\033[J")
+        cols = min(get_term_cols(), 72)
+        print(f"{BLUE}" + "═" * cols + f"{NC}")
+        print(f"{GREEN}  📝 NUEVO PROYECTO DETECTADO:{NC} {BOLD}{bname}{NC}")
+        print(f"{BLUE}" + "═" * cols + f"{NC}")
+        print(f"Ruta: {CYAN}{target_path}{NC}\n")
+        print("Escribe una breve descripción para recordar de qué trata este proyecto:")
+        print(f"{GRAY}(Ejemplo: 'Bot de trading', 'Tienda web con React', 'Scripts de trabajo'){NC}\n")
+        print(f" • {YELLOW}ENTER{NC} : Abrir en VS Code (sin descripción si lo dejas vacío).")
+        print(f" • {YELLOW}ESC{NC}   : Volver al explorador (cancelar apertura).\n")
+        
+        nueva_desc = prompt_text_with_esc(f"{BOLD}👉 Descripción:{NC} ")
+        
+        # Si canceló con ESC o Ctrl+C
+        if nueva_desc is None:
+            return False
+        
+        nueva_desc = nueva_desc.strip()
+        if nueva_desc:
+            add_to_history(target_path, nueva_desc)
+        else:
+            add_to_history(target_path)
+    else:
+        add_to_history(target_path)
+
+    print(f"\n{GREEN}[✓] Abriendo en VS Code:{NC} {CYAN}{target_path}{NC}\n")
+    os.execvp("start-vscode", ["start-vscode", target_path])
+    return True
+
+def edit_description_dialog(target_path, item_name):
+    """Diálogo interactivo para modificar la descripción de una carpeta o proyecto."""
+    data = load_data()
+    target_path = normalize_path(target_path)
+    current_desc = data.get("descriptions", {}).get(target_path, "")
+    
+    sys.stdout.write("\033[H\033[J")
+    cols = min(get_term_cols(), 72)
+    print(f"{BLUE}" + "═" * cols + f"{NC}")
+    print(f"{GREEN}  📝 EDITAR DESCRIPCIÓN:{NC} {BOLD}{item_name}{NC}")
+    print(f"{BLUE}" + "═" * cols + f"{NC}")
+    print(f"Ruta: {CYAN}{target_path}{NC}")
+    if current_desc:
+        print(f"Descripción actual: {YELLOW}\"{current_desc}\"{NC}")
+    else:
+        print(f"Descripción actual: {GRAY}(Sin descripción){NC}")
+    print(f"\nEscribe la nueva descripción:")
+    print(f" • {YELLOW}ENTER{NC} : Guardar nueva descripción.")
+    print(f" • {YELLOW}ESC{NC}   : Cancelar sin hacer cambios.\n")
+    
+    nueva = prompt_text_with_esc(f"{BOLD}👉 Nueva descripción:{NC} ")
+    if nueva is None:
+        return
+    
+    nueva = nueva.strip()
+    if nueva:
+        data["descriptions"][target_path] = nueva
+        save_data(data)
+
+def main():
+    if '--switch' in sys.argv or '-s' in sys.argv:
+        subprocess.run(["switch-identity"])
+        sys.exit(0)
+
+    # 1. Si se pasó una ruta directa como argumento, abrirla de inmediato
+    raw_args = [a for a in sys.argv[1:] if not a.startswith('-')]
+    if raw_args:
+        target = raw_args[0]
+        if os.path.exists(target):
+            launch_vscode_with_desc(os.path.abspath(target))
+            return
+        else:
+            print(f"{RED}[!] La ruta no existe: {target}{NC}")
+            sys.exit(1)
+
+    # 2. Comprobar permisos de almacenamiento
+    has_perm = check_storage_permission()
+    raw_cwd = os.getcwd()
+    current_dir = normalize_path(raw_cwd)
+
+    # Si se ejecuta desde el HOME de Termux (~$) sin argumentos
+    if current_dir == TERMUX_HOME or raw_cwd == TERMUX_HOME:
+        if not has_perm:
+            if request_storage_permission():
+                current_dir = STORAGE_ROOT
+            else:
+                current_dir = TERMUX_HOME
+        else:
+            current_dir = STORAGE_ROOT
+
+    active_tab = 0  # 0: Explorador, 1: Historial
+    page_size = 10
+    current_page = 0
+    status_msg = ""
+    search_filter = ""
+
+    # Determinar posición inicial del cursor (en la primera carpeta si existen)
+    initial_subdirs = get_subdirs(current_dir)
+    cursor_idx = 2 if initial_subdirs else 0
+
+    while True:
+        cols = min(get_term_cols(), 72)
+        div_line = f"{GRAY}" + "─" * cols + f"{NC}"
+        data = load_data()
+        descriptions = data.get("descriptions", {})
+        history = data.get("history", [])
+
+        # Preparar datos según pestaña activa
+        if active_tab == 0:
+            current_dir = normalize_path(current_dir)
+            all_subdirs = get_subdirs(current_dir)
+            
+            # Aplicar filtro de búsqueda si está activo
+            if search_filter:
+                subdirs = [d for d in all_subdirs if search_filter.lower() in d.lower()]
+            else:
+                subdirs = all_subdirs
+
+            total_dirs = len(subdirs)
+            total_pages = max(1, ((total_dirs - 1) // page_size) + 1)
+            if current_page >= total_pages:
+                current_page = total_pages - 1
+            if current_page < 0:
+                current_page = 0
+
+            start_idx = current_page * page_size
+            end_idx = min(start_idx + page_size, total_dirs)
+            visible_subdirs = subdirs[start_idx:end_idx]
+            items_on_screen = 2 + len(visible_subdirs)
+
+            if cursor_idx >= items_on_screen:
+                cursor_idx = items_on_screen - 1
+            if cursor_idx < 0:
+                cursor_idx = 0
+        else:
+            total_hist = len(history)
+            total_pages = max(1, ((total_hist - 1) // page_size) + 1)
+            if current_page >= total_pages:
+                current_page = total_pages - 1
+            if current_page < 0:
+                current_page = 0
+
+            start_idx = current_page * page_size
+            end_idx = min(start_idx + page_size, total_hist)
+            visible_hist = history[start_idx:end_idx]
+            items_on_screen = len(visible_hist)
+
+            if cursor_idx >= items_on_screen:
+                cursor_idx = max(0, items_on_screen - 1)
+            if cursor_idx < 0:
+                cursor_idx = 0
+
+        # Dibujar pantalla limpia
+        sys.stdout.write("\033[H\033[J")
+        print(f"{BLUE}╔" + "═" * (cols - 2) + f"╗{NC}")
+        active_file = os.path.expanduser("~/.config/termux-vscode/active_identity")
+        active_user = "Miguel (Líder)"
+        if os.path.exists(active_file):
+            try:
+                active_user = open(active_file).read().strip().split('_')[0]
+            except Exception:
+                pass
+        title_text = f"VS CODE PRO  •  👑 {active_user.upper()}"
+        print(f"{BLUE}║{WHITE}{BOLD} {title_text.center(cols - 4)} {BLUE}║{NC}")
+        print(f"{BLUE}╚" + "═" * (cols - 2) + f"╝{NC}")
+
+        # Pestañas de navegación interactiva
+        hist_badge = f" ({len(history)})" if history else ""
+        if active_tab == 0:
+            tab_exp = f"{HL_TAB} [ 📁 Explorador ] {NC}"
+            tab_his = f"{GRAY}   [ 🕒 Historial{hist_badge} ]   {NC}"
+        else:
+            tab_exp = f"{GRAY}   [ 📁 Explorador ]   {NC}"
+            tab_his = f"{HL_TAB} [ 🕒 Historial{hist_badge} ] {NC}"
+
+        print(f" {tab_exp}  {tab_his}")
+        print(div_line)
+
+        # ------------------ CONTENIDO PESTAÑA 0: EXPLORADOR ------------------
+        if active_tab == 0:
+            is_storage_root = (current_dir == STORAGE_ROOT)
+            print(f"{YELLOW}Ruta actual:{NC} {CYAN}{BOLD}{current_dir}{NC}")
+            if search_filter:
+                print(f" {YELLOW}🔍 Filtro activo:{NC} {BOLD}\"{search_filter}\"{NC} {GRAY}(coincidencias: {len(subdirs)}) • Pulsa [ / ] para limpiar{NC}")
+            print(div_line)
+
+            # Opción 0: Abrir en VS Code
+            if cursor_idx == 0:
+                line_0 = " > [ 0] 🚀 [ ABRIR ESTA CARPETA EN VS CODE ]".ljust(cols - 2)
+                print(f"{HL_GREEN} {line_0}{NC}")
+            else:
+                print(f"{GREEN}   [ 0] 🚀 [ ABRIR ESTA CARPETA EN VS CODE ]{NC}")
+            print(f"        {GRAY}└─ Inicia el editor VS Code en este directorio{NC}")
+
+            # Opción 1: Subir de nivel
+            if is_storage_root:
+                up_text = "⬆️  [..] Raíz del teléfono (Límite del almacenamiento)"
+                sub_text = "└─ Límite de carpetas alcanzado en Android"
+            else:
+                up_text = "⬆️  Subir un nivel (Volver atrás)"
+                sub_text = "└─ Regresa a la carpeta superior"
+
+            if cursor_idx == 1:
+                line_1 = f" > [..] {up_text}".ljust(cols - 2)
+                print(f"{HL_YELLOW} {line_1}{NC}")
+            else:
+                print(f"{YELLOW}   [..] {up_text}{NC}")
+            print(f"        {GRAY}{sub_text}{NC}")
+            print(div_line)
+
+            # Listado de subcarpetas (1 a 10)
+            if not visible_subdirs:
+                if search_filter:
+                    print(f"   {GRAY}(No se encontraron carpetas con: '{search_filter}'){NC}")
+                    print(f"   {CYAN}👉 Pulsa [/] o ESC para limpiar la búsqueda.{NC}")
+                else:
+                    print(f"   {GRAY}(No hay subcarpetas en este directorio){NC}")
+                    print(f"   {CYAN}👉 Pulsa [0] para abrir este proyecto en VS Code o [..] para volver.{NC}")
+            else:
+                name_w = 20
+                for idx, dname in enumerate(visible_subdirs):
+                    item_cursor = idx + 2
+                    is_sel = (cursor_idx == item_cursor)
+                    num = idx + 1
+                    
+                    full_p = os.path.join(current_dir, dname)
+                    desc = descriptions.get(full_p, "")
+                    is_git = os.path.isdir(os.path.join(full_p, '.git'))
+                    git_tag = "[git] " if is_git else ""
+                    
+                    display_name = dname if len(dname) <= name_w else (dname[:name_w - 3] + "...")
+                    padded_name = display_name.ljust(name_w)
+                    rem = cols - 12 - name_w - len(git_tag) - 3
+
+                    if is_sel:
+                        desc_text = f"│ {desc}" if desc else "│"
+                        raw_line = f" > [{num:2d}] 📁 {padded_name} {git_tag}{desc_text}".ljust(cols - 2)
+                        print(f"{HL_CYAN} {raw_line}{NC}")
+                    else:
+                        git_color_tag = f"{GREEN}[git]{NC} " if is_git else ""
+                        if desc:
+                            display_desc = desc if len(desc) <= rem else (desc[:rem - 3] + "...")
+                            desc_part = f"{GRAY}│{NC} {YELLOW}\"{display_desc}\"{NC}"
+                        else:
+                            desc_part = f"{GRAY}│ —{NC}"
+                        print(f"   [{num:2d}] 📁 {padded_name} {git_color_tag}{desc_part}")
+
+            print(div_line)
+
+            # Paginación con flechas explícitas
+            prev_s = "« [← / P] Anterior" if current_page > 0 else "                  "
+            next_s = "[→ / N] Siguiente »" if current_page < (total_pages - 1) else "                  "
+            rango_s = f"Carpetas {start_idx + 1}-{end_idx} de {total_dirs}" if total_dirs > 0 else "0 carpetas"
+            print(f" {CYAN}{prev_s}{NC}    {BOLD}Pág {current_page + 1}/{total_pages} ({rango_s}){NC}    {CYAN}{next_s}{NC}")
+            print(div_line)
+
+            # Guía explicativa sin conflictos
+            print(f"💡 {BOLD}Guía de navegación:{NC}")
+            print(f" • {YELLOW}Flechas ↑/↓ o W/S{NC}   : Mover cursor       • {YELLOW}ENTER{NC}          : Entrar o Abrir")
+            print(f" • {YELLOW}Flechas ←/→ o P/N{NC}   : Cambiar de página  • {YELLOW}ESC o Backspace{NC}: Subir un nivel")
+            print(f" • {YELLOW}[1-9]{NC}               : Salto numérico     • {YELLOW}[ / ]{NC}          : Buscar / Filtrar")
+            print(f" • {YELLOW}[E]{NC}                 : Poner descripción  • {YELLOW}TAB{NC}            : Ver Historial")
+            print(div_line)
+            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {BOLD}{WHITE}c{NC}{GRAY} Identidad  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+
+        # ------------------ CONTENIDO PESTAÑA 1: HISTORIAL ------------------
+        else:
+            print(f"{BOLD}Proyectos abiertos anteriormente en este dispositivo:{NC}")
+            print(div_line)
+
+            if not history:
+                print(f"   {GRAY}(No hay proyectos en el historial aún){NC}")
+                print(f"   {CYAN}👉 Se guardarán automáticamente cuando abras carpetas en VS Code.{NC}")
+                print(f"   {GRAY}Pulsa {BOLD}TAB{NC}{GRAY} para volver al Explorador de carpetas.{NC}")
+            else:
+                name_w = 20
+                for idx, item in enumerate(visible_hist):
+                    is_sel = (cursor_idx == idx)
+                    num = idx + 1
+                    p = item.get("path", "")
+                    name = item.get("name", os.path.basename(p))
+                    last_t = item.get("last_opened", "")
+                    desc = descriptions.get(p, "")
+                    
+                    display_name = name if len(name) <= name_w else (name[:name_w - 3] + "...")
+                    padded_name = display_name.ljust(name_w)
+                    rem = cols - 10 - name_w - 3
+
+                    if is_sel:
+                        desc_text = f"│ {desc}" if desc else "│"
+                        raw_line = f" > [{num:2d}] 📁 {padded_name} {desc_text}".ljust(cols - 2)
+                        print(f"{HL_CYAN} {raw_line}{NC}")
+                        short_p = p if len(p) <= cols - 12 else ("..." + p[-(cols - 15):])
+                        time_str = f" • Última vez: {last_t}" if last_t else ""
+                        print(f"        {GRAY}└─ {short_p}{time_str}{NC}")
+                    else:
+                        if desc:
+                            display_desc = desc if len(desc) <= rem else (desc[:rem - 3] + "...")
+                            desc_part = f"{GRAY}│{NC} {YELLOW}\"{display_desc}\"{NC}"
+                        else:
+                            desc_part = f"{GRAY}│ —{NC}"
+                        print(f"   [{num:2d}] 📁 {padded_name} {desc_part}")
+
+            print(div_line)
+
+            # Paginación Historial
+            prev_s = "« [← / P] Anterior" if current_page > 0 else "                  "
+            next_s = "[→ / N] Siguiente »" if current_page < (total_pages - 1) else "                  "
+            rango_s = f"Proyectos {start_idx + 1}-{end_idx} de {total_hist}" if total_hist > 0 else "0 proyectos"
+            print(f" {CYAN}{prev_s}{NC}    {BOLD}Pág {current_page + 1}/{total_pages} ({rango_s}){NC}    {CYAN}{next_s}{NC}")
+            print(div_line)
+
+            # Guía Historial
+            print(f"💡 {BOLD}Guía de Historial:{NC}")
+            print(f" • {YELLOW}Flechas ↑/↓ o W/S + ENTER{NC}: Abre el proyecto seleccionado en VS Code")
+            print(f" • {YELLOW}Flechas ←/→ o P/N{NC}        : Cambiar página de proyectos")
+            print(f" • {YELLOW}[1-{min(len(visible_hist), 10)}]{NC}              : Abre directo ese número")
+            print(f" • {YELLOW}[E]{NC}                       : Editar la descripción de este proyecto")
+            print(f" • {YELLOW}[D]{NC}                       : Eliminar este proyecto del historial")
+            print(f" • {YELLOW}TAB o ESC o [0]{NC}          : Volver al Explorador de carpetas")
+            print(f" • {YELLOW}[Q]{NC}                       : Salir sin abrir nada")
+            print(div_line)
+            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {BOLD}{WHITE}c{NC}{GRAY} Identidad  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+
+        if status_msg:
+            print(f"\n{YELLOW}⚠️  {status_msg}{NC}")
+            status_msg = ""
+
+        sys.stdout.flush()
+
+        # Captura de teclado robusta
+        raw_key = get_key()
+        action = classify_key(raw_key)
+
+        # Acciones Globales
+        if action == 'TAB':
+            active_tab = 1 - active_tab
+            current_page = 0
+            if active_tab == 0:
+                subdirs = get_subdirs(current_dir)
+                cursor_idx = 2 if subdirs else 0
+            else:
+                cursor_idx = 0
+            status_msg = ""
+            continue
+
+        if action == 'QUIT':
+            print(f"\n{YELLOW}[*] Cancelado. Saliendo sin abrir VS Code.{NC}\n")
+            sys.exit(0)
+
+        if action == 'SWITCH_IDENTITY':
+            subprocess.run(["switch-identity"])
+            status_msg = "Identidad actualizada."
+            continue
+
+        # ------------------ EVENTOS: EXPLORADOR ------------------
+        if active_tab == 0:
+            if action == 'UP':
+                cursor_idx -= 1
+                if cursor_idx < 0:
+                    if current_page > 0:
+                        current_page -= 1
+                        cursor_idx = items_on_screen - 1
+                    else:
+                        cursor_idx = 0
+
+            elif action == 'DOWN':
+                cursor_idx += 1
+                if cursor_idx >= items_on_screen:
+                    if current_page < total_pages - 1:
+                        current_page += 1
+                        cursor_idx = 2
+                    else:
+                        cursor_idx = items_on_screen - 1
+
+            elif action == 'BACK':
+                # Si hay un filtro de búsqueda activo, ESC lo limpia primero
+                if search_filter:
+                    search_filter = ""
+                    current_page = 0
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
+                    status_msg = "Filtro de búsqueda limpiado."
+                elif is_storage_root:
+                    status_msg = "Límite alcanzado: Raíz del teléfono (/storage/emulated/0)."
+                else:
+                    parent = os.path.dirname(os.path.abspath(current_dir))
+                    current_dir = normalize_path(parent)
+                    search_filter = ""
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
+                    current_page = 0
+
+            elif action == 'ENTER':
+                if cursor_idx == 0:
+                    if launch_vscode_with_desc(current_dir):
+                        return
+                    else:
+                        status_msg = "Apertura cancelada."
+                elif cursor_idx == 1:
+                    if is_storage_root:
+                        status_msg = "Límite alcanzado: No se puede subir más en Android."
+                    else:
+                        parent = os.path.dirname(os.path.abspath(current_dir))
+                        current_dir = normalize_path(parent)
+                        search_filter = ""
+                        subdirs_now = get_subdirs(current_dir)
+                        cursor_idx = 2 if subdirs_now else 0
+                        current_page = 0
+                else:
+                    folder_selected = visible_subdirs[cursor_idx - 2]
+                    current_dir = normalize_path(os.path.join(current_dir, folder_selected))
+                    search_filter = ""
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
+                    current_page = 0
+
+            # Flecha Derecha o N: Siguiente página de carpetas
+            elif action == 'NEXT':
+                if current_page < total_pages - 1:
+                    current_page += 1
+                    cursor_idx = 2
+                    status_msg = f"Página {current_page + 1} de {total_pages}"
+                else:
+                    status_msg = "Ya estás en la última página."
+
+            # Flecha Izquierda o P: Página anterior de carpetas
+            elif action == 'PREV':
+                if current_page > 0:
+                    current_page -= 1
+                    cursor_idx = 2
+                    status_msg = f"Página {current_page + 1} de {total_pages}"
+                else:
+                    status_msg = "Ya estás en la primera página."
+
+            elif action == 'SEARCH':
+                sys.stdout.write("\033[H\033[J")
+                cols = min(get_term_cols(), 72)
+                print(f"{BLUE}" + "═" * cols + f"{NC}")
+                print(f"{GREEN}  🔍 BUSCAR / FILTRAR CARPETAS{NC}")
+                print(f"{BLUE}" + "═" * cols + f"{NC}")
+                print(f"Ruta actual: {CYAN}{current_dir}{NC}\n")
+                if search_filter:
+                    print(f"Filtro actual: {YELLOW}\"{search_filter}\"{NC}")
+                print("Escribe el nombre de la carpeta a buscar:")
+                print(f" • {YELLOW}ENTER{NC} : Aplicar filtro (o ENTER vacío para quitarlo).")
+                print(f" • {YELLOW}ESC{NC}   : Cancelar y volver.\n")
+                q = prompt_text_with_esc(f"{BOLD}🔍 Buscar:{NC} ")
+                if q is not None:
+                    search_filter = q.strip()
+                    current_page = 0
+                    all_sub = get_subdirs(current_dir)
+                    matching = [d for d in all_sub if search_filter.lower() in d.lower()] if search_filter else all_sub
+                    cursor_idx = 2 if matching else 0
+                    if search_filter:
+                        status_msg = f"Filtro aplicado: '{search_filter}' ({len(matching)} carpetas)."
+                    else:
+                        status_msg = "Filtro eliminado (mostrando todas las carpetas)."
+
+            elif action == 'EDIT':
+                if cursor_idx >= 2:
+                    folder_selected = visible_subdirs[cursor_idx - 2]
+                    target_edit = os.path.join(current_dir, folder_selected)
+                    edit_description_dialog(target_edit, folder_selected)
+                elif cursor_idx == 0:
+                    edit_description_dialog(current_dir, os.path.basename(current_dir) or current_dir)
+
+            elif action.startswith('DIGIT_'):
+                val = int(action.split('_')[1])
+                if val == 0:
+                    if launch_vscode_with_desc(current_dir):
+                        return
+                    else:
+                        status_msg = "Apertura cancelada."
+                elif 1 <= val <= len(visible_subdirs):
+                    folder_selected = visible_subdirs[val - 1]
+                    current_dir = normalize_path(os.path.join(current_dir, folder_selected))
+                    search_filter = ""
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
+                    current_page = 0
+
+        # ------------------ EVENTOS: HISTORIAL ------------------
+        else:
+            if action == 'UP':
+                cursor_idx = max(0, cursor_idx - 1)
+
+            elif action == 'DOWN':
+                cursor_idx = min(len(visible_hist) - 1, cursor_idx + 1)
+
+            elif action == 'BACK':
+                active_tab = 0
+                subdirs_now = get_subdirs(current_dir)
+                cursor_idx = 2 if subdirs_now else 0
+                current_page = 0
+
+            elif action == 'ENTER':
+                if visible_hist:
+                    target = visible_hist[cursor_idx].get("path")
+                    if os.path.exists(target):
+                        if launch_vscode_with_desc(target):
+                            return
+                        else:
+                            status_msg = "Apertura cancelada."
+                    else:
+                        status_msg = f"La carpeta ya no existe: {target}"
+
+            elif action == 'NEXT':
+                if current_page < total_pages - 1:
+                    current_page += 1
+                    cursor_idx = 0
+                    status_msg = f"Página {current_page + 1} de {total_pages}"
+                else:
+                    status_msg = "Ya estás en la última página del historial."
+
+            elif action == 'PREV':
+                if current_page > 0:
+                    current_page -= 1
+                    cursor_idx = 0
+                    status_msg = f"Página {current_page + 1} de {total_pages}"
+                else:
+                    status_msg = "Ya estás en la primera página del historial."
+
+            elif action == 'EDIT':
+                if visible_hist:
+                    item = visible_hist[cursor_idx]
+                    edit_description_dialog(item.get("path"), item.get("name"))
+
+            elif action == 'DELETE':
+                if visible_hist:
+                    item = visible_hist[cursor_idx]
+                    p_del = item.get("path")
+                    name_del = item.get("name")
+                    sys.stdout.write("\033[H\033[J")
+                    print(f"{YELLOW}¿Eliminar '{name_del}' del historial? [s/N]: {NC}", end="")
+                    try:
+                        resp = input().strip().lower()
+                    except Exception:
+                        resp = "n"
+                    if resp in ('s', 'si', 'y', 'yes'):
+                        data = load_data()
+                        data["history"] = [h for h in data.get("history", []) if h.get("path") != p_del]
+                        save_data(data)
+                        status_msg = f"Proyecto '{name_del}' eliminado del historial."
+                        cursor_idx = max(0, cursor_idx - 1)
+
+            elif action.startswith('DIGIT_'):
+                val = int(action.split('_')[1])
+                if val == 0:
+                    active_tab = 0
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
+                    current_page = 0
+                elif 1 <= val <= len(visible_hist):
+                    target = visible_hist[val - 1].get("path")
+                    if os.path.exists(target):
+                        if launch_vscode_with_desc(target):
+                            return
+                        else:
+                            status_msg = "Apertura cancelada."
+                    else:
+                        status_msg = f"La carpeta ya no existe: {target}"
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nSaliendo...")
+        sys.exit(0)
