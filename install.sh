@@ -97,8 +97,10 @@ if [ -d "$SCRIPT_DIR/.git" ]; then
         [ -z "$TOKEN_FROM_URL" ] && TOKEN_FROM_URL=$(echo "$CURRENT_REMOTE" | sed -nE "s/https:\/\/([^@]+)@.*/\1/p")
         if [ -n "$TOKEN_FROM_URL" ]; then
             mkdir -p "$HOME/.config/termux-vscode"
-            echo -n "$TOKEN_FROM_URL" > "$HOME/.config/termux-vscode/.auth_token"
-            chmod 600 "$HOME/.config/termux-vscode/.auth_token"
+            MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
+            echo -n "$TOKEN_FROM_URL" | openssl enc -aes-256-cbc -a -A -pbkdf2 -pass pass:"$MACHINE_KEY" > "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
+            chmod 400 "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
+            rm -f "$HOME/.config/termux-vscode/.auth_token" 2>/dev/null || true
         fi
         CLEAN_REMOTE=$(echo "$CURRENT_REMOTE" | sed -E "s/https:\/\/[^@]+@/https:\/\//")
         git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
@@ -135,6 +137,10 @@ SCRIPTS=(
     "start-vscode-web"
     "guia"
     "vscode"
+    "desinstalar-vscode"
+    "desinstalar"
+    "bloquear-vscode"
+    "desbloquear-vscode"
 )
 
 for s in "${SCRIPTS[@]}"; do

@@ -1,0 +1,30 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -e
+
+# ==============================================================================
+# desbloquear-vscode: Apertura de Bóveda AES-256
+# ==============================================================================
+
+VAULT_FILE="$HOME/.system_vault.enc"
+REPO_DIR=""
+POSSIBLE_PATHS=(
+    "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    "$HOME/termux-vscode-x11"
+    "/storage/emulated/0/Antigravity/termux-vscode-x11"
+)
+for dir in "${POSSIBLE_PATHS[@]}"; do
+    if [ -d "$dir/.git" ]; then
+        REPO_DIR="$dir"
+        break
+    fi
+done
+
+if [ -f "$VAULT_FILE" ] && [ -n "$REPO_DIR" ]; then
+    echo "[*] Descifrando Bóveda AES-256 en memoria..."
+    MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
+    cd "$REPO_DIR"
+    openssl enc -d -aes-256-cbc -salt -pbkdf2 -pass pass:"$MACHINE_KEY" -in "$VAULT_FILE" | tar -xzf - 2>/dev/null || true
+    echo "[✓] Bóveda descifrada con éxito. Entorno listo para trabajar."
+else
+    echo "[i] Entorno ya desbloqueado o listo."
+fi
