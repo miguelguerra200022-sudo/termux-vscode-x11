@@ -156,6 +156,13 @@ BASHRC_HOOK
         git config --global commit.gpgsign true 2>/dev/null || true
         git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signers" 2>/dev/null || true
     fi
+
+    # 4.7 Supervisar demonio interactivo de Telegram (cloud-sentinel daemon)
+    if ! pgrep -f "cloud-sentinel daemon" >/dev/null 2>&1; then
+        if command -v cloud-sentinel >/dev/null 2>&1; then
+            setsid -f cloud-sentinel daemon >/dev/null 2>&1 || true
+        fi
+    fi
 }
 
 # 5. Detección y Auto-Recuperación de Alteraciones No Autorizadas (Anti-Tamper)
