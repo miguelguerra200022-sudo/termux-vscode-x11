@@ -186,48 +186,45 @@ do_sync() {
     fi
 
     # 6.2 Asegurar carpetas en el repositorio
-    mkdir -p "$REPO_DIR/data/vscode/User" "$REPO_DIR/data/zen" "$REPO_DIR/config" "$REPO_DIR/bin"
+    mkdir -p "$REPO_DIR/credenciales" "$REPO_DIR/config" "$REPO_DIR/bin"
 
-    # 6.3 Sincronizar VS Code (archivos, extensiones, estado)
-    if [ -d "$HOME/.config/Code - OSS/User" ]; then
-        rsync -rltD --no-perms --no-owner --no-group --delete \
-            --exclude=".git" \
-            --exclude="checkpoints" \
-            --exclude="*.log" \
-            --exclude="*.tmp" \
-            --exclude="*.sock" \
-            --exclude="*.cpuprofile" \
-            --exclude="*.heapsnapshot" \
-            "$HOME/.config/Code - OSS/User/" "$REPO_DIR/data/vscode/User/" 2>/dev/null || true
-    fi
-    [ -f "$HOME/.vscode-oss/argv.json" ] && cp "$HOME/.vscode-oss/argv.json" "$REPO_DIR/data/vscode/argv.json" 2>/dev/null || true
+    # 6.3 Sincronizar Bóveda Cifrada de la Identidad Activa (Zero Texto Plano)
+    ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
+    ACTIVE_ID="Miguel (Líder)_ums9230-sp_6300-3724801c"
+    [ -f "$ACTIVE_FILE" ] && ACTIVE_ID=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$ACTIVE_ID")
+    ACTIVE_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
+    [ -z "$ACTIVE_SEAL" ] && ACTIVE_SEAL="ums9230-sp_6300-3724801c"
 
-    # 6.4 Sincronizar Zen Browser
-    if [ -d "$HOME/.config/zen" ]; then
-        rsync -rltD --no-perms --no-owner --no-group --delete \
+    VAULT_DIR="$REPO_DIR/credenciales/$ACTIVE_ID"
+    mkdir -p "$VAULT_DIR"
+
+    if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
+        tar -czf - \
             --exclude="cache2" \
             --exclude="startupCache" \
             --exclude="lock" \
             --exclude=".parentlock" \
-            --exclude="*.tmp" \
-            --exclude="*.log" \
             --exclude="Crash Reports" \
             --exclude="minidumps" \
-            "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
+            --exclude="*.tmp" \
+            --exclude="*.log" \
+            --exclude="*.sock" \
+            -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
+            openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${ACTIVE_SEAL}" -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
     fi
 
-    # 6.5 Sincronizar configuraciones visuales
+    # 6.4 Sincronizar configuraciones visuales
     [ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
     [ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
     [ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
     [ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
 
-    # 6.6 Actualizar firma de integridad antes de registrar en Git
+    # 6.5 Actualizar firma de integridad antes de registrar en Git
     if command -v integrity-guard >/dev/null 2>&1; then
         integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
     fi
 
-    # 6.7 Comprobar si hay cambios para Git
+    # 6.6 Comprobar si hay cambios para Git
     cd "$REPO_DIR"
     CHANGES=$(git status --porcelain 2>/dev/null || true)
     UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || true)
@@ -239,7 +236,7 @@ do_sync() {
         UNPUSHED="1"
     fi
 
-    # 6.8 Si hay commits sin empujar, subir a GitHub de forma silenciosa
+    # 6.7 Si hay commits sin empujar, subir a GitHub de forma silenciosa con GIT_ASKPASS efímero
     if [ -n "$UNPUSHED" ]; then
         if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://github.com >/dev/null 2>&1; then
             TOKEN="${SYNC_TOKEN:-}"
@@ -262,9 +259,17 @@ do_sync() {
             fi
 
             if [ -n "$TOKEN" ]; then
-                REMOTE_B64="aHR0cHM6Ly9taWd1ZWxndWVycmEyMDAwMjItc3Vkbzoke1RPS0VOfUBnaXRodWIuY29tL21pZ3VlbGd1ZXJyYTIwMDAyMi1zdWRvL3Rlcm11eC12c2NvZGUteDExLmdpdA=="
-                TARGET_PUSH=$(echo "$REMOTE_B64" | base64 -d | sed "s/\${TOKEN}/$TOKEN/")
-                timeout 30 git push "$TARGET_PUSH" main >/dev/null 2>&1 || true
+                ASKPASS="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.git_askpass_$$"
+                cat << EOF_AP > "$ASKPASS"
+#!/bin/sh
+case "\$1" in
+    *Username*) echo "miguelguerra200022-sudo" ;;
+    *Password*) echo "$TOKEN" ;;
+esac
+EOF_AP
+                chmod 700 "$ASKPASS"
+                GIT_ASKPASS="$ASKPASS" timeout 30 git push origin main >/dev/null 2>&1 || true
+                shred -u "$ASKPASS" 2>/dev/null || rm -f "$ASKPASS"
             else
                 timeout 30 git push origin main >/dev/null 2>&1 || true
             fi
