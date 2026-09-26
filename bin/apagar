@@ -75,4 +75,4 @@ if command -v integrity-watchdog >/dev/null 2>&1; then
     fi
 fi
 
-echo -e "\033[1;32m[✓] Entorno apagado y sincronizado exitosamente.\033[0m"
+echo -e "\033[1;32m[✓] Entorno apagado exitosamente.\033[0m"
