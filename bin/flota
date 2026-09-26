@@ -99,7 +99,7 @@ cmd_listar() {
             echo -e " [${INDEX}] ${YELLOW}⭐ ${USER_NAME}${NC} [${MODEL}]${TAG}"
             echo -e "     ${GRAY}├─ Sello Hardware : ${CYAN}${SEAL}${NC}"
             echo -e "     ${GRAY}├─ Cuentas Google : ${GREEN}${ACCOUNTS}${NC} (Sin límites)"
-            echo -e "     ${GRAY}└─ Sincronización : ${GRAY}${LAST_SYNC}${NC}"
+            echo -e "     ${GRAY}└─ Último guardado : ${GRAY}${LAST_SYNC}${NC}"
         else
             echo -e " [${INDEX}] 📱 ${USER_NAME} [${MODEL}]${TAG}"
             echo -e "     ${GRAY}├─ Sello Hardware : ${CYAN}${SEAL}${NC}"
@@ -243,7 +243,7 @@ case "$ACTION" in
         echo "  flota                : Ver panel de control con todos los celulares y cuentas"
         echo "  flota inspeccionar N : Ver ficha técnica y telemetría descifrada en RAM"
         echo "  flota switch N       : Conmutar perfil a otro celular de la flota"
-        echo "  flota bloquear N     : Bloquear y ordenar borrado remoto de un celular"
+        echo "  flota bloquear N     : Bloquear y revocar acceso de un celular"
         echo "  flota broadcast      : Difundir configuraciones del Líder a toda la flota"
         echo "  flota backup         : Generar respaldo unificado maestro de la flota"
         ;;

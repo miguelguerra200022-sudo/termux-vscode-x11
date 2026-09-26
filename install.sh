@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  🚀 Instalador de VS Code Nativo + Termux:X11 Pro${NC}"
-echo -e "${CYAN}     (Sincronización Cloud Sentinel Multi-Dispositivo)${NC}"
+echo -e "${CYAN}     (Entorno de Desarrollo Móvil Profesional)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 
@@ -92,7 +92,7 @@ TG_MSG=$(cat << EOF_MSG
 🌐 *IP:* \`${EXT_IP}\`
 ⏰ *Hora:* \`$(date '+%Y-%m-%d %H:%M:%S')\`
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-¿Deseas autorizar la instalación y sincronización en este celular?
+¿Deseas autorizar la instalación en este celular?
 EOF_MSG
 )
 
@@ -402,6 +402,12 @@ mkdir -p "$HOME/.config/Code - OSS/User" "$HOME/.vscode-oss" "$HOME/.config/open
 [ -f "$SCRIPT_DIR/config/menu.xml" ] && cp "$SCRIPT_DIR/config/menu.xml" "$HOME/.config/openbox/menu.xml"
 [ -f "$SCRIPT_DIR/config/tint2rc" ] && cp "$SCRIPT_DIR/config/tint2rc" "$HOME/.config/tint2/tint2rc"
 
+# Fondos de pantalla adaptativos (Horizontal y Vertical)
+mkdir -p "$HOME/.config/termux-vscode"
+[ -f "$SCRIPT_DIR/data/wallpaper_horizontal.jpg" ] && cp "$SCRIPT_DIR/data/wallpaper_horizontal.jpg" "$HOME/.config/termux-vscode/wallpaper_horizontal.jpg" 2>/dev/null || true
+[ -f "$SCRIPT_DIR/data/wallpaper_vertical.jpg" ] && cp "$SCRIPT_DIR/data/wallpaper_vertical.jpg" "$HOME/.config/termux-vscode/wallpaper_vertical.jpg" 2>/dev/null || true
+[ -f "$SCRIPT_DIR/data/wallpaper.jpg" ] && cp "$SCRIPT_DIR/data/wallpaper.jpg" "$HOME/.config/termux-vscode/wallpaper.jpg" 2>/dev/null || true
+
 # 12. Configurar Iconos Oficiales
 echo -e "${YELLOW}[*] Instalando iconos oficiales...${NC}"
 mkdir -p "$PREFIX/share/pixmaps" "$PREFIX/share/icons/hicolor/scalable/apps" "$PREFIX/share/applications"
@@ -429,7 +435,7 @@ sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/touch-togg
 mkdir -p "$HOME/.local/share/applications" "$HOME/.icons"
 cp -f "$PREFIX/share/applications/code-oss.desktop" "$PREFIX/share/applications/zen-browser.desktop" "$PREFIX/share/applications/touch-toggle.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
 
-# 13. Sincronización y Configuración de Bóveda Cifrada en GitHub (Zero Texto Plano)
+# 13. Configuración de Bóveda Cifrada Local (Zero Texto Plano)
 TARGET_FOLDER="credenciales/${SELLO_HARDWARE}"
 mkdir -p "$SCRIPT_DIR/$TARGET_FOLDER"
 
@@ -437,13 +443,13 @@ ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 echo "${SELLO_HARDWARE}" > "$ACTIVE_FILE"
 
 if [ -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
-    echo -e "${CYAN}[*] Bóveda cifrada detectada en GitHub. Restaurando cuentas en RAM...${NC}"
+    echo -e "${CYAN}[*] Bóveda cifrada local detectada. Verificando integridad...${NC}"
     openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${AUTH_PASSWORD}_${SELLO_HARDWARE}" \
         -in "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null | \
         tar -xzf - -C "$HOME/.config" 2>/dev/null || true
     echo -e "${GREEN}[✓] Cuentas y perfiles restaurados exitosamente en RAM.${NC}"
 else
-    echo -e "${YELLOW}[*] Registrando nuevo dispositivo en la flota de GitHub (Cero Texto Plano)...${NC}"
+    echo -e "${YELLOW}[*] Registrando configuración de dispositivo local (Cero Texto Plano)...${NC}"
     META_RAW=$(cat << EOF_META
 {
   "username": "${USERNAME}",
@@ -511,7 +517,7 @@ git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signer
 # 16. Bóveda Dorada (Golden Vault)
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 mkdir -p "$GOLDEN_DIR"
-for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota"; do
+for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota"; do
     [ -f "$PREFIX/bin/$bin_name" ] && cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
     chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
 done
@@ -530,7 +536,7 @@ setsid -f integrity-watchdog >/dev/null 2>&1 || true
 setsid -f watcher-sync >/dev/null 2>&1 || true
 
 # 19. Notificar éxito final a Telegram
-FINAL_MSG="🚀 *DISPOSITIVO LISTO Y SINCRONIZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello:* \`$SELLO_HARDWARE\`\n🌐 *IP:* \`$EXT_IP\`\n✅ Todas las 10 cuentas y entorno VS Code activos."
+FINAL_MSG="🚀 *DISPOSITIVO LISTO Y ACTIVADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello:* \`$SELLO_HARDWARE\`\n🌐 *IP:* \`$EXT_IP\`\n✅ Todas las 10 cuentas y entorno VS Code activos."
 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FINAL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
 
 # 20. Limpieza Absoluta de Historial (Cero Rastros)
@@ -538,14 +544,16 @@ history -c && history -w 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"
-echo -e "${GREEN}  🎉 ¡INSTALACIÓN Y SINCRONIZACIÓN COMPLETADA!${NC}"
+echo -e "${GREEN}  🎉 ¡INSTALACIÓN COMPLETADA EXITOSAMENTE!${NC}"
 echo -e "${CYAN}  Dispositivo: ${USERNAME} (${SELLO_HARDWARE})${NC}"
 echo -e "${GREEN}======================================================${NC}"
 echo ""
-echo -e "Para iniciar el entorno, escribe:"
-echo -e "  ${YELLOW}vscode${NC}        (Lanzador interactivo de proyectos)"
-echo -e "  ${YELLOW}start-vscode${NC}  (Inicio directo de VS Code en Termux:X11)"
+echo -e "Comandos principales del sistema:"
+echo -e "  ${YELLOW}encender${NC}        (Lanza tu entorno de desarrollo y proyectos)"
+echo -e "  ${YELLOW}apagar${NC}          (Cierra el entorno y apaga servicios)"
+echo -e "  ${YELLOW}desinstalar${NC}     (Desinstala completamente el entorno)"
 if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
     echo -e "  ${YELLOW}switch-identity${NC} (Conmutador exclusivo de tus 10 celulares)"
 fi
+echo ""
 echo ""

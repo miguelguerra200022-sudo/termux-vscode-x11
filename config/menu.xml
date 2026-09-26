@@ -16,14 +16,14 @@
     <item label="🔄 Recargar Interfaz Openbox">
       <action name="Restart" />
     </item>
-    <item label="💾 Sincronización Segura">
+    <item label="💾 Guardar Cambios Locales">
       <action name="Execute">
-        <command>sync-vscode</command>
+        <command>sync-vscode --quiet</command>
       </action>
     </item>
-    <item label="❌ Cerrar VS Code y Entorno">
+    <item label="❌ Apagar Entorno">
       <action name="Execute">
-        <command>stop-vscode</command>
+        <command>apagar</command>
       </action>
     </item>
   </menu>

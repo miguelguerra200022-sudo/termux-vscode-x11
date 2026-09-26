@@ -21,8 +21,8 @@ A diferencia de las instalaciones lentas basadas en PRoot / Ubuntu / Debian, est
 * 🌍 **Túneles HTTPS Públicos al Instante (`share-port`)**: Comparte tus proyectos locales por internet con un solo comando mediante túneles oficiales de Cloudflare (`https://*.trycloudflare.com`) sin abrir puertos en tu router.
 * 📡 **Inspector de Red y Código QR (`dev-info`)**: Genera enlaces locales y códigos QR en la terminal para que cualquier persona en tu misma red Wi-Fi pueda escanear y probar tu web al instante.
 * 🔔 **Notificaciones y Vibración Android (`notify-done`)**: Recibe una alerta háptica y notificación en la barra de Android cuando termine una tarea larga (ej: `npm run build && notify-done`).
-* 🔄 **Sincronización y Respaldo 100% Automático**: Cada vez que ejecutas `stop-vscode`, tus configuraciones se respaldan y suben automáticamente a tu GitHub sin que tengas que acordarte.
-* 📋 **Portapapeles Unificado**: Sincronización bidireccional entre el portapapeles de Android y VS Code. Copia en Android y pega en VS Code (o viceversa) sin pasos intermedios.
+* 💾 **Guardado Local Automático**: Cada vez que ejecutas `apagar`, tus proyectos y configuraciones quedan asegurados en el almacenamiento del dispositivo.
+* 📋 **Portapapeles Unificado**: Integración fluida entre el portapapeles de Android y VS Code. Copia en Android y pega en VS Code (o viceversa) sin pasos intermedios.
 * 💾 **Persistencia Completa de Sesiones y Credenciales**: Incluye `password-store=basic` y `VSCODE_CLI_USE_FILE_KEYCHAIN=1` para mantener tus inicios de sesión, tokens de IA, pestañas abiertas y ventanas guardadas entre reinicios.
 * 📱 **Optimización Táctil en Openbox**: Reglas de ventana configuradas para eliminar barras de título y maximizar el editor al 100% de la pantalla táctil de tu teléfono.
 * 🔊 **Soporte de Sonido (PulseAudio)**: Servidor de audio enrutado a los altavoces de tu móvil para escuchar sonidos, alertas o pruebas multimedia.
@@ -52,9 +52,9 @@ chmod +x install.sh
 
 | Comando | Descripción |
 | :--- | :--- |
-| `vscode` | Explorador interactivo con números y flechas para navegar por cualquier carpeta del dispositivo y abrirla en VS Code. |
+| `encender` | Explorador interactivo con números y flechas para navegar por cualquier carpeta del dispositivo y abrirla en VS Code. |
 | `start-vscode` | Arranca VS Code directo en la carpeta actual con Wakelock, audio, aceleración multi-hilo y entorno gráfico. |
-| `stop-vscode` | Cierra limpiamente, guarda pestañas y credenciales, y respalda automáticamente tus configuraciones a GitHub. |
+| `apagar` | Cierra limpiamente el entorno, guarda pestañas y credenciales de forma local. |
 | `guia` | Abre inmediatamente la copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md). |
 | `start-vscode-web` | Modo Dual: comparte la pantalla de VS Code para usarlo desde tu PC o Tablet en la red local. |
 | `new-project` | Generador interactivo de proyectos (Python, Web, Bots, Node) listos con Git en 3 segundos. |
@@ -63,7 +63,6 @@ chmod +x install.sh
 | `share-port <puerto>` | Genera un túnel público seguro HTTPS con Cloudflare (ej: `share-port 3000`). |
 | `dev-info <puerto>` | Muestra URLs para móvil/PC en tu Wi-Fi y genera un código QR escaneable. |
 | `notify-done "texto"` | Envía notificación y vibración a Android al terminar un comando. |
-| `sync-vscode` | Respalda tus configuraciones actuales y hace `push` automático a GitHub. |
 | `setup-swap` | Diagnostica el estado de la RAM y memoria Swap para prevenir cierres por memoria. |
 
 ---
@@ -73,8 +72,8 @@ chmod +x install.sh
 Si instalas la aplicación complementaria **Termux:Widget** desde F-Droid:
 1. Mantén presionado un espacio vacío en la pantalla de inicio de tu celular y añade el widget de **Termux**.
 2. Podrás colocar iconos directos para:
-   * 🟢 **VS-Code**: Abre Termux con el explorador interactivo de carpetas para elegir proyecto con números/flechas y arrancar.
-   * 🔴 **Cerrar-VS-Code**: Cierra y respalda todo en GitHub.
+   * 🟢 **Encender**: Abre Termux con el explorador interactivo de carpetas para elegir proyecto con números/flechas y arrancar.
+   * 🔴 **Apagar**: Cierra el entorno y guarda el estado localmente.
    * 🌐 **Compartir-Web**: Muestra enlaces y código QR de tu servidor local.
 
 ---

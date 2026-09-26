@@ -29,7 +29,7 @@ pulseaudio --kill 2>/dev/null || true
 # 5. Limpiar sockets temporales
 rm -rf "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.X11-unix/X*" /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null || true
 
-# 6. Sincronización, sellado en bóveda y sanitización silenciosa en segundo plano
+# 6. Guardado de estado local y aseguramiento silencioso en segundo plano
 (
     if command -v sync-vscode >/dev/null 2>&1; then
         sync-vscode --quiet >/dev/null 2>&1 || true

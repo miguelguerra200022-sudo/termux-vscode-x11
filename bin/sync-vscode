@@ -121,6 +121,8 @@ fi
 
 # 6. Sincronizar scripts
 SCRIPTS=(
+    "encender"
+    "apagar"
     "start-vscode"
     "stop-vscode"
     "share-port"

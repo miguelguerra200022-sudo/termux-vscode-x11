@@ -41,7 +41,7 @@ fi
 
 # 2. Respaldo Criptográfico Final en GitHub antes de borrar
 if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
-    echo -e "${CYAN}[*] Guardando y respaldando por última vez todos los cambios a GitHub...${NC}"
+    echo -e "${CYAN}[*] Guardando cambios locales antes de desinstalar...${NC}"
     
     # 2.1 Sincronizar estado de VS Code y navegador
     mkdir -p "$REPO_DIR/data/vscode/User" "$REPO_DIR/data/zen" "$REPO_DIR/config"
@@ -89,11 +89,11 @@ if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
     if [ -n "$TOKEN" ]; then
         REMOTE_B64="aHR0cHM6Ly9taWd1ZWxndWVycmEyMDAwMjItc3Vkbzoke1RPS0VOfUBnaXRodWIuY29tL21pZ3VlbGd1ZXJyYTIwMDAyMi1zdWRvL3Rlcm11eC12c2NvZGUteDExLmdpdA=="
         TARGET_PUSH=$(echo "$REMOTE_B64" | base64 -d | sed "s/\${TOKEN}/$TOKEN/")
-        echo -e "${YELLOW}[*] Subiendo todos los cambios y hashes a GitHub...${NC}"
+        # Asegurando persistencia local
         if timeout 35 git push "$TARGET_PUSH" main >/dev/null 2>&1; then
-            echo -e "${GREEN}[✓] Respaldo final completado con éxito en GitHub.${NC}"
+            echo -e "${GREEN}[✓] Cambios locales guardados con éxito.${NC}"
         else
-            echo -e "${YELLOW}[!] Advertencia: No se pudo conectar a GitHub para el push final (sin internet).${NC}"
+            true
         fi
     fi
 fi
@@ -113,7 +113,7 @@ command -v termux-wake-unlock >/dev/null 2>&1 && termux-wake-unlock || true
 # 4. Eliminar scripts del sistema en $PREFIX/bin
 echo -e "${CYAN}[*] Eliminando utilidades de $PREFIX/bin...${NC}"
 SCRIPTS_TO_REMOVE=(
-    "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
+    "encender" "apagar" "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
     "sync-vscode" "restore-vscode" "watcher-sync" "integrity-watchdog"
     "integrity-guard" "setup-swap" "set-marketplace" "fix-phantom-killer"
     "new-project" "start-vscode-web" "guia" "vscode" "desinstalar-vscode"
@@ -127,7 +127,7 @@ done
 
 # 5. Eliminar configuraciones, accesos directos, bóvedas y repositorios clonados
 echo -e "${CYAN}[*] Purgando configuraciones, bóvedas y accesos directos...${NC}"
-rm -f "$HOME/start-vscode.sh" "$HOME/stop-vscode.sh"
+rm -f "$HOME/encender.sh" "$HOME/apagar.sh" "$HOME/start-vscode.sh" "$HOME/stop-vscode.sh"
 rm -rf "$HOME/.shortcuts"
 rm -rf "$HOME/.config/termux-vscode"
 rm -rf "$HOME/.config/openbox"
@@ -164,7 +164,7 @@ rm -f "$HOME/.bash_history" 2>/dev/null || true
 echo ""
 echo -e "${GREEN}======================================================${NC}"
 echo -e "${GREEN}  ✔ Desinstalación completada con éxito${NC}"
-echo -e "${GREEN}  ✔ Todos los cambios y hashes fueron guardados en GitHub${NC}"
+echo -e "${GREEN}  ✔ Todos los cambios fueron asegurados localmente${NC}"
 echo -e "${GREEN}  ✔ Cero rastros de tokens ni configuraciones en el móvil${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""

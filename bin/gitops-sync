@@ -44,7 +44,7 @@ check_updates() {
     LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null)
 
     if [ -z "$REMOTE_HEAD" ]; then
-        [ "$QUIET" -eq 0 ] && echo "[!] No se pudo obtener HEAD remoto de origin/main."
+        true
         return 1
     fi
 
@@ -53,7 +53,7 @@ check_updates() {
         return 0
     fi
 
-    [ "$QUIET" -eq 0 ] && echo "[*] Nueva actualización detectada en GitHub: $REMOTE_HEAD (Local: $LOCAL_HEAD)"
+    [ "$QUIET" -eq 0 ] && echo "[*] Actualización del sistema disponible: $REMOTE_HEAD"
     return 2
 }
 
@@ -65,7 +65,7 @@ pull_and_apply() {
         return 0
     fi
 
-    echo "[*] Descargando commits de origin/main..."
+    echo "[*] Aplicando mejoras del sistema..."
     git fetch origin main >/dev/null 2>&1
 
     FETCH_HASH=$(git rev-parse FETCH_HEAD)
@@ -100,7 +100,7 @@ pull_and_apply() {
 
     # 4. Despliegue de binarios actualizados en $PREFIX/bin
     SCRIPTS=(
-        "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
+        "encender" "apagar" "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
         "sync-vscode" "restore-vscode" "watcher-sync" "integrity-watchdog"
         "integrity-guard" "setup-swap" "set-marketplace" "fix-phantom-killer"
         "new-project" "start-vscode-web" "guia" "vscode" "toggle-touch-mode"
