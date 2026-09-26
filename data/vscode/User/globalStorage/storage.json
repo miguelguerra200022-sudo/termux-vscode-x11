@@ -6,20 +6,17 @@
         "workspaces": [],
         "folders": [
             {
-                "folderUri": "file:///storage/emulated/0/Antigravity"
+                "folderUri": "file:///data/data/com.termux/files/home"
             }
         ],
-        "emptyWindows": [
-            {
-                "backupFolder": "1790394330477"
-            }
-        ]
+        "emptyWindows": []
     },
     "windowControlHeight": 35,
     "profileAssociations": {
         "workspaces": {
             "file:///storage/emulated/0/Antigravity/IdeasMillonarias": "__default__profile__",
-            "file:///storage/emulated/0/Antigravity": "__default__profile__"
+            "file:///storage/emulated/0/Antigravity": "__default__profile__",
+            "file:///data/data/com.termux/files/home": "__default__profile__"
         },
         "emptyWindows": {}
     },
@@ -51,8 +48,8 @@
             "editorPartMinWidth": 220,
             "titleBarHeight": 35,
             "activityBarWidth": 48,
-            "sideBarWidth": 0,
-            "auxiliaryBarWidth": 0,
+            "sideBarWidth": 180,
+            "auxiliaryBarWidth": 180,
             "statusBarHeight": 22,
             "windowBorder": false,
             "modernUI": false
@@ -60,8 +57,8 @@
     },
     "windowsState": {
         "lastActiveWindow": {
-            "folder": "file:///storage/emulated/0/Antigravity",
-            "backupPath": "/data/data/com.termux/files/home/.config/Code - OSS/Backups/de0fdc20470c6a3076a4c4782295365c",
+            "folder": "file:///data/data/com.termux/files/home",
+            "backupPath": "/data/data/com.termux/files/home/.config/Code - OSS/Backups/9e938ebcb8f917a9a64bdab53f8bbee6",
             "uiState": {
                 "mode": 0,
                 "x": 328,
@@ -74,7 +71,7 @@
     },
     "windowSplashWorkspaceOverride": {
         "layoutInfo": {
-            "sideBarWidth": 372,
+            "sideBarWidth": 180,
             "auxiliaryBarWidth": 180,
             "workspaces": {
                 "9f27a2cbc28b43acaa15f77d4c838de9": {
@@ -88,6 +85,10 @@
                 "f6c923d0222edd678f4737f253e6346d": {
                     "sideBarVisible": false,
                     "auxiliaryBarVisible": false
+                },
+                "b53d9585c855ff8fd50655134a43448d": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
                 }
             }
         }
