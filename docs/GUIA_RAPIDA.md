@@ -21,7 +21,7 @@ Bienvenido a tu entorno de desarrollo nativo. Esta guía se genera automáticame
 
 | Comando | Para qué sirve |
 | :--- | :--- |
-| **`vscode`** | Abre el explorador interactivo con números y flechas para navegar por cualquier carpeta del dispositivo y abrirla en VS Code. |
+| **`vscode`** | Explorador interactivo con pestañas (`Explorador` e `Historial`), navegación con flechas `↑/↓`, paginación estricta (10 por página), descripciones de proyectos y detección automática de permisos y raíz de almacenamiento de Android. |
 | **`start-vscode`** | Arranca directo en la carpeta actual con el entorno gráfico, escudo anti-cierres (Wakelock), aceleración multi-hilo y tema OLED. |
 | **`stop-vscode`** | Cierra de forma limpia, guarda tus pestañas y sesiones, y **respalda automáticamente tus configuraciones a GitHub**. |
 | **`guia`** | Abre inmediatamente la copia maestra de esta guía en VS Code. |

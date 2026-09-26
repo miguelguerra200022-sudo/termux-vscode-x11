@@ -26,10 +26,17 @@ if [ ! -d "/data/data/com.termux" ]; then
 fi
 
 # 2. Permisos de almacenamiento en Android si no están concedidos
-if [ ! -d "/storage/emulated/0/Download" ]; then
+if [ ! -d "/storage/emulated/0" ] || ! ls "/storage/emulated/0" >/dev/null 2>&1; then
     echo -e "${YELLOW}[*] Solicitando permisos de almacenamiento a Android...${NC}"
+    echo -e "${CYAN}[i] Pulsa 'PERMITIR' en la ventana emergente de tu pantalla para acceder a tus archivos.${NC}"
     termux-setup-storage || true
-    sleep 2
+    for i in {1..15}; do
+        if ls "/storage/emulated/0" >/dev/null 2>&1; then
+            echo -e "${GREEN}[✓] Permiso de almacenamiento confirmado.${NC}"
+            break
+        fi
+        sleep 1
+    done
 fi
 
 # 3. Actualizar repositorios e instalar las versiones más recientes de todo
@@ -164,6 +171,8 @@ if [ ! -f "$PREFIX/share/fonts/TTF/FiraCode-Regular.ttf" ]; then
     cp "$FONT_TMP/ttf/"*.ttf "$PREFIX/share/fonts/TTF/" 2>/dev/null && \
     cp "$FONT_TMP/ttf/FiraCode-Regular.ttf" "$HOME/.termux/font.ttf" 2>/dev/null || true
     rm -rf "$FONT_TMP"
+fi
+
 # 14. Instalar copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md)
 echo -e "${YELLOW}[*] Instalando copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md)...${NC}"
 mkdir -p "$PREFIX/share/termux-vscode-x11"
