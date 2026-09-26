@@ -8,7 +8,7 @@
     "editor.fontSize": 14,
     "terminal.integrated.fontFamily": "'Fira Code', monospace",
     "terminal.integrated.fontSize": 13,
-    "workbench.colorTheme": "Default Dark Modern",
+    "workbench.colorTheme": "Dark Modern",
     "workbench.colorCustomizations": {
         "editor.background": "#000000",
         "sideBar.background": "#000000",
