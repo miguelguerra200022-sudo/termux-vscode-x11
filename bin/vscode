@@ -195,6 +195,9 @@ def classify_key(k):
     # Volver / Subir nivel: ESC o Backspace (o letra A)
     if k in ('\x7f', '\b', '\x1b', 'a', 'A'):
         return 'BACK'
+    # Conmutar Identidad Multi-dispositivo (Líder)
+    if k in ('c', 'C', 'i', 'I'):
+        return 'SWITCH_IDENTITY'
     # Búsqueda / Filtro rápido por nombre
     if k in ('/', 'f', 'F'):
         return 'SEARCH'
@@ -354,6 +357,10 @@ def edit_description_dialog(target_path, item_name):
         save_data(data)
 
 def main():
+    if '--switch' in sys.argv or '-s' in sys.argv:
+        subprocess.run(["switch-identity"])
+        sys.exit(0)
+
     # 1. Si se pasó una ruta directa como argumento, abrirla de inmediato
     raw_args = [a for a in sys.argv[1:] if not a.startswith('-')]
     if raw_args:

@@ -4,35 +4,47 @@
 # start-vscode: Lanzador ultrarrápido con Anti-Cierres y Optimización Móvil
 # ==============================================================================
 
-# 0. Apertura automática y transparente de Bóveda AES-256 en memoria (Cero Contraseñas)
-VAULT_FILE="$HOME/.system_vault.enc"
-if [ -f "$VAULT_FILE" ]; then
-    MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
-    REPO_DIR=""
-    CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
-    [ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
-    if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-        REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
-    fi
-    if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-        for root in "$HOME" "${STORAGE_ROOT:-/storage/emulated/0}" "/sdcard" "/var/mobile"; do
-            [ -d "$root" ] || continue
-            found=$(find "$root" -maxdepth 4 -type d -name "termux-vscode-x11" 2>/dev/null | head -n 1)
-            if [ -n "$found" ] && [ -d "$found/.git" ]; then
-                REPO_DIR="$found"
-                mkdir -p "$HOME/.config/termux-vscode"
-                echo "$REPO_DIR" > "$CONFIG_FILE" 2>/dev/null || true
-                break
-            fi
-        done
-    fi
-    if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
-        cd "$REPO_DIR"
-        openssl enc -d -aes-256-cbc -salt -pbkdf2 -pass pass:"$MACHINE_KEY" -in "$VAULT_FILE" 2>/dev/null | tar -xzf - 2>/dev/null || true
+# 0. Conmutador de Identidad si se solicita explícitamente
+if [ "$1" = "--switch" ] || [ "$1" = "-s" ]; then
+    shift
+    if command -v switch-identity >/dev/null 2>&1; then
+        switch-identity
     fi
 fi
 
-# 0.1 Auto-recuperación silenciosa en segundo plano por si hubo un cierre forzado previo
+# 0.1 Cargar y verificar bóveda cifrada en memoria (Cero Contraseñas en disco)
+ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
+LEADER_SEAL="ums9230-sp_6300-3724801c"
+LOCAL_SEAL=""
+if command -v cloud-sentinel >/dev/null 2>&1; then
+    LOCAL_SEAL=$(cloud-sentinel seal 2>/dev/null || true)
+fi
+if [ -z "$LOCAL_SEAL" ] && [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ]; then
+    LOCAL_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null || true)
+fi
+[ -z "$LOCAL_SEAL" ] && LOCAL_SEAL="$LEADER_SEAL"
+
+ACTIVE_ID="Miguel (Líder)_ums9230-sp_6300-3724801c"
+[ -f "$ACTIVE_FILE" ] && ACTIVE_ID=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$ACTIVE_ID")
+
+REPO_DIR=""
+CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+fi
+
+VAULT_ENC="$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc"
+if [ ! -d "$HOME/.config/Code - OSS/User" ] || [ ! -d "$HOME/.config/zen" ]; then
+    if [ -f "$VAULT_ENC" ]; then
+        echo "[*] Restaurando credenciales y cuentas en RAM para: $ACTIVE_ID..."
+        EXTRACTED_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
+        openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${EXTRACTED_SEAL}" -in "$VAULT_ENC" 2>/dev/null | \
+            tar -xzf - -C "$HOME/.config" 2>/dev/null || true
+    fi
+fi
+
+# 0.2 Auto-recuperación silenciosa en segundo plano por si hubo un cierre forzado previo
 if command -v sync-vscode >/dev/null 2>&1; then
     ( sync-vscode --quiet >/dev/null 2>&1 & )
 fi
@@ -141,7 +153,7 @@ if [ -n "$DISP_W" ]; then
     fi
 fi
 
-for sfile in "$HOME/.config/Code - OSS/User/settings.json" "${REPO_DIR:-$PWD}/config/settings.json" "${REPO_DIR:-$PWD}/data/vscode/User/settings.json"; do
+for sfile in "$HOME/.config/Code - OSS/User/settings.json" "${REPO_DIR:-$PWD}/config/settings.json"; do
     if [ -f "$sfile" ]; then
         sed -i -E "s/\"window.zoomLevel\": [0-9.]+/\"window.zoomLevel\": $ZOOM_LEVEL/" "$sfile" 2>/dev/null || true
     fi
@@ -168,7 +180,8 @@ if [ -f "$MASTER_GUIDE" ]; then
 fi
 
 # 11. Iniciar VS Code con aceleración de red real y rendimiento optimizado
-echo "[+] Lanzando VS Code con sesión persistente..."
+USER_NAME_DISPLAY=$(echo "$ACTIVE_ID" | awk -F'_' '{print $1}')
+echo -e "[+] Lanzando VS Code [Perfil: ${USER_NAME_DISPLAY}]..."
 shift || true
 ELECTRON_FLAGS="--no-sandbox --disable-gpu --password-store=basic --enable-features=NetworkServiceInProcess,ParallelDownloading --disable-renderer-backgrounding --disable-background-timer-throttling --disable-backgrounding-occluded-windows --js-flags=--max-old-space-size=2048"
 
