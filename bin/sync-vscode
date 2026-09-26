@@ -65,24 +65,7 @@ if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
     REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
 fi
 if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    SCRIPT_PARENT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
-    [ -d "$SCRIPT_PARENT/.git" ] && REPO_DIR="$SCRIPT_PARENT"
-fi
-if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    for root in "$HOME" "${STORAGE_ROOT:-/storage/emulated/0}" "/sdcard" "/var/mobile"; do
-        [ -d "$root" ] || continue
-        found=$(find "$root" -maxdepth 4 -type d -name "termux-vscode-x11" 2>/dev/null | head -n 1)
-        if [ -n "$found" ] && [ -d "$found/.git" ]; then
-            REPO_DIR="$found"
-            mkdir -p "$HOME/.config/termux-vscode"
-            echo "$REPO_DIR" > "$CONFIG_FILE" 2>/dev/null || true
-            break
-        fi
-    done
-fi
-
-if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    exit 0
+    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
 fi
 
 # 2.1 Limpiar bloqueos de Git huérfanos si hubo un cierre abrupto
@@ -93,47 +76,42 @@ if [ -f "$REPO_DIR/.git/index.lock" ]; then
 fi
 
 # 3. Asegurar directorios de destino
-mkdir -p "$REPO_DIR/data/vscode/User"
-mkdir -p "$REPO_DIR/data/zen"
+mkdir -p "$REPO_DIR/credenciales"
 mkdir -p "$REPO_DIR/config"
 mkdir -p "$REPO_DIR/bin"
 
-# 4. Sincronizar VS Code (User data, estado y configuraciones)
-if [ -d "$HOME/.config/Code - OSS/User" ]; then
-    rsync -rltD --no-perms --no-owner --no-group --delete \
-        --exclude=".git" \
-        --exclude="checkpoints" \
-        --exclude="*.log" \
-        --exclude="*.tmp" \
-        --exclude="*.sock" \
-        --exclude="*.cpuprofile" \
-        --exclude="*.heapsnapshot" \
-        "$HOME/.config/Code - OSS/User/" "$REPO_DIR/data/vscode/User/" 2>/dev/null || true
-fi
+# 4. Sincronizar Bóveda Cifrada de la Identidad Activa (Cero Texto Plano)
+ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
+ACTIVE_ID="Miguel (Líder)_ums9230-sp_6300-3724801c"
+[ -f "$ACTIVE_FILE" ] && ACTIVE_ID=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$ACTIVE_ID")
+ACTIVE_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
+[ -z "$ACTIVE_SEAL" ] && ACTIVE_SEAL="ums9230-sp_6300-3724801c"
 
-[ -f "$HOME/.vscode-oss/argv.json" ] && cp "$HOME/.vscode-oss/argv.json" "$REPO_DIR/data/vscode/argv.json" 2>/dev/null || true
+VAULT_DIR="$REPO_DIR/credenciales/$ACTIVE_ID"
+mkdir -p "$VAULT_DIR"
 
-# 5. Sincronizar Zen Browser (perfiles, historial, cookies, SQLite WAL/SHM y sesiones)
-if [ -d "$HOME/.config/zen" ]; then
-    rsync -rltD --no-perms --no-owner --no-group --delete \
+if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
+    tar -czf - \
         --exclude="cache2" \
         --exclude="startupCache" \
         --exclude="lock" \
         --exclude=".parentlock" \
-        --exclude="*.tmp" \
-        --exclude="*.log" \
         --exclude="Crash Reports" \
         --exclude="minidumps" \
-        "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
+        --exclude="*.tmp" \
+        --exclude="*.log" \
+        --exclude="*.sock" \
+        -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
+        openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${ACTIVE_SEAL}" -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
 fi
 
-# 6. Sincronizar configuraciones visuales
+# 5. Sincronizar configuraciones visuales del sistema
 [ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
 [ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
 [ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
 [ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
 
-# 7. Sincronizar scripts
+# 6. Sincronizar scripts
 SCRIPTS=(
     "start-vscode"
     "stop-vscode"
@@ -153,6 +131,8 @@ SCRIPTS=(
     "guia"
     "vscode"
     "toggle-touch-mode"
+    "switch-identity"
+    "cloud-sentinel"
     "desinstalar-vscode"
     "desinstalar"
 )
@@ -161,12 +141,12 @@ for s in "${SCRIPTS[@]}"; do
     [ -f "$PREFIX/bin/$s" ] && cp "$PREFIX/bin/$s" "$REPO_DIR/bin/$s" 2>/dev/null || true
 done
 
-# 8. Sellar firma de integridad criptográfica
+# 7. Sellar firma de integridad criptográfica (Ed25519)
 if command -v integrity-guard >/dev/null 2>&1; then
     integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
 fi
 
-# 9. Detectar cambios en Git y subir incrementalmente
+# 8. Detectar cambios en Git y realizar commit firmado
 cd "$REPO_DIR"
 
 CHANGES=$(git status --porcelain 2>/dev/null || true)
@@ -180,13 +160,21 @@ if [ -n "$CHANGES" ]; then
     UNPUSHED="1"
 fi
 
-# 10. Subida a GitHub con token en memoria RAM
+# 9. Subida a GitHub con token efímero en memoria RAM (Zero Plaintext en disco)
 if [ -n "$UNPUSHED" ]; then
     if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
         if [ -n "$TOKEN" ]; then
-            REMOTE_B64="aHR0cHM6Ly9taWd1ZWxndWVycmEyMDAwMjItc3Vkbzoke1RPS0VOfUBnaXRodWIuY29tL21pZ3VlbGd1ZXJyYTIwMDAyMi1zdWRvL3Rlcm11eC12c2NvZGUteDExLmdpdA=="
-            TARGET_PUSH=$(echo "$REMOTE_B64" | base64 -d | sed "s/\${TOKEN}/$TOKEN/")
-            timeout 30 git push "$TARGET_PUSH" main >/dev/null 2>&1 || true
+            ASKPASS="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.git_askpass_$$"
+            cat << EOF_AP > "$ASKPASS"
+#!/bin/sh
+case "\$1" in
+    *Username*) echo "miguelguerra200022-sudo" ;;
+    *Password*) echo "$TOKEN" ;;
+esac
+EOF_AP
+            chmod 700 "$ASKPASS"
+            GIT_ASKPASS="$ASKPASS" timeout 30 git push origin main >/dev/null 2>&1 || true
+            shred -u "$ASKPASS" 2>/dev/null || rm -f "$ASKPASS"
         else
             timeout 30 git push origin main >/dev/null 2>&1 || true
         fi

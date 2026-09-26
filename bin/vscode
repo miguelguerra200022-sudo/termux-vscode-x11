@@ -619,7 +619,7 @@ def main():
             print(f" • {YELLOW}TAB o ESC o [0]{NC}          : Volver al Explorador de carpetas")
             print(f" • {YELLOW}[Q]{NC}                       : Salir sin abrir nada")
             print(div_line)
-            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {BOLD}{WHITE}c{NC}{GRAY} Identidad  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
 
         if status_msg:
             print(f"\n{YELLOW}⚠️  {status_msg}{NC}")
