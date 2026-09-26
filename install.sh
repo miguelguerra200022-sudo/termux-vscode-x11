@@ -50,11 +50,64 @@ pkg install -y x11-repo
 echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
 pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl
 
-# 4. Descarga e Instalación Automática de las Últimas Versiones de APKs (X11 y Widget)
-echo -e "${YELLOW}[*] Obteniendo e instalando últimas versiones de Termux:X11 y Termux:Widget...${NC}"
+# 4. Detección Inteligente e Instalación de APKs (X11 y Widget)
+echo -e "${YELLOW}[*] Comprobando complementos gráficos de Android (Termux:X11 y Termux:Widget)...${NC}"
 mkdir -p "/storage/emulated/0/Download"
+CONFIG_DIR="$HOME/.config/termux-vscode"
+mkdir -p "$CONFIG_DIR"
+UNKNOWN_SOURCES_FLAG="$CONFIG_DIR/.unknown_sources_configured"
 APK_X11_PATH="/storage/emulated/0/Download/termux-x11-universal-debug.apk"
 APK_WIDGET_PATH="/storage/emulated/0/Download/termux-widget.apk"
+
+is_package_installed() {
+    local pkg="$1"
+    local out
+    out=$(ls -d "/data/data/$pkg" 2>&1 || true)
+    if [[ "$out" == *"Permission denied"* ]] || [ -d "/data/data/$pkg" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+ensure_unknown_sources_permission() {
+    if is_package_installed "com.termux.x11" && is_package_installed "com.termux.widget"; then
+        return 0
+    fi
+    if [ -f "$UNKNOWN_SOURCES_FLAG" ]; then
+        return 0
+    fi
+    echo -e "${YELLOW}[!] Android requiere autorizar a Termux para instalar aplicaciones desconocidas.${NC}"
+    echo -e "${CYAN}[*] Abriendo Ajustes de Android para Termux...${NC}"
+    echo -e "${YELLOW}[i] Activa la casilla 'Permitir desde esta fuente' y regresa a Termux.${NC}"
+    am start -a android.settings.MANAGE_UNKNOWN_APP_SOURCES -d "package:com.termux" >/dev/null 2>&1 || true
+    touch "$UNKNOWN_SOURCES_FLAG"
+    sleep 3
+}
+
+auto_install_apk() {
+    local file="$1"
+    local name="$2"
+    local pkg="$3"
+
+    if is_package_installed "$pkg"; then
+        echo -e "${GREEN}[✓] ${name} ya se encuentra instalado.${NC}"
+        return 0
+    fi
+
+    if [ -f "$file" ]; then
+        echo -e "${GREEN}[+] Iniciando instalación de ${name}...${NC}"
+        if command -v su >/dev/null 2>&1 && su -c "id" >/dev/null 2>&1; then
+            su -c "pm install -r \"$file\"" >/dev/null 2>&1 || true
+        elif command -v rish >/dev/null 2>&1; then
+            rish -c "pm install -r \"$file\"" >/dev/null 2>&1 || true
+        else
+            termux-open --content-type "application/vnd.android.package-archive" --view "$file" >/dev/null 2>&1 || \
+            termux-open "$file" >/dev/null 2>&1 || true
+        fi
+        sleep 2
+    fi
+}
 
 LATEST_X11_URL=$(curl -s "https://api.github.com/repos/termux/termux-x11/releases" 2>/dev/null | grep -o 'https://github.com/termux/termux-x11/releases/download/[^"]*universal-debug\.apk' | head -n 1)
 [ -z "$LATEST_X11_URL" ] && LATEST_X11_URL="https://github.com/termux/termux-x11/releases/download/nightly/termux-x11-universal-debug.apk"
@@ -62,31 +115,23 @@ LATEST_X11_URL=$(curl -s "https://api.github.com/repos/termux/termux-x11/release
 LATEST_WIDGET_URL=$(curl -s "https://api.github.com/repos/termux/termux-widget/releases/latest" 2>/dev/null | grep -o 'https://github.com/termux/termux-widget/releases/download/[^"]*\.apk' | head -n 1)
 [ -z "$LATEST_WIDGET_URL" ] && LATEST_WIDGET_URL="https://github.com/termux/termux-widget/releases/download/v0.15.0/termux-widget-app_v0.15.0%2Bgithub.debug.apk"
 
-echo -e "${CYAN}[*] Descargando Termux:X11 APK...${NC}"
-curl -sSL "$LATEST_X11_URL" -o "$APK_X11_PATH" 2>/dev/null || true
+ensure_unknown_sources_permission
 
-echo -e "${CYAN}[*] Descargando Termux:Widget APK...${NC}"
-curl -sSL "$LATEST_WIDGET_URL" -o "$APK_WIDGET_PATH" 2>/dev/null || true
+if ! is_package_installed "com.termux.x11"; then
+    echo -e "${CYAN}[*] Descargando Termux:X11 APK...${NC}"
+    curl -sSL "$LATEST_X11_URL" -o "$APK_X11_PATH" 2>/dev/null || true
+    auto_install_apk "$APK_X11_PATH" "Termux:X11" "com.termux.x11"
+else
+    echo -e "${GREEN}[✓] Termux:X11 ya se encuentra instalado.${NC}"
+fi
 
-auto_install_apk() {
-    local file="$1"
-    local name="$2"
-    if [ -f "$file" ]; then
-        echo -e "${GREEN}[+] Activando instalación de ${name}...${NC}"
-        if command -v su >/dev/null 2>&1 && su -c "id" >/dev/null 2>&1; then
-            su -c "pm install -r \"$file\"" >/dev/null 2>&1 || true
-        elif command -v rish >/dev/null 2>&1; then
-            rish -c "pm install -r \"$file\"" >/dev/null 2>&1 || true
-        else
-            termux-open "$file" >/dev/null 2>&1 || \
-            am start -a android.intent.action.VIEW -d "file://$file" -t "application/vnd.android.package-archive" --user 0 >/dev/null 2>&1 || true
-        fi
-    fi
-}
-
-auto_install_apk "$APK_X11_PATH" "Termux:X11"
-sleep 1
-auto_install_apk "$APK_WIDGET_PATH" "Termux:Widget"
+if ! is_package_installed "com.termux.widget"; then
+    echo -e "${CYAN}[*] Descargando Termux:Widget APK...${NC}"
+    curl -sSL "$LATEST_WIDGET_URL" -o "$APK_WIDGET_PATH" 2>/dev/null || true
+    auto_install_apk "$APK_WIDGET_PATH" "Termux:Widget" "com.termux.widget"
+else
+    echo -e "${GREEN}[✓] Termux:Widget ya se encuentra instalado.${NC}"
+fi
 
 # 5. Obtener directorio del script y Sanitización Cero-Rastros (Zero-Knowledge)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
@@ -139,9 +184,8 @@ SCRIPTS=(
     "vscode"
     "desinstalar-vscode"
     "desinstalar"
-    "bloquear-vscode"
-    "desbloquear-vscode"
 )
+rm -f "$PREFIX/bin/bloquear-vscode" "$PREFIX/bin/desbloquear-vscode" 2>/dev/null || true
 
 for s in "${SCRIPTS[@]}"; do
     rm -f "$PREFIX/bin/$s"
@@ -334,4 +378,5 @@ echo -e "  • ${YELLOW}fix-phantom-killer${NC}: Desactiva el Phantom Process Ki
 echo -e "  • ${YELLOW}notify-done \"msg\"${NC} : Alerta con vibración/notificación al terminar un comando."
 echo -e "  • ${YELLOW}sync-vscode${NC}       : Respalda tus ajustes a GitHub en un solo clic."
 echo -e "  • ${YELLOW}setup-swap${NC}        : Supervisa la memoria RAM y Swap contra cierres OOM."
+echo -e "  • ${YELLOW}desinstalar-vscode${NC}: Desinstala el entorno con un último respaldo firmado a GitHub."
 echo ""

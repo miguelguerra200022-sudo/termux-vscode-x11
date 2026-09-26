@@ -75,9 +75,10 @@ init_golden_vault() {
         cp "$HOME/.config/git/allowed_signers" "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
         chmod 400 "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
     fi
-    if [ -f "$AUTH_FILE" ] && [ ! -f "$GOLDEN_DIR/.auth_token" ]; then
-        cp "$AUTH_FILE" "$GOLDEN_DIR/.auth_token" 2>/dev/null || true
-        chmod 400 "$GOLDEN_DIR/.auth_token" 2>/dev/null || true
+    AUTH_ENC="$HOME/.config/termux-vscode/.auth_token.enc"
+    if [ -f "$AUTH_ENC" ] && [ ! -f "$GOLDEN_DIR/.auth_token.enc" ]; then
+        cp "$AUTH_ENC" "$GOLDEN_DIR/.auth_token.enc" 2>/dev/null || true
+        chmod 400 "$GOLDEN_DIR/.auth_token.enc" 2>/dev/null || true
     fi
 
     # Blindar permisos en ejecución (solo lectura/ejecución para el propietario)
@@ -110,11 +111,11 @@ self_audit_and_repair() {
         chmod 400 "$HOME/.config/git/allowed_signers" 2>/dev/null || true
     fi
 
-    # 4.3 Verificar y reparar token de autenticación
-    if [ ! -s "$AUTH_FILE" ] && [ -f "$GOLDEN_DIR/.auth_token" ]; then
+    # 4.3 Verificar y reparar token de autenticación cifrado
+    if [ ! -s "$AUTH_ENC" ] && [ -f "$GOLDEN_DIR/.auth_token.enc" ]; then
         mkdir -p "$HOME/.config/termux-vscode"
-        cp "$GOLDEN_DIR/.auth_token" "$AUTH_FILE" 2>/dev/null || true
-        chmod 400 "$AUTH_FILE" 2>/dev/null || true
+        cp "$GOLDEN_DIR/.auth_token.enc" "$AUTH_ENC" 2>/dev/null || true
+        chmod 400 "$AUTH_ENC" 2>/dev/null || true
     fi
 
     # 4.4 Verificar centinela supervisor mutuo (integrity-watchdog)
@@ -153,6 +154,10 @@ BASHRC_HOOK
 
 # 5. Detección y Auto-Recuperación de Alteraciones No Autorizadas (Anti-Tamper)
 check_and_heal_tamper() {
+    # No interferir si hay una sincronización o mantenimiento autorizado en progreso
+    if [ -f "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.maintenance" ] || pgrep -f "sync-vscode" >/dev/null 2>&1; then
+        return 0
+    fi
     # Solo actuar cuando VS Code NO está en ejecución (código en reposo)
     if ! pgrep -f "code-oss" >/dev/null 2>&1; then
         if command -v integrity-guard >/dev/null 2>&1; then
