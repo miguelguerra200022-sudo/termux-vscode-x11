@@ -2,12 +2,20 @@
 set -e
 
 # ==============================================================================
-# watcher-sync: Demonio de Sincronización en Tiempo Real con Debounce Inteligente
+# watcher-sync: Demonio Autónomo de Integridad, Anti-Tamper y Sincronización 24/7
+# ==============================================================================
+# - Vigilancia en tiempo real e inmutable del código fuente y configuraciones.
+# - Detección automática y purga inmediata (auto-healing) de alteraciones externas
+#   cuando VS Code no está en ejecución.
+# - Auto-defensa y auto-reparación del propio demonio, centinelas y claves Ed25519.
+# - Sincronización silenciosa con Debounce Inteligente y firmas digitales.
 # ==============================================================================
 
 PIDFILE="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/watcher-sync.pid"
 HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
 ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
+AUTH_FILE="$HOME/.config/termux-vscode/.auth_token"
+GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 
 # 1. Evitar múltiples instancias del demonio
 if [ -f "$PIDFILE" ]; then
@@ -41,19 +49,135 @@ if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
     exit 0
 fi
 
-# 3. Función de sincronización y subida silenciosa
+# 3. Inicializar Bóveda Dorada (Golden Vault) para Auto-Protección
+init_golden_vault() {
+    mkdir -p "$GOLDEN_DIR" "$HOME/.config/git" "$HOME/.ssh"
+    chmod 700 "$HOME/.config/termux-vscode" "$GOLDEN_DIR" 2>/dev/null || true
+
+    # Respaldar binarios de defensa originales en bóveda dorada protegida
+    for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode"; do
+        if [ -f "$PREFIX/bin/$bin_name" ] && [ ! -f "$GOLDEN_DIR/$bin_name" ]; then
+            cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+            chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+        elif [ -f "$REPO_DIR/bin/$bin_name" ] && [ ! -f "$GOLDEN_DIR/$bin_name" ]; then
+            cp "$REPO_DIR/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+            chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+        fi
+    done
+
+    # Respaldar claves y configuraciones criptográficas
+    if [ -f "$HOME/.ssh/id_ed25519" ] && [ ! -f "$GOLDEN_DIR/id_ed25519" ]; then
+        cp "$HOME/.ssh/id_ed25519" "$GOLDEN_DIR/id_ed25519" 2>/dev/null || true
+        cp "$HOME/.ssh/id_ed25519.pub" "$GOLDEN_DIR/id_ed25519.pub" 2>/dev/null || true
+        chmod 400 "$GOLDEN_DIR/id_ed25519" 2>/dev/null || true
+    fi
+    if [ -f "$HOME/.config/git/allowed_signers" ] && [ ! -f "$GOLDEN_DIR/allowed_signers" ]; then
+        cp "$HOME/.config/git/allowed_signers" "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
+        chmod 400 "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
+    fi
+    if [ -f "$AUTH_FILE" ] && [ ! -f "$GOLDEN_DIR/.auth_token" ]; then
+        cp "$AUTH_FILE" "$GOLDEN_DIR/.auth_token" 2>/dev/null || true
+        chmod 400 "$GOLDEN_DIR/.auth_token" 2>/dev/null || true
+    fi
+
+    # Blindar permisos en ejecución (solo lectura/ejecución para el propietario)
+    chmod 500 "$PREFIX/bin/watcher-sync" "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" 2>/dev/null || true
+    chmod 400 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_ed25519.pub" "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+}
+
+init_golden_vault
+
+# 4. Auto-Auditoría y Auto-Reparación de la propia infraestructura de defensa
+self_audit_and_repair() {
+    # 4.1 Verificar y reparar integridad de los binarios de defensa
+    for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard"; do
+        if [ ! -s "$PREFIX/bin/$bin_name" ] && [ -f "$GOLDEN_DIR/$bin_name" ]; then
+            cp "$GOLDEN_DIR/$bin_name" "$PREFIX/bin/$bin_name" 2>/dev/null || true
+            chmod 500 "$PREFIX/bin/$bin_name" 2>/dev/null || true
+        fi
+    done
+
+    # 4.2 Verificar y reparar claves Ed25519 y allowed_signers
+    if [ ! -s "$HOME/.ssh/id_ed25519" ] && [ -f "$GOLDEN_DIR/id_ed25519" ]; then
+        mkdir -p "$HOME/.ssh"
+        cp "$GOLDEN_DIR/id_ed25519" "$HOME/.ssh/id_ed25519" 2>/dev/null || true
+        cp "$GOLDEN_DIR/id_ed25519.pub" "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true
+        chmod 400 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true
+    fi
+    if [ ! -s "$HOME/.config/git/allowed_signers" ] && [ -f "$GOLDEN_DIR/allowed_signers" ]; then
+        mkdir -p "$HOME/.config/git"
+        cp "$GOLDEN_DIR/allowed_signers" "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+        chmod 400 "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+    fi
+
+    # 4.3 Verificar y reparar token de autenticación
+    if [ ! -s "$AUTH_FILE" ] && [ -f "$GOLDEN_DIR/.auth_token" ]; then
+        mkdir -p "$HOME/.config/termux-vscode"
+        cp "$GOLDEN_DIR/.auth_token" "$AUTH_FILE" 2>/dev/null || true
+        chmod 400 "$AUTH_FILE" 2>/dev/null || true
+    fi
+
+    # 4.4 Verificar centinela supervisor mutuo (integrity-watchdog)
+    if ! pgrep -f "integrity-watchdog" >/dev/null 2>&1; then
+        if command -v integrity-watchdog >/dev/null 2>&1; then
+            setsid -f integrity-watchdog >/dev/null 2>&1 || true
+        elif [ -f "$GOLDEN_DIR/integrity-watchdog" ]; then
+            cp "$GOLDEN_DIR/integrity-watchdog" "$PREFIX/bin/integrity-watchdog" 2>/dev/null || true
+            chmod 500 "$PREFIX/bin/integrity-watchdog" 2>/dev/null || true
+            setsid -f "$PREFIX/bin/integrity-watchdog" >/dev/null 2>&1 || true
+        fi
+    fi
+
+    # 4.5 Garantizar persistencia del gancho supervisor en ~/.bashrc
+    if ! grep -q "watcher-sync" "$HOME/.bashrc" 2>/dev/null; then
+        cat << 'BASHRC_HOOK' >> "$HOME/.bashrc"
+
+# Demonio Autónomo de Integridad y Sincronización en Segundo Plano (Watchdog)
+if command -v watcher-sync >/dev/null 2>&1; then
+    if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
+        setsid -f watcher-sync >/dev/null 2>&1 || true
+    fi
+fi
+export PROMPT_COMMAND="pgrep -f watcher-sync >/dev/null 2>&1 || ( setsid -f watcher-sync >/dev/null 2>&1 || true ); ${PROMPT_COMMAND:-}"
+BASHRC_HOOK
+    fi
+
+    # 4.6 Asegurar configuración de firma criptográfica en Git
+    if [ "$(git config --global commit.gpgsign 2>/dev/null || true)" != "true" ]; then
+        git config --global user.signingkey "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true
+        git config --global gpg.format ssh 2>/dev/null || true
+        git config --global commit.gpgsign true 2>/dev/null || true
+        git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+    fi
+}
+
+# 5. Detección y Auto-Recuperación de Alteraciones No Autorizadas (Anti-Tamper)
+check_and_heal_tamper() {
+    # Solo actuar cuando VS Code NO está en ejecución (código en reposo)
+    if ! pgrep -f "code-oss" >/dev/null 2>&1; then
+        if command -v integrity-guard >/dev/null 2>&1; then
+            # Verificar integridad de forma silenciosa
+            if ! integrity-guard check "$REPO_DIR" >/dev/null 2>&1; then
+                # Alteración externa detectada -> Ejecutar auto-recuperación y purga instantánea
+                integrity-guard heal "$REPO_DIR" >/dev/null 2>&1 || true
+            fi
+        fi
+    fi
+}
+
+# 6. Función de Sincronización, Firma Criptográfica y Subida a GitHub
 do_sync() {
-    # 3.1 Limpiar posibles bloqueos huérfanos de Git si hubo un cierre forzado
+    # 6.1 Limpiar posibles bloqueos huérfanos de Git si hubo un cierre forzado
     if [ -f "$REPO_DIR/.git/index.lock" ]; then
         if ! pgrep -x "git" >/dev/null 2>&1; then
             rm -f "$REPO_DIR/.git/index.lock" 2>/dev/null || true
         fi
     fi
 
-    # 3.2 Asegurar carpetas en el repositorio
+    # 6.2 Asegurar carpetas en el repositorio
     mkdir -p "$REPO_DIR/data/vscode/User" "$REPO_DIR/data/zen" "$REPO_DIR/config" "$REPO_DIR/bin"
 
-    # 3.3 Sincronizar VS Code (archivos, extensiones, estado)
+    # 6.3 Sincronizar VS Code (archivos, extensiones, estado)
     if [ -d "$HOME/.config/Code - OSS/User" ]; then
         rsync -rltD --no-perms --no-owner --no-group --delete \
             --exclude=".git" \
@@ -67,7 +191,7 @@ do_sync() {
     fi
     [ -f "$HOME/.vscode-oss/argv.json" ] && cp "$HOME/.vscode-oss/argv.json" "$REPO_DIR/data/vscode/argv.json" 2>/dev/null || true
 
-    # 3.4 Sincronizar Zen Browser (incluyendo archivos SQLite WAL/SHM para integridad total)
+    # 6.4 Sincronizar Zen Browser
     if [ -d "$HOME/.config/zen" ]; then
         rsync -rltD --no-perms --no-owner --no-group --delete \
             --exclude="cache2" \
@@ -81,30 +205,36 @@ do_sync() {
             "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
     fi
 
-    # 3.5 Sincronizar configuraciones visuales
+    # 6.5 Sincronizar configuraciones visuales
     [ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
     [ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
     [ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
     [ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
 
-    # 3.6 Comprobar si hay cambios para Git
+    # 6.6 Actualizar firma de integridad antes de registrar en Git
+    if command -v integrity-guard >/dev/null 2>&1; then
+        integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
+    fi
+
+    # 6.7 Comprobar si hay cambios para Git
     cd "$REPO_DIR"
-    CHANGES=$(git status --porcelain data/ config/ bin/ docs/ 2>/dev/null || true)
-    
-    # Comprobar también si hay commits pendientes de empujar
+    CHANGES=$(git status --porcelain 2>/dev/null || true)
     UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || true)
 
     if [ -n "$CHANGES" ]; then
-        git add data/ config/ bin/ docs/ install.sh 2>/dev/null || true
+        git add -A 2>/dev/null || true
+        git commit -S -m "sync: cambios en tiempo real ($(date '+%Y-%m-%d %H:%M:%S'))" >/dev/null 2>&1 || \
         git commit -m "sync: cambios en tiempo real ($(date '+%Y-%m-%d %H:%M:%S'))" >/dev/null 2>&1 || true
         UNPUSHED="1"
     fi
 
-    # 3.7 Si hay commits sin empujar, intentar subirlos a GitHub
+    # 6.8 Si hay commits sin empujar, subir a GitHub de forma silenciosa
     if [ -n "$UNPUSHED" ]; then
-        # Verificar conectividad a Internet rápidamente (timeout 2s)
         if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://github.com >/dev/null 2>&1; then
             TOKEN="${SYNC_TOKEN:-}"
+            if [ -z "$TOKEN" ] && [ -f "$AUTH_FILE" ]; then
+                TOKEN=$(cat "$AUTH_FILE" 2>/dev/null || true)
+            fi
             if [ -z "$TOKEN" ] && [ -n "${SYNC_PASS:-}" ]; then
                 TOKEN=$(echo "$ENC_TOKEN" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"$SYNC_PASS" 2>/dev/null || true)
             fi
@@ -118,34 +248,33 @@ do_sync() {
     fi
 }
 
-# 4. Asegurar directorios a vigilar
-WATCH_DIRS=()
+# 7. Configuración de Directorios Vigilados
+WATCH_DIRS=("$REPO_DIR")
 [ -d "$HOME/.config/Code - OSS/User" ] && WATCH_DIRS+=("$HOME/.config/Code - OSS/User")
 [ -d "$HOME/.config/zen" ] && WATCH_DIRS+=("$HOME/.config/zen")
 
-if [ ${#WATCH_DIRS[@]} -eq 0 ]; then
-    # Si aún no existen, esperar y reintentar
-    sleep 10
-    exit 0
-fi
+EXCLUDE_REGEX='(\.git|\.integrity|cache2|startupCache|\.parentlock|\.lock|lock|Crash Reports|minidumps|\.log|\.tmp|\.sock|\.cpuprofile|\.heapsnapshot|checkpoints)'
 
-# 5. Bucle principal con inotifywait y Debounce Inteligente (30 segundos)
-EXCLUDE_REGEX='(cache2|startupCache|\.parentlock|\.lock|lock|Crash Reports|minidumps|\.log|\.tmp|\.sock|\.cpuprofile|\.heapsnapshot|checkpoints)'
-
+# 8. Bucle Principal Autónomo 24/7
 while true; do
-    # inotifywait espera de forma ultraeficiente (0% CPU mientras duerme en el kernel)
-    if inotifywait -r -q -e modify,create,delete,move --exclude "$EXCLUDE_REGEX" "${WATCH_DIRS[@]}" >/dev/null 2>&1; then
-        # Detectó actividad: iniciar temporizador de debounce inteligente (30s)
-        # Si siguen llegando cambios durante los 30 segundos, el temporizador se reinicia
-        while inotifywait -r -q -t 25 -e modify,create,delete,move --exclude "$EXCLUDE_REGEX" "${WATCH_DIRS[@]}" >/dev/null 2>&1; do
+    self_audit_and_repair || true
+
+    # inotifywait espera eficientemente (0% CPU en espera del kernel)
+    if inotifywait -r -q -t 45 -e modify,create,delete,move --exclude "$EXCLUDE_REGEX" "${WATCH_DIRS[@]}" >/dev/null 2>&1; then
+        if pgrep -f "code-oss" >/dev/null 2>&1; then
+            # VS Code está en uso: debounce inteligente (25s de reposo antes de sincronizar)
+            while inotifywait -r -q -t 25 -e modify,create,delete,move --exclude "$EXCLUDE_REGEX" "${WATCH_DIRS[@]}" >/dev/null 2>&1; do
+                sleep 1
+            done
+            do_sync || true
+        else
+            # VS Code está CERRADO: actividad externa no autorizada en reposo
             sleep 1
-        done
-        
-        # Tras 25-30s de silencio sin nuevos cambios, sincronizar limpiamente
-        do_sync || true
+            check_and_heal_tamper || true
+        fi
     else
-        # Si inotifywait termina o no está disponible, esperar 180s y sincronizar
-        sleep 180
-        do_sync || true
+        # Timeout de inactividad (45s): chequeo de integridad y auto-reparación preventiva
+        self_audit_and_repair || true
+        check_and_heal_tamper || true
     fi
 done

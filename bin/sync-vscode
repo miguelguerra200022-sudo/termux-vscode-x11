@@ -42,7 +42,7 @@ if [ -z "$TOKEN" ]; then
     if [ -n "$TOKEN" ]; then
         mkdir -p "$HOME/.config/termux-vscode"
         echo -n "$TOKEN" > "$AUTH_FILE"
-        chmod 600 "$AUTH_FILE" 2>/dev/null || true
+        chmod 400 "$AUTH_FILE" 2>/dev/null || true
     fi
 fi
 
@@ -127,6 +127,8 @@ SCRIPTS=(
     "sync-vscode"
     "restore-vscode"
     "watcher-sync"
+    "integrity-watchdog"
+    "integrity-guard"
     "setup-swap"
     "set-marketplace"
     "fix-phantom-killer"
@@ -140,20 +142,26 @@ for s in "${SCRIPTS[@]}"; do
     [ -f "$PREFIX/bin/$s" ] && cp "$PREFIX/bin/$s" "$REPO_DIR/bin/$s" 2>/dev/null || true
 done
 
-# 8. Detectar cambios en Git y subir incrementalmente
+# 8. Sellar firma de integridad criptográfica
+if command -v integrity-guard >/dev/null 2>&1; then
+    integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
+fi
+
+# 9. Detectar cambios en Git y subir incrementalmente
 cd "$REPO_DIR"
 
-CHANGES=$(git status --porcelain data/ config/ bin/ docs/ 2>/dev/null || true)
+CHANGES=$(git status --porcelain 2>/dev/null || true)
 UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || true)
 
 if [ -n "$CHANGES" ]; then
-    git add data/ config/ bin/ docs/ install.sh 2>/dev/null || true
+    git add -A 2>/dev/null || true
     COMMIT_MSG="sync: actualización de datos ($(date '+%Y-%m-%d %H:%M:%S'))"
+    git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || \
     git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
     UNPUSHED="1"
 fi
 
-# 9. Subida a GitHub con token en memoria RAM
+# 10. Subida a GitHub con token en memoria RAM
 if [ -n "$UNPUSHED" ]; then
     if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://github.com >/dev/null 2>&1; then
         if [ -n "$TOKEN" ]; then

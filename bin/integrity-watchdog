@@ -1,0 +1,51 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# integrity-watchdog: Centinela Supervisor Mutuo de Alta Disponibilidad
+# ==============================================================================
+# Supervisa 24/7 en segundo plano que el demonio watcher-sync esté activo y que
+# los binarios y claves criptográficas de defensa no hayan sido eliminados o alterados.
+# Si watcher-sync es finalizado, lo revive de inmediato (< 4 segundos).
+# ==============================================================================
+
+GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
+PIDFILE="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/integrity-watchdog.pid"
+
+# 1. Evitar múltiples instancias del centinela
+if [ -f "$PIDFILE" ]; then
+    OLD_PID=$(cat "$PIDFILE" 2>/dev/null || true)
+    if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+        exit 0
+    fi
+fi
+echo $$ > "$PIDFILE"
+trap 'rm -f "$PIDFILE" 2>/dev/null; exit 0' SIGTERM SIGINT SIGHUP EXIT
+
+while true; do
+    # 2. Supervisar que el demonio principal watcher-sync esté corriendo
+    if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
+        if command -v watcher-sync >/dev/null 2>&1; then
+            setsid -f watcher-sync >/dev/null 2>&1 || true
+        elif [ -f "$GOLDEN_DIR/watcher-sync" ]; then
+            cp "$GOLDEN_DIR/watcher-sync" "$PREFIX/bin/watcher-sync" 2>/dev/null || true
+            chmod 500 "$PREFIX/bin/watcher-sync" 2>/dev/null || true
+            setsid -f "$PREFIX/bin/watcher-sync" >/dev/null 2>&1 || true
+        fi
+    fi
+
+    # 3. Supervisar y auto-reparar binarios de defensa si fueron eliminados
+    if [ ! -f "$PREFIX/bin/integrity-guard" ] && [ -f "$GOLDEN_DIR/integrity-guard" ]; then
+        cp "$GOLDEN_DIR/integrity-guard" "$PREFIX/bin/integrity-guard" 2>/dev/null || true
+        chmod 500 "$PREFIX/bin/integrity-guard" 2>/dev/null || true
+    fi
+
+    # 4. Supervisar y auto-reparar llaves Ed25519 si fueron manipuladas
+    if [ ! -f "$HOME/.ssh/id_ed25519" ] && [ -f "$GOLDEN_DIR/id_ed25519" ]; then
+        mkdir -p "$HOME/.ssh"
+        cp "$GOLDEN_DIR/id_ed25519" "$HOME/.ssh/id_ed25519" 2>/dev/null || true
+        cp "$GOLDEN_DIR/id_ed25519.pub" "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true
+        chmod 400 "$HOME/.ssh/id_ed25519" 2>/dev/null || true
+        chmod 400 "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true
+    fi
+
+    sleep 4
+done

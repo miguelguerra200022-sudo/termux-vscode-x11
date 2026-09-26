@@ -89,6 +89,8 @@ SCRIPTS=(
     "sync-vscode"
     "restore-vscode"
     "watcher-sync"
+    "integrity-watchdog"
+    "integrity-guard"
     "setup-swap"
     "set-marketplace"
     "fix-phantom-killer"
@@ -106,6 +108,9 @@ for s in "${SCRIPTS[@]}"; do
         curl "${CURL_OPTS[@]}" "$BASE_RAW/bin/$s" -o "$PREFIX/bin/$s"
     fi
     chmod +x "$PREFIX/bin/$s"
+done
+chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" 2>/dev/null || true
+for dummy in
 done
 
 ln -sf "$PREFIX/bin/start-vscode" "$HOME/start-vscode.sh"

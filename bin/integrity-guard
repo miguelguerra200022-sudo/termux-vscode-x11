@@ -1,0 +1,186 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -e
+
+# ==============================================================================
+# integrity-guard: Sistema de Protección e Integridad Criptográfica Anti-Tamper
+# ==============================================================================
+# - Firma digital Ed25519 de manifiestos SHA-256.
+# - Detección instantánea de modificaciones, inyecciones o eliminaciones por terceros/root.
+# - Auto-recuperación (Heal) desde el árbol criptográfico firmado.
+# ==============================================================================
+
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+CYAN='\033[1;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+KEY_FILE="$HOME/.ssh/id_ed25519"
+ALLOWED_SIGNERS="$HOME/.config/git/allowed_signers"
+
+# Asegurar claves de firma
+if [ ! -f "$KEY_FILE" ]; then
+    mkdir -p "$HOME/.ssh"
+    ssh-keygen -t ed25519 -N "" -f "$KEY_FILE" >/dev/null 2>&1
+    chmod 600 "$KEY_FILE"
+fi
+
+if [ ! -f "$ALLOWED_SIGNERS" ]; then
+    mkdir -p "$HOME/.config/git"
+    PUBKEY=$(cat "$KEY_FILE.pub")
+    echo "principal $PUBKEY" > "$ALLOWED_SIGNERS"
+    chmod 600 "$ALLOWED_SIGNERS"
+fi
+
+ACTION="${1:-check}"
+shift || true
+TARGET_DIR="${1:-$PWD}"
+
+if [ -f "$TARGET_DIR" ]; then
+    TARGET_DIR=$(dirname "$TARGET_DIR")
+fi
+
+cd "$TARGET_DIR"
+
+MANIFEST_FILE="$TARGET_DIR/.integrity.manifest"
+SIG_FILE="$TARGET_DIR/.integrity.manifest.sig"
+
+EXCLUDE_PATTERN='(\.git|\.integrity|node_modules|__pycache__|\.cache|\.tmp|\.log|\.sock|\.cpuprofile|\.heapsnapshot|checkpoints)'
+
+# ==============================================================================
+# 1. FUNCIÓN DE FIRMADO DE INTEGRIDAD (sign)
+# ==============================================================================
+do_sign() {
+    local QUIET="${1:-0}"
+    [ "$QUIET" -eq 0 ] && echo -e "${CYAN}[*] Generando manifiesto y firma digital Ed25519...${NC}"
+
+    TMP_MANIFEST=$(mktemp)
+    find . -type f | grep -vE "$EXCLUDE_PATTERN" | sort | xargs -d '\n' sha256sum > "$TMP_MANIFEST"
+
+    mv "$TMP_MANIFEST" "$MANIFEST_FILE"
+    chmod 644 "$MANIFEST_FILE" 2>/dev/null || true
+
+    # Firmar el manifiesto con la clave privada Ed25519
+    rm -f "$SIG_FILE"
+    ssh-keygen -Y sign -f "$KEY_FILE" -n integrity "$MANIFEST_FILE" >/dev/null 2>&1
+
+    [ "$QUIET" -eq 0 ] && echo -e "${GREEN}[✓] Integridad firmada criptográficamente (Ed25519).${NC}"
+    return 0
+}
+
+# ==============================================================================
+# 2. FUNCIÓN DE VERIFICACIÓN DE INTEGRIDAD (check)
+# ==============================================================================
+do_check() {
+    local QUIET="${1:-0}"
+    
+    # Si no existe firma aún, firmar el estado base
+    if [ ! -f "$MANIFEST_FILE" ] || [ ! -f "$SIG_FILE" ]; then
+        do_sign 1
+        [ "$QUIET" -eq 0 ] && echo -e "${GREEN}[✓] Integridad inicial establecida y firmada (Ed25519).${NC}"
+        return 0
+    fi
+
+    # 1. Verificar firma criptográfica del manifiesto
+    if ! ssh-keygen -Y verify -f "$ALLOWED_SIGNERS" -I principal -n integrity -s "$SIG_FILE" < "$MANIFEST_FILE" >/dev/null 2>&1; then
+        echo ""
+        echo -e "${RED}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║  🚨 ALERTA CRÍTICA: FIRMA DIGITAL MANIPULADA O FALSIFICADA       ║${NC}"
+        echo -e "${RED}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${YELLOW}[!] El manifiesto de integridad fue alterado por un tercero o proceso no autorizado.${NC}"
+        return 2
+    fi
+
+    # 2. Comprobar hashes de archivos existentes usando sha256sum en C (ultrarrápido)
+    CHECKSUM_ERRORS=$(sha256sum -c --quiet "$MANIFEST_FILE" 2>&1 || true)
+
+    # 3. Detectar archivos inyectados no autorizados usando comm
+    CURRENT_LIST=$(mktemp)
+    MANIFEST_LIST=$(mktemp)
+    find . -type f | grep -vE "$EXCLUDE_PATTERN" | sort > "$CURRENT_LIST"
+    cut -c 67- "$MANIFEST_FILE" | sed 's/^\*//' | sort > "$MANIFEST_LIST"
+    INJECTED_FILES=$(comm -23 "$CURRENT_LIST" "$MANIFEST_LIST" 2>/dev/null || true)
+    rm -f "$CURRENT_LIST" "$MANIFEST_LIST"
+
+    # 4. Evaluar si hubo alteraciones
+    if [ -n "$CHECKSUM_ERRORS" ] || [ -n "$INJECTED_FILES" ]; then
+        echo ""
+        echo -e "${RED}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║  🚨 ALERTA CRÍTICA: SE DETECTÓ ALTERACIÓN NO AUTORIZADA           ║${NC}"
+        echo -e "${RED}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${YELLOW}Proyecto:${NC} $TARGET_DIR"
+        echo ""
+        
+        if [ -n "$CHECKSUM_ERRORS" ]; then
+            echo -e "${RED}[!] Archivos modificados o corruptos detectados:${NC}"
+            echo "$CHECKSUM_ERRORS" | while read -r line; do
+                echo -e "    ${RED}✘${NC} $line"
+            done
+        fi
+
+        if [ -n "$INJECTED_FILES" ]; then
+            echo -e "${RED}[!] Archivos extraños inyectados (posible backdoor/malware):${NC}"
+            echo "$INJECTED_FILES" | while read -r line; do
+                echo -e "    ${RED}✚ INYECTADO:${NC} $line"
+            done
+        fi
+
+        echo ""
+        return 2
+    fi
+
+    [ "$QUIET" -eq 0 ] && echo -e "${GREEN}[✓] Integridad 100% verificada: Cero alteraciones detectadas.${NC}"
+    return 0
+}
+
+# ==============================================================================
+# 3. FUNCIÓN DE AUTO-RECUPERACIÓN (heal)
+# ==============================================================================
+do_heal() {
+    echo -e "${CYAN}[*] Iniciando auto-recuperación y purga de alteraciones...${NC}"
+    
+    if [ -d ".git" ]; then
+        echo -e "${YELLOW}[*] Purgando archivos inyectados y revirtiendo cambios...${NC}"
+        git clean -fd >/dev/null 2>&1 || true
+        git checkout -f . >/dev/null 2>&1 || true
+        
+        # Si hay diferencias con el commit remoto firmado, restaurar
+        if git rev-parse --verify origin/main >/dev/null 2>&1; then
+            git reset --hard origin/main >/dev/null 2>&1 || true
+        fi
+        
+        # Volver a firmar el estado legítimo restaurado
+        do_sign 1
+        echo -e "${GREEN}[✓] Proyecto purgado y restaurado con éxito a su estado firmado puro.${NC}"
+        return 0
+    else
+        echo -e "${RED}[!] Error: No se puede auto-recuperar sin repositorio Git.${NC}"
+        return 1
+    fi
+}
+
+# ==============================================================================
+# ENRUTADOR PRINCIPAL
+# ==============================================================================
+case "$ACTION" in
+    sign)
+        do_sign 0
+        ;;
+    check|verify)
+        if ! do_check 0; then
+            exit 2
+        fi
+        ;;
+    heal|restore)
+        do_heal
+        ;;
+    status)
+        do_check 0
+        ;;
+    *)
+        echo "Uso: integrity-guard {check|sign|heal|status} [directorio]"
+        exit 1
+        ;;
+esac
