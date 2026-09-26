@@ -16,7 +16,7 @@ e1e3ab460d5e8c5606443c6f77191c64503d5b31599eb909388162b7cf696569  ./bin/restore-
 603014ef31aab72eb28776431330fb59615b31f417aa86b3eb2c64ad6cca5005  ./bin/start-vscode-web
 4ff6c64de8f7c5b9c5c1f8ffa97a8a8d377b8d62cbff5b48ebe087913ea7fc39  ./bin/stop-vscode
 11720c2bbe91fa7023f14a4273af54f25b6ed45be36ea7a927bb6f958375e73a  ./bin/sync-vscode
-dfda73e38f37816b2120c8bd3b865d2b88733256be481030314b8b34f83b764c  ./bin/toggle-touch-mode
+f7309f92f2703a0517f11472b9bd3bf6fdaafe105d667d3704c97390e6a426e5  ./bin/toggle-touch-mode
 fd3249aa07abf8794ae985122d035b3ab2610e632a116d03a1ed51e67699e1b4  ./bin/vscode
 5e24ccaf157203bac93e0b8e6e9f97987c4b02698f9f3f1ab18d7dc415f55131  ./bin/watcher-sync
 cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./config/argv.json
@@ -90,9 +90,9 @@ f941698683bf4fbb09c612177d27879fc242c8a55236a9127ee899acc784adfe  ./data/vscode/
 0ab48b25cba617ed3a4acca0161813b314c095ef63544bb4af60769eb1012977  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db
 30be3243e3fdc4e982b7cf2ec103e3444704cbd225c9a051435414516631cc75  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-shm
 2d817b2f240755c84e9568ff95c2804df52374f04f91bb32f8919a67f8b6784f  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-wal
-c7659140b3e87167f21e55832831af609f74285b24fc36d59bb317de9f666a72  ./data/vscode/User/globalStorage/state.vscdb
+831aca80a43e9f6e3a21aac14b16ab35cdde8f1ca9127d8c6b374d1591ad3bf4  ./data/vscode/User/globalStorage/state.vscdb
 f73e8fbc22d48e353bc43363c689e5bf0e575df278d411264a93b6d93b8d6b3c  ./data/vscode/User/globalStorage/state.vscdb.backup
-7f16e6480d7fb1a0dbf6d88a1ef46c4fea25ae1fba236751c9be5a8abf8631ab  ./data/vscode/User/globalStorage/storage.json
+1404a325ebeefc46936f23a51aec4b2ab43c5b72690007b283490d5b734b7828  ./data/vscode/User/globalStorage/storage.json
 8d5bccec199626052664188964f504b6c268b025448c177e8a3c521c37caaa6d  ./data/vscode/User/profiles/builtin/agents/globalStorage/state.vscdb
 f22eecebd113162df1a8967b94a75ba2edf5b030b82b112dcd5b67c618986be3  ./data/vscode/User/settings.json
 c648a30ceefe9969b2b37a27843fd0389936c5b280cb1311243180469fd7cc17  ./data/vscode/User/workspaceStorage/56c0e868/state.vscdb
