@@ -50,30 +50,53 @@ pkg install -y x11-repo
 echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
 pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl
 
-# 4. Obtener dinámicamente la última versión de Termux:X11 desde GitHub Releases
-echo -e "${YELLOW}[*] Consultando la última versión oficial de Termux:X11 en GitHub...${NC}"
-APK_PATH="/storage/emulated/0/Download/termux-x11-universal-debug.apk"
+# 4. Descarga e Instalación Automática de las Últimas Versiones de APKs (X11 y Widget)
+echo -e "${YELLOW}[*] Obteniendo e instalando últimas versiones de Termux:X11 y Termux:Widget...${NC}"
+mkdir -p "/storage/emulated/0/Download"
+APK_X11_PATH="/storage/emulated/0/Download/termux-x11-universal-debug.apk"
+APK_WIDGET_PATH="/storage/emulated/0/Download/termux-widget.apk"
 
-LATEST_APK_URL=$(curl -s "https://api.github.com/repos/termux/termux-x11/releases" 2>/dev/null | grep -o 'https://github.com/termux/termux-x11/releases/download/[^"]*universal-debug\.apk' | head -n 1)
+LATEST_X11_URL=$(curl -s "https://api.github.com/repos/termux/termux-x11/releases" 2>/dev/null | grep -o 'https://github.com/termux/termux-x11/releases/download/[^"]*universal-debug\.apk' | head -n 1)
+[ -z "$LATEST_X11_URL" ] && LATEST_X11_URL="https://github.com/termux/termux-x11/releases/download/nightly/termux-x11-universal-debug.apk"
 
-if [ -z "$LATEST_APK_URL" ]; then
-    LATEST_APK_URL="https://github.com/termux/termux-x11/releases/download/nightly/termux-x11-universal-debug.apk"
-fi
+LATEST_WIDGET_URL=$(curl -s "https://api.github.com/repos/termux/termux-widget/releases/latest" 2>/dev/null | grep -o 'https://github.com/termux/termux-widget/releases/download/[^"]*\.apk' | head -n 1)
+[ -z "$LATEST_WIDGET_URL" ] && LATEST_WIDGET_URL="https://github.com/termux/termux-widget/releases/download/v0.15.0/termux-widget-app_v0.15.0%2Bgithub.debug.apk"
 
-echo -e "${CYAN}[i] Versión de Termux:X11 detectada: ${LATEST_APK_URL}${NC}"
+echo -e "${CYAN}[*] Descargando Termux:X11 APK...${NC}"
+curl -sSL "$LATEST_X11_URL" -o "$APK_X11_PATH" 2>/dev/null || true
 
-if [ ! -f "$APK_PATH" ]; then
-    echo -e "${YELLOW}[*] Descargando la última versión del APK a Descargas...${NC}"
-    aria2c -x 4 -s 4 -d "/storage/emulated/0/Download" -o "termux-x11-universal-debug.apk" "$LATEST_APK_URL" || \
-    curl -L "$LATEST_APK_URL" -o "$APK_PATH" || true
-    echo -e "${GREEN}[+] APK descargado en: ${APK_PATH}${NC}"
-    echo -e "${YELLOW}[i] Instala o actualiza la app Termux:X11 desde tu gestor de archivos o Descargas.${NC}"
-else
-    echo -e "${GREEN}[+] APK de Termux:X11 ya disponible en Descargas.${NC}"
-fi
+echo -e "${CYAN}[*] Descargando Termux:Widget APK...${NC}"
+curl -sSL "$LATEST_WIDGET_URL" -o "$APK_WIDGET_PATH" 2>/dev/null || true
+
+auto_install_apk() {
+    local file="$1"
+    local name="$2"
+    if [ -f "$file" ]; then
+        echo -e "${GREEN}[+] Activando instalación de ${name}...${NC}"
+        if command -v su >/dev/null 2>&1 && su -c "id" >/dev/null 2>&1; then
+            su -c "pm install -r \"$file\"" >/dev/null 2>&1 || true
+        elif command -v rish >/dev/null 2>&1; then
+            rish -c "pm install -r \"$file\"" >/dev/null 2>&1 || true
+        else
+            termux-open "$file" >/dev/null 2>&1 || \
+            am start -a android.intent.action.VIEW -d "file://$file" -t "application/vnd.android.package-archive" --user 0 >/dev/null 2>&1 || true
+        fi
+    fi
+}
+
+auto_install_apk "$APK_X11_PATH" "Termux:X11"
+sleep 1
+auto_install_apk "$APK_WIDGET_PATH" "Termux:Widget"
 
 # 5. Obtener directorio del script (local o clonado)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+if [ -d "$SCRIPT_DIR/.git" ]; then
+    CURRENT_REMOTE=$(git -C "$SCRIPT_DIR" config --get remote.origin.url 2>/dev/null || true)
+    if [ -n "$CURRENT_REMOTE" ]; then
+        CLEAN_REMOTE=$(echo "$CURRENT_REMOTE" | sed -E 's/https:\/\/[^@]+@/https:\/\//')
+        git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
+    fi
+fi
 BASE_RAW="https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main"
 CURL_OPTS=(-fsSL -H "Cache-Control: no-cache" -H "Pragma: no-cache")
 
@@ -217,6 +240,58 @@ else
 fi
 
 echo ""
+# 15. Blindaje Criptográfico Anti-Tamper (Ed25519) y Centinelas Autónomos 24/7
+echo -e "${YELLOW}[*] Configurando blindaje de integridad criptográfica y centinelas autónomos...${NC}"
+mkdir -p "$HOME/.ssh" "$HOME/.config/git"
+if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
+    ssh-keygen -t ed25519 -N "" -f "$HOME/.ssh/id_ed25519" >/dev/null 2>&1
+fi
+chmod 400 "$HOME/.ssh/id_ed25519" 2>/dev/null || true
+PUBKEY=$(cat "$HOME/.ssh/id_ed25519.pub")
+echo "principal $PUBKEY" > "$HOME/.config/git/allowed_signers"
+chmod 400 "$HOME/.ssh/id_ed25519.pub" "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+
+git config --global user.signingkey "$HOME/.ssh/id_ed25519.pub"
+git config --global gpg.format ssh
+git config --global commit.gpgsign true
+git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signers"
+
+GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
+mkdir -p "$GOLDEN_DIR"
+chmod 700 "$HOME/.config/termux-vscode" "$GOLDEN_DIR" 2>/dev/null || true
+for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode" "sync-vscode"; do
+    [ -f "$PREFIX/bin/$bin_name" ] && cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+    chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+done
+cp "$HOME/.ssh/id_ed25519" "$GOLDEN_DIR/id_ed25519" 2>/dev/null || true
+cp "$HOME/.ssh/id_ed25519.pub" "$GOLDEN_DIR/id_ed25519.pub" 2>/dev/null || true
+cp "$HOME/.config/git/allowed_signers" "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
+[ -f "$HOME/.config/termux-vscode/.auth_token" ] && cp "$HOME/.config/termux-vscode/.auth_token" "$GOLDEN_DIR/.auth_token" 2>/dev/null || true
+chmod 400 "$GOLDEN_DIR/id_ed25519"* "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
+[ -f "$GOLDEN_DIR/.auth_token" ] && chmod 400 "$GOLDEN_DIR/.auth_token" 2>/dev/null || true
+
+if ! grep -q "watcher-sync" "$HOME/.bashrc" 2>/dev/null; then
+    cat << 'BASHRC_HOOK' >> "$HOME/.bashrc"
+
+# Centinelas Autónomos de Integridad y Sincronización en Segundo Plano (Watchdog Dual 24/7)
+if command -v watcher-sync >/dev/null 2>&1; then
+    if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
+        setsid -f watcher-sync >/dev/null 2>&1 || true
+    fi
+fi
+if command -v integrity-watchdog >/dev/null 2>&1; then
+    if ! pgrep -f "integrity-watchdog" >/dev/null 2>&1; then
+        setsid -f integrity-watchdog >/dev/null 2>&1 || true
+    fi
+fi
+export PROMPT_COMMAND="pgrep -f watcher-sync >/dev/null 2>&1 || ( setsid -f watcher-sync >/dev/null 2>&1 || true ); pgrep -f integrity-watchdog >/dev/null 2>&1 || ( setsid -f integrity-watchdog >/dev/null 2>&1 || true ); ${PROMPT_COMMAND:-}"
+BASHRC_HOOK
+fi
+
+setsid -f watcher-sync >/dev/null 2>&1 || true
+setsid -f integrity-watchdog >/dev/null 2>&1 || true
+history -c && history -w 2>/dev/null || true
+
 echo -e "${GREEN}======================================================${NC}"
 echo -e "${GREEN}  ¡Instalación y Configuración Pro Completadas!${NC}"
 echo -e "${BLUE}======================================================${NC}"
