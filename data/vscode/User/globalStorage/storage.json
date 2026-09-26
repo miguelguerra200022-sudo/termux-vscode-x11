@@ -11,7 +11,7 @@
         ],
         "emptyWindows": []
     },
-    "windowControlHeight": 35,
+    "windowControlHeight": 42,
     "profileAssociations": {
         "workspaces": {
             "file:///storage/emulated/0/Antigravity/IdeasMillonarias": "__default__profile__",
@@ -23,7 +23,7 @@
     "theme": "vs-dark",
     "themeBackground": "#000000",
     "windowSplash": {
-        "zoomLevel": 0,
+        "zoomLevel": 1,
         "baseTheme": "vs-dark",
         "colorInfo": {
             "foreground": "#cccccc",
@@ -42,17 +42,6 @@
             "statusBarBackground": "#000000",
             "statusBarBorder": "#2b2b2b",
             "statusBarNoFolderBackground": "#1f1f1f"
-        },
-        "layoutInfo": {
-            "sideBarSide": "left",
-            "editorPartMinWidth": 220,
-            "titleBarHeight": 35,
-            "activityBarWidth": 48,
-            "sideBarWidth": 0,
-            "auxiliaryBarWidth": 180,
-            "statusBarHeight": 22,
-            "windowBorder": false,
-            "modernUI": false
         }
     },
     "windowsState": {
@@ -85,10 +74,6 @@
                 "f6c923d0222edd678f4737f253e6346d": {
                     "sideBarVisible": false,
                     "auxiliaryBarVisible": false
-                },
-                "b53d9585c855ff8fd50655134a43448d": {
-                    "sideBarVisible": false,
-                    "auxiliaryBarVisible": true
                 }
             }
         }

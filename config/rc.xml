@@ -778,8 +778,32 @@
   </application>
 
   -->
-  <application class="*" type="normal">
+  <!-- VS Code / Code OSS: Maximizado limpio sin decoraciones (usa barra de titulo integrada) -->
+  <application class="Code" type="normal">
     <maximized>true</maximized>
+    <decor>no</decor>
+  </application>
+  <application class="code-oss" type="normal">
+    <maximized>true</maximized>
+    <decor>no</decor>
+  </application>
+
+  <!-- Zen Browser: Maximizado optimizado para aprovechar 100% de pantalla -->
+  <application class="zen-browser" type="normal">
+    <maximized>true</maximized>
+    <decor>no</decor>
+  </application>
+  <application class="Zen" type="normal">
+    <maximized>true</maximized>
+    <decor>no</decor>
+  </application>
+
+  <!-- Cuadros de dialogo, alertas y selectores: con decoraciones tactiles y centrados -->
+  <application type="dialog">
+    <decor>yes</decor>
+    <focus>yes</focus>
+  </application>
+  <application type="splash">
     <decor>no</decor>
   </application>
   <application type="dock">

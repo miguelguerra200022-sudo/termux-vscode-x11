@@ -44,18 +44,28 @@ command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
 export XDG_RUNTIME_DIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
 export DISPLAY=:0
 export PULSE_SERVER=127.0.0.1
+export PULSE_LATENCY_MSEC=30
+export UV_THREADPOOL_SIZE=16
 export BROWSER=zen-browser
 export LP_NUM_THREADS=$(nproc 2>/dev/null || echo 4) # Aceleración CPU multi-hilo
 
 # 3. Persistencia de credenciales, sesiones y tokens
 export VSCODE_CLI_USE_FILE_KEYCHAIN=1
 
-# 4. Configurar preferencias de Termux-X11 (Portapapeles activo, pantalla completa y teclas rápidas)
-termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true >/dev/null 2>&1 || true
+# 4. Configurar preferencias de Termux-X11 (Portapapeles, filtrado bilineal de alta nitidez)
+termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:linear >/dev/null 2>&1 || true
 
-# 5. Iniciar servidor de sonido PulseAudio si no está activo
+# 5. Iniciar servidor de sonido PulseAudio con salida física Android (OpenSL ES / AAudio)
 if ! pgrep -x "pulseaudio" > /dev/null 2>&1; then
-    pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1 >/dev/null 2>&1 || true
+    pulseaudio --start \
+        --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" \
+        --load="module-sles-sink" \
+        --exit-idle-time=-1 >/dev/null 2>&1 || true
+else
+    # Si pulseaudio ya estaba activo sin sink de salida fisica, cargarlo dinamicamente
+    if ! pactl list sinks short 2>/dev/null | grep -q "OpenSL_ES_sink"; then
+        pactl load-module module-sles-sink >/dev/null 2>&1 || true
+    fi
 fi
 
 # 6. Iniciar bus de sesión D-Bus si no está activo
@@ -131,11 +141,13 @@ if [ -f "$MASTER_GUIDE" ]; then
     fi
 fi
 
-# 11. Iniciar VS Code abriendo la carpeta y la Guía Rápida como primera pestaña activa
+# 11. Iniciar VS Code con aceleración de red real y rendimiento optimizado
 echo "[+] Lanzando VS Code con sesión persistente..."
 shift || true
+ELECTRON_FLAGS="--no-sandbox --disable-gpu --password-store=basic --enable-features=NetworkServiceInProcess,ParallelDownloading --disable-renderer-backgrounding --disable-background-timer-throttling --disable-backgrounding-occluded-windows --js-flags=--max-old-space-size=2048"
+
 if [ -f "$TARGET_DIR/GUIA_RAPIDA.md" ]; then
-    exec code-oss --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$TARGET_DIR" "$TARGET_DIR/GUIA_RAPIDA.md" "$@"
+    exec code-oss $ELECTRON_FLAGS "$TARGET_DIR" "$TARGET_DIR/GUIA_RAPIDA.md" "$@"
 else
-    exec code-oss --no-sandbox --disable-gpu --password-store=basic --js-flags="--max-old-space-size=2048" "$TARGET_DIR" "$@"
+    exec code-oss $ELECTRON_FLAGS "$TARGET_DIR" "$@"
 fi

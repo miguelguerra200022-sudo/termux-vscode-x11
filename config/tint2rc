@@ -1,15 +1,12 @@
 # ==============================================================================
-# tint2rc - Barra de Tareas Estilo Ubuntu (Yaru Dark) para Termux-X11
+# tint2rc - Barra de Tareas Estilo Ubuntu (Yaru Dark) UI/UX Táctil para Termux-X11
 # ==============================================================================
-# Repositorio: miguelguerra200022-sudo/termux-vscode-x11
 # Características:
-#  - Barra inferior con altura optimizada para pantallas táctiles (36px).
-#  - Estilo Ubuntu: Fondo grafito oscuro (#181818) e indicador naranja (#e95420).
-#  - Soporte multitarea: Botón individual para cada ventana de VS Code o apps.
-#  - Clic izquierdo: Minimizar / Restaurar / Traer al frente ventana.
-#  - Clic derecho: Alternar Maximizar / Restaurar tamaño.
-#  - Clic central: Cerrar ventana.
-#  - Reloj digital y bandeja del sistema integrados.
+#  - Altura táctil optimizada para pantallas móviles FHD+/QHD+ (46px).
+#  - Iconos nítidos de 30px para VS Code, Zen Browser y selector Táctil/Cursor.
+#  - Estilo Ubuntu: Fondo grafito oscuro (#181818) con indicador naranja (#e95420).
+#  - Multitarea fluida: Botones anchos con fuentes nítidas Sans Bold 10.
+#  - Conmutador táctil directo en la barra (Trackpad <-> Direct Touch).
 # ==============================================================================
 
 # Background 1: Panel principal (Fondo oscuro elegante estilo Ubuntu Yaru)
@@ -36,7 +33,7 @@ border_color_pressed = #484848 100
 
 # Background 3: Ventana activa (Línea naranja inferior estilo Ubuntu #e95420)
 rounded = 4
-border_width = 2
+border_width = 3
 border_sides = B
 background_color = #323232 100
 border_color = #e95420 100
@@ -47,7 +44,7 @@ border_color_pressed = #e95420 100
 
 # Background 4: Ventana de alerta / urgente
 rounded = 4
-border_width = 2
+border_width = 3
 border_sides = B
 background_color = #e95420 100
 border_color = #ffffff 100
@@ -57,7 +54,7 @@ background_color_pressed = #c43c08 100
 border_color_pressed = #ffffff 100
 
 # Background 5: Tooltips informativos
-rounded = 3
+rounded = 4
 border_width = 1
 border_sides = TBLR
 background_color = #222222 100
@@ -93,9 +90,9 @@ border_color_pressed = #3d3d3d 100
 # Panel Principal
 # ------------------------------------------------------------------------------
 panel_items = LTSC
-panel_size = 100% 36
+panel_size = 100% 46
 panel_margin = 0 0
-panel_padding = 4 2 4
+panel_padding = 6 2 6
 panel_background_id = 1
 wm_menu = 0
 panel_dock = 0
@@ -113,23 +110,24 @@ font_shadow = 0
 # ------------------------------------------------------------------------------
 # Lanzadores Fijos de Aplicaciones (Launcher)
 # ------------------------------------------------------------------------------
-launcher_padding = 4 1 6
+launcher_padding = 6 2 8
 launcher_background_id = 0
 launcher_icon_background_id = 0
-launcher_icon_size = 24
+launcher_icon_size = 30
 launcher_icon_asb = 100 0 0
 launcher_icon_theme_override = 0
 startup_notifications = 0
 launcher_tooltip = 1
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/code-oss.desktop
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/zen-browser.desktop
+launcher_item_app = /data/data/com.termux/files/usr/share/applications/touch-toggle.desktop
 
 # ------------------------------------------------------------------------------
 # Barra de Tareas (Taskbar)
 # ------------------------------------------------------------------------------
 taskbar_mode = single_desktop
 taskbar_hide_if_empty = 0
-taskbar_padding = 2 0 4
+taskbar_padding = 4 0 6
 taskbar_background_id = 0
 taskbar_active_background_id = 0
 taskbar_name = 0
@@ -148,16 +146,16 @@ task_text = 1
 task_icon = 1
 task_centered = 0
 urgent_nb_of_blink = 100000
-task_maximum_size = 220 32
-task_padding = 6 3 4
-task_font = Sans 9
+task_maximum_size = 240 38
+task_padding = 8 3 6
+task_font = Sans Bold 10
 task_tooltip = 1
 task_thumbnail = 0
 task_font_color = #b0b0b0 100
 task_active_font_color = #ffffff 100
 task_urgent_font_color = #ffffff 100
 task_iconified_font_color = #777777 100
-task_icon_asb = 90 0 0
+task_icon_asb = 100 0 0
 task_active_icon_asb = 100 0 0
 task_urgent_icon_asb = 100 0 0
 task_iconified_icon_asb = 60 -30 -10
@@ -176,10 +174,10 @@ mouse_scroll_down = next_task
 # ------------------------------------------------------------------------------
 # Bandeja del Sistema (Systray)
 # ------------------------------------------------------------------------------
-systray_padding = 4 2 4
+systray_padding = 6 2 6
 systray_background_id = 0
 systray_sort = ascending
-systray_icon_size = 20
+systray_icon_size = 24
 systray_icon_asb = 100 0 0
 systray_monitor = 1
 systray_name_filter = 
@@ -189,10 +187,10 @@ systray_name_filter =
 # ------------------------------------------------------------------------------
 time1_format = %H:%M
 time2_format = 
-time1_font = Sans Bold 9
-time2_font = Sans 7
+time1_font = Sans Bold 10
+time2_font = Sans 8
 clock_font_color = #e0e0e0 100
-clock_padding = 8 2
+clock_padding = 10 2
 clock_background_id = 6
 clock_tooltip = %A, %d de %B de %Y
 clock_tooltip_timezone = 
@@ -207,7 +205,7 @@ clock_dwheel_command =
 # ------------------------------------------------------------------------------
 tooltip_show_timeout = 0.5
 tooltip_hide_timeout = 0.1
-tooltip_padding = 6 4
+tooltip_padding = 8 5
 tooltip_background_id = 5
 tooltip_font_color = #ffffff 100
-tooltip_font = Sans 8
+tooltip_font = Sans 9

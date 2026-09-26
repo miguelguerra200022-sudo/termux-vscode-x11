@@ -3,6 +3,11 @@
     "workbench.startupEditor": "restoreOpenedEditors",
     "files.hotExit": "onExitAndWindowClose",
     "workbench.externalBrowser": "zen-browser",
+    "window.zoomLevel": 1,
+    "window.titleBarStyle": "custom",
+    "window.menuBarVisibility": "classic",
+    "workbench.iconTheme": "vs-seti",
+    "workbench.productIconTheme": "default",
     "editor.fontFamily": "'Fira Code', 'DejaVu Sans Mono', monospace",
     "editor.fontLigatures": true,
     "editor.fontSize": 14,
@@ -18,6 +23,15 @@
         "titleBar.activeBackground": "#000000",
         "terminal.background": "#000000"
     },
-    "workbench.tree.indent": 16,
-    "workbench.tree.renderIndentGuides": "always"
+    "workbench.tree.indent": 18,
+    "workbench.tree.renderIndentGuides": "always",
+    "editor.smoothScrolling": true,
+    "workbench.list.smoothScrolling": true,
+    "terminal.integrated.smoothScrolling": true,
+    "editor.cursorBlinking": "smooth",
+    "editor.cursorSmoothCaretAnimation": "on",
+    "editor.mouseWheelScrollSensitivity": 1.2,
+    "http.proxySupport": "off",
+    "telemetry.telemetryLevel": "off",
+    "workbench.enableExperiments": false
 }
