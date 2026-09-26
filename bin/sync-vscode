@@ -50,6 +50,8 @@ mkdir -p "$REPO_DIR/bin"
 # 3. Sincronizar VS Code (User data, snippets, configuraciones, estado global y pestañas)
 if [ -d "$HOME/.config/Code - OSS/User" ]; then
     rsync -rltD --no-perms --no-owner --no-group --delete \
+        --exclude=".git" \
+        --exclude="checkpoints" \
         --exclude="*.log" \
         --exclude="*.tmp" \
         --exclude="*.sock" \
