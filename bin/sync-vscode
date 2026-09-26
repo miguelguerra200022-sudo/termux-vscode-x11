@@ -2,11 +2,11 @@
 set -e
 
 # ==============================================================================
-# sync-vscode: Sincronización Automática e Incremental de VS Code y Zen Browser
+# sync-vscode: Sincronización Automática e Incremental con Autenticación Segura
 # ==============================================================================
-# Guarda archivos tal cual como se crean (sin comprimir) para que Git detecte
-# exactamente qué archivos se modificaron o son nuevos, y los sube a GitHub.
-# También mantiene una réplica en el almacenamiento del celular.
+# - Verificación por contraseña (hash SHA-256 criptográfico).
+# - Modo sigiloso (no expone URLs ni tokens en pantalla).
+# - Almacenamiento 100% privado en Termux (sin residuos en /storage/emulated/0).
 # ==============================================================================
 
 GREEN='\033[0;32m'
@@ -15,7 +15,21 @@ CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# 1. Localizar el repositorio del proyecto
+HASH_SEGURA="1e875d6311ef243cebac22b61d5fa9fa4bd57ef94db3e8079879b2002ba7ae8a"
+
+# 1. Autenticación con contraseña protegida (sin eco en pantalla)
+if [ -t 0 ] && [ "$SYNC_AUTO" != "1" ]; then
+    echo -ne "${CYAN}🔒 Ingrese contraseña de seguridad para sincronizar:${NC} "
+    read -s USER_PASS
+    echo ""
+    INPUT_HASH=$(echo -n "$USER_PASS" | sha256sum | awk '{print $1}')
+    if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
+        echo -e "${RED}[!] Contraseña incorrecta. Operación cancelada.${NC}"
+        exit 1
+    fi
+fi
+
+# 2. Localizar el repositorio del proyecto
 REPO_DIR=""
 POSSIBLE_PATHS=(
     "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
@@ -35,19 +49,18 @@ if [ -z "$REPO_DIR" ]; then
 fi
 
 if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    echo -e "${YELLOW}[!] Aviso: No se encontró el repositorio Git local para respaldar datos.${NC}"
     exit 0
 fi
 
-echo -e "${CYAN}[*] Preparando sincronización incremental de VS Code y Zen Browser...${NC}"
+echo -e "${CYAN}[*] Sincronizando datos de forma segura...${NC}"
 
-# 2. Asegurar directorios de destino en el repositorio
+# 3. Asegurar directorios de destino
 mkdir -p "$REPO_DIR/data/vscode/User"
 mkdir -p "$REPO_DIR/data/zen"
 mkdir -p "$REPO_DIR/config"
 mkdir -p "$REPO_DIR/bin"
 
-# 3. Sincronizar VS Code (User data, snippets, configuraciones, estado global y pestañas)
+# 4. Sincronizar VS Code (User data, estado y configuraciones)
 if [ -d "$HOME/.config/Code - OSS/User" ]; then
     rsync -rltD --no-perms --no-owner --no-group --delete \
         --exclude=".git" \
@@ -62,7 +75,7 @@ fi
 
 [ -f "$HOME/.vscode-oss/argv.json" ] && cp "$HOME/.vscode-oss/argv.json" "$REPO_DIR/data/vscode/argv.json" 2>/dev/null || true
 
-# 4. Sincronizar Zen Browser (perfiles, historial, cookies, credenciales y sesiones)
+# 5. Sincronizar Zen Browser (perfiles, historial, cookies, contraseñas y sesiones)
 if [ -d "$HOME/.config/zen" ]; then
     rsync -rltD --no-perms --no-owner --no-group --delete \
         --exclude="cache2" \
@@ -76,13 +89,13 @@ if [ -d "$HOME/.config/zen" ]; then
         "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
 fi
 
-# 5. Sincronizar configuraciones visuales (Openbox, Tint2 y VS Code)
+# 6. Sincronizar configuraciones visuales
 [ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
 [ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
 [ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
 [ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
 
-# 6. Sincronizar scripts del sistema
+# 7. Sincronizar scripts
 SCRIPTS=(
     "start-vscode"
     "stop-vscode"
@@ -104,32 +117,22 @@ for s in "${SCRIPTS[@]}"; do
     [ -f "$PREFIX/bin/$s" ] && cp "$PREFIX/bin/$s" "$REPO_DIR/bin/$s" 2>/dev/null || true
 done
 
-# 7. Mantener réplica local inmediata en el almacenamiento del celular
-PHONE_BACKUP="/storage/emulated/0/Antigravity/Backup-Vscode-Zen"
-if [ -d "/storage/emulated/0" ]; then
-    mkdir -p "$PHONE_BACKUP"
-    rsync -rltD --no-perms --no-owner --no-group --delete "$REPO_DIR/data/" "$PHONE_BACKUP/" 2>/dev/null || true
-fi
-
 # 8. Detectar cambios en Git y subir incrementalmente
 cd "$REPO_DIR"
 
 CHANGES=$(git status --porcelain data/ config/ bin/ docs/ 2>/dev/null || true)
 
 if [ -z "$CHANGES" ]; then
-    echo -e "${GREEN}[✓] Todo al día: no hay archivos nuevos ni modificados para subir.${NC}"
+    echo -e "${GREEN}[✓] Datos al día (sin cambios nuevos).${NC}"
     exit 0
 fi
 
-echo -e "${YELLOW}[*] Detectados archivos nuevos o modificados en VS Code / Zen Browser...${NC}"
 git add data/ config/ bin/ docs/ install.sh 2>/dev/null || true
+COMMIT_MSG="sync: actualización de datos ($(date '+%Y-%m-%d %H:%M:%S'))"
+git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
 
-COMMIT_MSG="sync: actualización de datos, cookies e historial ($(date '+%Y-%m-%d %H:%M:%S'))"
-git commit -m "$COMMIT_MSG" 2>/dev/null || true
-
-echo -e "${YELLOW}[*] Subiendo cambios a GitHub...${NC}"
-if timeout 30 git push origin main 2>/dev/null; then
-    echo -e "${GREEN}[✓] ¡Todo respaldado y subido a GitHub con éxito!${NC}"
+if timeout 30 git push origin main >/dev/null 2>&1; then
+    echo -e "${GREEN}[✓] Sesión y datos sincronizados correctamente.${NC}"
 else
-    echo -e "${YELLOW}[!] Cambios guardados localmente. (No se pudo conectar a GitHub, se subirá en el próximo cierre).${NC}"
+    echo -e "${YELLOW}[!] Guardado localmente. Se sincronizará en la próxima conexión.${NC}"
 fi

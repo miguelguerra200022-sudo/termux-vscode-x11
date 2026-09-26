@@ -16,7 +16,7 @@
     <item label="🔄 Recargar Interfaz Openbox">
       <action name="Restart" />
     </item>
-    <item label="💾 Sincronizar y Guardar en GitHub">
+    <item label="💾 Sincronización Segura">
       <action name="Execute">
         <command>sync-vscode</command>
       </action>

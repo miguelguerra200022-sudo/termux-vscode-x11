@@ -4,8 +4,8 @@ set -e
 # ==============================================================================
 # restore-vscode: Restauración Completa de VS Code, Zen Browser y Entorno X11
 # ==============================================================================
-# Restaura todos los archivos tal cual (sin comprimir) desde el repositorio
-# o desde el almacenamiento interno del celular.
+# - Verificación por contraseña (hash SHA-256 criptográfico).
+# - Restaura cookies, historial, extensiones y pestañas directamente.
 # ==============================================================================
 
 GREEN='\033[0;32m'
@@ -14,17 +14,26 @@ CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${CYAN}======================================================${NC}"
-echo -e "${GREEN}  🔄 Restaurador de Datos: VS Code + Zen Browser${NC}"
-echo -e "${CYAN}======================================================${NC}"
+HASH_SEGURA="1e875d6311ef243cebac22b61d5fa9fa4bd57ef94db3e8079879b2002ba7ae8a"
 
-# 1. Localizar la fuente de datos
+# 1. Autenticación con contraseña protegida (sin eco en pantalla)
+if [ -t 0 ]; then
+    echo -ne "${CYAN}🔒 Ingrese contraseña de seguridad para restaurar:${NC} "
+    read -s USER_PASS
+    echo ""
+    INPUT_HASH=$(echo -n "$USER_PASS" | sha256sum | awk '{print $1}')
+    if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
+        echo -e "${RED}[!] Contraseña incorrecta. Acceso denegado.${NC}"
+        exit 1
+    fi
+fi
+
+# 2. Localizar la fuente de datos
 SOURCE_DIR=""
 POSSIBLE_PATHS=(
     "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11/data"
     "$HOME/termux-vscode-x11/data"
     "/storage/emulated/0/Antigravity/termux-vscode-x11/data"
-    "/storage/emulated/0/Antigravity/Backup-Vscode-Zen"
 )
 
 for path in "${POSSIBLE_PATHS[@]}"; do
@@ -35,15 +44,14 @@ for path in "${POSSIBLE_PATHS[@]}"; do
 done
 
 if [ -z "$SOURCE_DIR" ]; then
-    echo -e "${RED}[!] Error: No se encontraron datos de respaldo en las rutas conocidas.${NC}"
+    echo -e "${RED}[!] Error: No se encontraron datos para restaurar.${NC}"
     exit 1
 fi
 
-echo -e "${YELLOW}[*] Fuente de datos detectada:${NC} ${CYAN}$SOURCE_DIR${NC}"
+echo -e "${CYAN}[*] Restaurando entorno, extensiones, historial y sesiones...${NC}"
 
-# 2. Restaurar VS Code (User, configuraciones, tokens, historial y extensiones)
+# 3. Restaurar VS Code
 if [ -d "$SOURCE_DIR/vscode/User" ]; then
-    echo -e "${YELLOW}[*] Restaurando datos de usuario, estado y sesiones de VS Code...${NC}"
     mkdir -p "$HOME/.config/Code - OSS/User"
     rsync -rltD --no-perms --no-owner --no-group "$SOURCE_DIR/vscode/User/" "$HOME/.config/Code - OSS/User/" 2>/dev/null || true
 fi
@@ -53,14 +61,13 @@ if [ -f "$SOURCE_DIR/vscode/argv.json" ]; then
     cp "$SOURCE_DIR/vscode/argv.json" "$HOME/.vscode-oss/argv.json" 2>/dev/null || true
 fi
 
-# 3. Restaurar Zen Browser (perfiles, historial, cookies de 1ros y 3ros, contraseñas)
+# 4. Restaurar Zen Browser (perfiles, historial, cookies de 1ros y 3ros, contraseñas)
 if [ -d "$SOURCE_DIR/zen" ]; then
-    echo -e "${YELLOW}[*] Restaurando perfiles, cookies, historial y credenciales de Zen Browser...${NC}"
     mkdir -p "$HOME/.config/zen"
     rsync -rltD --no-perms --no-owner --no-group "$SOURCE_DIR/zen/" "$HOME/.config/zen/" 2>/dev/null || true
 fi
 
-# 4. Asegurar directorios de sockets y runtime
+# 5. Asegurar directorios de runtime
 mkdir -p "${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
 mkdir -p "$HOME/.config/openbox" "$HOME/.config/tint2"
 

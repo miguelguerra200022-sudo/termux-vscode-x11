@@ -9,7 +9,11 @@
                 "folderUri": "file:///storage/emulated/0/Antigravity"
             }
         ],
-        "emptyWindows": []
+        "emptyWindows": [
+            {
+                "backupFolder": "1790394330477"
+            }
+        ]
     },
     "windowControlHeight": 35,
     "profileAssociations": {

@@ -30,6 +30,6 @@ echo "[+] Sesión guardada y entorno gráfico detenido correctamente."
 
 # 6. Sincronización y respaldo 100% automático de configuraciones con GitHub
 if command -v sync-vscode >/dev/null 2>&1; then
-    echo "[*] Sincronizando configuraciones automáticamente con GitHub..."
+    echo "[*] Sincronización segura de sesión y datos..."
     sync-vscode || true
 fi
