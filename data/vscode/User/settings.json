@@ -3,7 +3,7 @@
     "workbench.startupEditor": "restoreOpenedEditors",
     "files.hotExit": "onExitAndWindowClose",
     "workbench.externalBrowser": "zen-browser",
-    "window.zoomLevel": 1,
+    "window.zoomLevel": 0.2,
     "window.titleBarStyle": "custom",
     "window.menuBarVisibility": "classic",
     "workbench.iconTheme": "vs-seti",

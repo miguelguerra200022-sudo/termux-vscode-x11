@@ -22,3 +22,6 @@
 {"timestamp":146146489,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"glean_timestamp":"1790433429779","firstTime":"false"}}
 {"timestamp":146150667,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"glean_timestamp":"1790433429779","firstTime":"false"}}
 {"timestamp":146237846,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"glean_timestamp":"1790433525185","firstTime":"false"}}
+{"timestamp":146925624,"category":"session_restore","name":"startup_session_auto_restored","extra":{"glean_timestamp":"1790434199691","new_tab_action":"disabled"}}
+{"timestamp":146997121,"category":"urlbar","name":"abandonment","extra":{"available_semantic_sources":"none","window_mode":"classic","abandonment_type":"blur","n_words":"0","search_engine_default_id":"google-b-d","groups":"top_site,top_site,top_site,top_site","results":"top_site,top_site,top_site,top_site","n_chars":"0","glean_timestamp":"1790434271203","actions":"none,none,none,none","search_mode":"","interaction":"typed","n_results":"4","sap":"urlbar_newtab"}}
+{"timestamp":147002857,"category":"doh","name":"state_shutdown","extra":{"value":"null","glean_timestamp":"1790434276923"}}

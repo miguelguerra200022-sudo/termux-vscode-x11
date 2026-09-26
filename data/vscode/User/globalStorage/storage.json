@@ -11,7 +11,7 @@
         ],
         "emptyWindows": []
     },
-    "windowControlHeight": 42,
+    "windowControlHeight": 36,
     "profileAssociations": {
         "workspaces": {
             "file:///storage/emulated/0/Antigravity/IdeasMillonarias": "__default__profile__",
@@ -23,7 +23,7 @@
     "theme": "vs-dark",
     "themeBackground": "#000000",
     "windowSplash": {
-        "zoomLevel": 1,
+        "zoomLevel": 0.2,
         "baseTheme": "vs-dark",
         "colorInfo": {
             "foreground": "#cccccc",
@@ -62,9 +62,9 @@
             "uiState": {
                 "mode": 0,
                 "x": 0,
-                "y": 0,
+                "y": 46,
                 "width": 720,
-                "height": 1604
+                "height": 1594
             }
         },
         "openedWindows": []

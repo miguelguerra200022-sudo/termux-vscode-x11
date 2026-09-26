@@ -232,7 +232,7 @@ else
 fi
 
 # 8.1 Configuración de Barra de Tareas tint2 (Estilo Ubuntu Yaru Dark con Lanzadores)
-echo -e "${YELLOW}[*] Configurando barra de tareas inferior tint2 (estilo Ubuntu)...${NC}"
+echo -e "${YELLOW}[*] Configurando barra superior flotante tint2 UI/UX (Safe Area Insets)...${NC}"
 mkdir -p "$HOME/.config/tint2"
 if [ -f "$SCRIPT_DIR/config/tint2rc" ]; then
     cp "$SCRIPT_DIR/config/tint2rc" "$HOME/.config/tint2/tint2rc"

@@ -106,7 +106,7 @@ else
     openbox --reconfigure >/dev/null 2>&1 || true
 fi
 
-# 8.1 Iniciar la barra de tareas inferior tint2 (estilo Ubuntu)
+# 8.1 Iniciar la barra superior flotante tint2 UI/UX (Safe Area Insets)
 if ! pgrep -x "tint2" > /dev/null 2>&1; then
     echo "[*] Iniciando barra de tareas Ubuntu (tint2)..."
     tint2 >/dev/null 2>&1 &
@@ -120,6 +120,32 @@ if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
         nohup watcher-sync >/dev/null 2>&1 &
     fi
 fi
+
+# 8.3 Detección Dinámica de Pantalla y Adaptación UI/UX (Safe Areas y Curvatura)
+DISP_W=1080
+if command -v xdotool >/dev/null 2>&1; then
+    DISP_GEO=$(DISPLAY=:0 xdotool getdisplaygeometry 2>/dev/null || echo "")
+    [ -n "$DISP_GEO" ] && DISP_W=$(echo "$DISP_GEO" | awk '{print $1}')
+fi
+
+ZOOM_LEVEL=1
+if [ -n "$DISP_W" ]; then
+    if [ "$DISP_W" -le 720 ]; then
+        ZOOM_LEVEL=0.2     # Pantallas compactas (HD / 720p)
+    elif [ "$DISP_W" -le 1080 ]; then
+        ZOOM_LEVEL=0.9     # Pantallas estándar (FHD / 1080p)
+    elif [ "$DISP_W" -le 1440 ]; then
+        ZOOM_LEVEL=1.2     # Pantallas de alta densidad (2K / QHD)
+    else
+        ZOOM_LEVEL=1.5     # Tablets y pantallas 4K
+    fi
+fi
+
+for sfile in "$HOME/.config/Code - OSS/User/settings.json" "${REPO_DIR:-$PWD}/config/settings.json" "${REPO_DIR:-$PWD}/data/vscode/User/settings.json"; do
+    if [ -f "$sfile" ]; then
+        sed -i -E "s/\"window.zoomLevel\": [0-9.]+/\"window.zoomLevel\": $ZOOM_LEVEL/" "$sfile" 2>/dev/null || true
+    fi
+done
 
 # 9. Traer la app Termux:X11 al frente en la pantalla del teléfono
 echo "[*] Abriendo app Termux:X11..."
