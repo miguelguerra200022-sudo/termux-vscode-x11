@@ -12,3 +12,13 @@
 {"timestamp":145913735,"category":"nimbus_events","name":"is_ready","extra":{"glean_timestamp":"1790433187800"}}
 {"timestamp":145922656,"category":"urlbar","name":"engagement","extra":{"actions":"none,none,none,none","results":"top_site,top_site,top_site,top_site","available_semantic_sources":"none","interaction":"typed","groups":"top_site,top_site,top_site,top_site","n_chars":"0","selected_result":"top_site","window_mode":"classic","search_mode":"","sap":"urlbar_newtab","n_words":"0","engagement_type":"click","glean_timestamp":"1790433196721","provider":"UrlbarProviderTopSites","selected_position":"1","search_engine_default_id":"google-b-d","n_results":"4"}}
 {"timestamp":145975168,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"firstTime":"true","glean_timestamp":"1790433266109"}}
+{"timestamp":146111907,"category":"pictureinpicture","name":"create_player","extra":{"height":"401","screenX":"494","value":"0","ccEnabled":"true","screenY":"1203","width":"226","webVTTSubtitles":"false","glean_timestamp":"1790433385973"}}
+{"timestamp":146112156,"category":"pictureinpicture","name":"subtitles_shown_subtitles","extra":{"glean_timestamp":"1790433393222","webVTTSubtitles":"false"}}
+{"timestamp":146106124,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"glean_timestamp":"1790433393222","firstTime":"true"}}
+{"timestamp":146111418,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"firstTime":"true","glean_timestamp":"1790433393222"}}
+{"timestamp":146111226,"category":"pictureinpicture","name":"opened_method_toggle","extra":{"firstTimeToggle":"true","glean_timestamp":"1790433393222"}}
+{"timestamp":146135612,"category":"pictureinpicture","name":"closed_method_unpip","extra":{"glean_timestamp":"1790433409678"}}
+{"timestamp":146143958,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"glean_timestamp":"1790433429779","firstTime":"false"}}
+{"timestamp":146146489,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"glean_timestamp":"1790433429779","firstTime":"false"}}
+{"timestamp":146150667,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"glean_timestamp":"1790433429779","firstTime":"false"}}
+{"timestamp":146237846,"category":"pictureinpicture","name":"saw_toggle_toggle","extra":{"glean_timestamp":"1790433525185","firstTime":"false"}}

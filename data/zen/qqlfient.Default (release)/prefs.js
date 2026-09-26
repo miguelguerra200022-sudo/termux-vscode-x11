@@ -95,6 +95,7 @@ user_pref("media.gmp-manager.lastCheck", 1790394396);
 user_pref("media.gmp-manager.lastEmptyCheck", 1790394396);
 user_pref("media.gmp.storage.version.observed", 1);
 user_pref("media.videocontrols.picture-in-picture.video-toggle.first-seen-secs", 1790428940);
+user_pref("media.videocontrols.picture-in-picture.video-toggle.has-used", true);
 user_pref("network.cookie.CHIPS.lastMigrateDatabase", 2);
 user_pref("network.cookie.validation.lastEpoch", 1);
 user_pref("nimbus.firstUpdateComplete", true);
