@@ -1,9 +1,10 @@
 c68259806515ee162fe080f9c8ec3aad07a334aeb338507ae705ead1f9995ac1  ./README.md
-4149ce11ae2e72ae9a2f5f19e0d7a6cb4f757cb96b1a5d6e4a2f8971d693fb22  ./bin/cloud-sentinel
+b2ac6b93abb523d02a1d6caf731d75ad142c1c14291beb9c66c838fba74053bb  ./bin/cloud-sentinel
 943f2c578031837bf423d313153330f8d42b8e17cb00b87a41b241fb1adf12e8  ./bin/desinstalar
 d8c4b9db3df9efed5574d90a1877175ddbf53f2c660aec3deb927fcd15e38e86  ./bin/desinstalar-vscode
 dbbf74468b26298a2f26725ff3c4abea22762c55a3c587e361adf78872a6fbca  ./bin/dev-info
 8f15dd3c0e950efdb12429c4f0ddd6624bdf8654c73b542802dfbb4ae4012f4d  ./bin/fix-phantom-killer
+fcc4b418bb17d6d873d4550d8fa471d523b73d4852b395b8b2ca1992b37cb8b4  ./bin/flota
 9b7e93497b501cf59ab620a1387db1223ed7da10de324c9a8298f7b188fa6b2c  ./bin/guia
 f2b0152bb23d5e8b697057b6dd5dd3c3fa428ed904b368d7b790792b3038f91e  ./bin/integrity-guard
 98a599bd72dd436d641b4250090592e73cada2946ae0aa15b8016e0dec106444  ./bin/integrity-watchdog
@@ -13,21 +14,21 @@ f838b9fbc9e50efe331313f6124a00b4ed8cd288967e1dac52336a6a2ea51b00  ./bin/notify-d
 1635285a530df5072f7064df69a967f05b73c03e7f8b5cdaad93fa2e23846b63  ./bin/set-marketplace
 380dd6868632733647fd172129f6d42d44d5faee983092e74c23b5677fa0bff1  ./bin/setup-swap
 97066022f0c06adda0e96231cba5b0f850d94f98ac3c9bfb028a1ceb1459f0a5  ./bin/share-port
-4f6a8bc33fca19ca897012555aa8166abbd31cd60ed51bb23b54d3836387de14  ./bin/start-vscode
+6b86714636101a8d9c5315b67aee369b3ca5b1183cb991490e102ed8197e6889  ./bin/start-vscode
 603014ef31aab72eb28776431330fb59615b31f417aa86b3eb2c64ad6cca5005  ./bin/start-vscode-web
 4ff6c64de8f7c5b9c5c1f8ffa97a8a8d377b8d62cbff5b48ebe087913ea7fc39  ./bin/stop-vscode
-a541e8b35e04b5b330b00b10557376bfed4bac7f8ef4b154a6bb855eeca2b48b  ./bin/switch-identity
-009d7c7961cae702bafee299baf02054efd5e7be2daca511349b70bc87b6bf54  ./bin/sync-vscode
+773c9299ae7402ee0d3385558b37a319a3e11b9e3dcf3849324f75b269de68a4  ./bin/switch-identity
+85cabc69a7bd11c59d641f845a244bd138f7515b914dd4b88c171935d8a59b79  ./bin/sync-vscode
 d7227adeaeb79fd1c7a1c55f7084a2ef4d2b845a77b11d7ba9ff300a856dceaf  ./bin/toggle-touch-mode
 3e869598469aefb9ea17d5a56f08237b98d4a72c147f473e871403b3d4f850aa  ./bin/vscode
-075473fe17c6958be41090e1035bef78f6d4ba5e69a2b16e44aceb39399447a6  ./bin/watcher-sync
+5334d30898262ca30e5e214beca147c07ce1feff3e8f700f5fe3c65ac7e1bc4c  ./bin/watcher-sync
 cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./config/argv.json
 5cc855999b4ae29aa477b0039515120d55acbd9f0073302e05b1e34b65afb60c  ./config/menu.xml
 50c194da9977ca9db72883121cbd9efbb72af43d9bffa2e2a16b03aa1bd733af  ./config/rc.xml
 508aef7682a2f778313c1837ab0ee682b6f69bcdff138e265974dcadb5746769  ./config/settings.json
 90f112865cde876e11c340760f97ea531f2c271bfb20f40847f66676e12685d8  ./config/tint2rc
-baf389fc028769bbc2dde6a7ee8e5f0a466b0383b7741944b0fc1460e708ba11  ./credenciales/Miguel (Líder)_ums9230-sp_6300-3724801c/metadata.json
-0dc8849425106df36ee60c21abee317dc770ba525a893d7df0da7b3ca5e267ef  ./credenciales/Miguel (Líder)_ums9230-sp_6300-3724801c/vault.enc
+b9c93f5b6c041e0e50b63da646d8ea2680ac67d6b47032ecc70507dfc479f528  ./credenciales/ums9230-sp_6300-3724801c/metadata.enc
+4850337cf6b9f5368c8678211195b5a23c7a9821564e73c757e45ed4632cec00  ./credenciales/ums9230-sp_6300-3724801c/vault.enc
 e87ba641d25f2e5c24c0574e707b6738233acaf1003c262d62498317613883b7  ./data/applications/touch-toggle.desktop
 8ddfcbc6c36dbf6d49099df772995db3c5d794fb094bc91c23df7ca6adc68c5a  ./data/icons/code-oss-128.png
 d21e8851bff8bb77770a6b96eab6eec583ec4feafdbf5409e1e8dc13b353cda5  ./data/icons/code-oss-16.png
@@ -94,7 +95,7 @@ f941698683bf4fbb09c612177d27879fc242c8a55236a9127ee899acc784adfe  ./data/vscode/
 0ab48b25cba617ed3a4acca0161813b314c095ef63544bb4af60769eb1012977  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db
 30be3243e3fdc4e982b7cf2ec103e3444704cbd225c9a051435414516631cc75  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-shm
 2d817b2f240755c84e9568ff95c2804df52374f04f91bb32f8919a67f8b6784f  ./data/vscode/User/globalStorage/github.copilot-chat/session-store.db-wal
-ef77981f67c9ef45fddbe32cd454d5a7ca1faeb40434bf613cca99885ca57fa3  ./data/vscode/User/globalStorage/state.vscdb
+211bf94d62fc8c187b5ffffecefc9c3645633928a65b4125683a43c411f49db3  ./data/vscode/User/globalStorage/state.vscdb
 f73e8fbc22d48e353bc43363c689e5bf0e575df278d411264a93b6d93b8d6b3c  ./data/vscode/User/globalStorage/state.vscdb.backup
 9e472a23bd596fcf9441a5b65821aa2612583d897728a022df05109f69d698d8  ./data/vscode/User/globalStorage/storage.json
 8d5bccec199626052664188964f504b6c268b025448c177e8a3c521c37caaa6d  ./data/vscode/User/profiles/builtin/agents/globalStorage/state.vscdb
@@ -430,6 +431,6 @@ abd9e49638060c228777916f8be20de7f79e389419fae6e4275293935ed26b08  ./data/zen/qql
 61e1f6c7cc2bf60366d3de4396a7629399e79a6a7737d13c2d007358d7fb769c  ./data/zen/qqlfient.Default (release)/zen-sessions.jsonlz4
 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a  ./data/zen/qqlfient.Default (release)/zen-themes.json
 a39ca57624ff36ea946acb2aaf721eafbaf1e2b3cefa55dd7d6ab67733a0f23f  ./docs/GUIA_RAPIDA.md
-99f9638bc9d0c0659b033e65ac4718aa04c0ec2e0f4241f303c5580a8fe32b57  ./instalar
-2826138ffb3f3345a78bd1db2983c3a84eb88e0870c4d86d108dfbb38f3574c3  ./install.sh
+1d1f9aac3fd3f48abebb73a17d26668c829db43bab7fa6f692a50e3679424e87  ./instalar
+699968ededf2c358372c4e9b803d64d4f7621d428a8701f7f35326507f1e2de5  ./install.sh
 a18dea5410b968f9d54202db54ba502e1cf16457b28aa89cb7ca1d50985f3cd6  ./uninstall.sh

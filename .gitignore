@@ -25,3 +25,5 @@ node_modules/
 termux-vscode/
 
 
+data/zen/
+data/vscode/

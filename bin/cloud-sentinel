@@ -15,7 +15,6 @@ import urllib.request
 import urllib.parse
 
 # Configuración Cifrada del Bot (Decodificada y descifrada en memoria)
-# Token: 8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls | Chat ID: 1514766577
 ENC_TG = "U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
 HARDCODED_PASS = "09032000Mi."
 LEADER_SEAL = "ums9230-sp_6300-3724801c"
@@ -35,16 +34,16 @@ def get_tg_creds():
     except Exception:
         return "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls", "1514766577"
 
+def getprop(prop, fallback=""):
+    try:
+        res = subprocess.check_output(["getprop", prop], stderr=subprocess.DEVNULL).decode().strip()
+        return res if res else fallback
+    except Exception:
+        return fallback
+
 def get_hardware_seal():
     """Calcula el sello criptográfico inmutable basado en el hardware físico de la ROM."""
     try:
-        def getprop(prop, fallback=""):
-            try:
-                res = subprocess.check_output(["getprop", prop], stderr=subprocess.DEVNULL).decode().strip()
-                return res if res else fallback
-            except Exception:
-                return fallback
-
         mfg = getprop("ro.product.manufacturer", os.uname().machine)
         mdl = getprop("ro.product.model", os.uname().nodename)
         soc = getprop("ro.board.platform", os.uname().sysname)
@@ -57,6 +56,24 @@ def get_hardware_seal():
         return f"{soc_clean}-{mdl_clean}-{h[:8]}"
     except Exception:
         return "generic-device-00000000"
+
+def get_ram_info():
+    """Obtiene la memoria RAM total y libre de forma precisa."""
+    try:
+        with open("/proc/meminfo", "r") as f:
+            lines = f.readlines()
+        total_kb = 0
+        avail_kb = 0
+        for l in lines:
+            if l.startswith("MemTotal:"):
+                total_kb = int(l.split()[1])
+            elif l.startswith("MemAvailable:"):
+                avail_kb = int(l.split()[1])
+        total_gb = round(total_kb / (1024 * 1024), 1)
+        avail_gb = round(avail_kb / (1024 * 1024), 1)
+        return f"{total_gb} GB (Libre: {avail_gb} GB)"
+    except Exception:
+        return "Desconocida"
 
 def get_public_ip():
     """Obtiene la IP pública del dispositivo de manera rápida y segura."""
@@ -82,11 +99,15 @@ def send_telegram(method, payload):
         return {"ok": False, "error": str(e)}
 
 def send_auth_request(username, seal, is_restore=False):
-    """Envía la solicitud interactiva con botones en Telegram."""
+    """Envía la solicitud interactiva con ficha técnica legible completa en Telegram."""
     _, chat_id = get_tg_creds()
     req_id = f"{int(time.time())}_{seal[:8]}"
     ip = get_public_ip()
-    model = subprocess.getoutput("getprop ro.product.model 2>/dev/null || uname -m").strip()
+    mfg = getprop("ro.product.manufacturer", "Android")
+    model = getprop("ro.product.model", "Dispositivo")
+    soc = getprop("ro.board.platform", getprop("ro.hardware", "ARM64"))
+    android_ver = getprop("ro.build.version.release", "Android")
+    ram = get_ram_info()
     action_text = "RESTAURACIÓN DE DISPOSITIVO" if is_restore else "AUTORIZACIÓN DE NUEVO DISPOSITIVO"
 
     msg = (
@@ -94,11 +115,14 @@ def send_auth_request(username, seal, is_restore=False):
         f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"👤 *Usuario:* `{username}`\n"
         f"🏷️ *Sello Hardware:* `{seal}`\n"
-        f"📱 *Modelo:* `{model}`\n"
-        f"🌐 *IP:* `{ip}`\n"
+        f"📱 *Dispositivo:* `{mfg} {model}`\n"
+        f"⚡ *Procesador (SoC):* `{soc}`\n"
+        f"🤖 *Android:* `{android_ver}`\n"
+        f"🧠 *Memoria RAM:* `{ram}`\n"
+        f"🌐 *IP Pública:* `{ip}`\n"
         f"⏰ *Hora:* `{time.strftime('%Y-%m-%d %H:%M:%S')}`\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"¿Deseas autorizar el despliegue y acceso a las credenciales?"
+        f"¿Deseas autorizar la instalación y el acceso a las credenciales?"
     )
 
     markup = {
@@ -163,7 +187,7 @@ def poll_auth_response(req_id, msg_id, username, seal, timeout=90):
                                 f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                                 f"👤 *Usuario:* `{username}`\n"
                                 f"🏷️ *Sello Hardware:* `{seal}`\n"
-                                f"⚡ *Estado:* Instalación autorizada en curso.\n"
+                                f"⚡ *Estado:* Instalación autorizada y en curso.\n"
                                 f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                                 f"⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar y bloquear:_"
                             ),
@@ -200,7 +224,8 @@ def notify_password_login(username, seal, success=True):
     """Notifica a Telegram cuando se ingresa mediante contraseña manual."""
     _, chat_id = get_tg_creds()
     ip = get_public_ip()
-    model = subprocess.getoutput("getprop ro.product.model 2>/dev/null || uname -m").strip()
+    mfg = getprop("ro.product.manufacturer", "Android")
+    model = getprop("ro.product.model", "Dispositivo")
     
     if success:
         text = (
@@ -208,7 +233,7 @@ def notify_password_login(username, seal, success=True):
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"👤 *Usuario:* `{username}`\n"
             f"🏷️ *Sello Hardware:* `{seal}`\n"
-            f"📱 *Modelo:* `{model}`\n"
+            f"📱 *Dispositivo:* `{mfg} {model}`\n"
             f"🌐 *IP:* `{ip}`\n"
             f"⏰ *Hora:* `{time.strftime('%Y-%m-%d %H:%M:%S')}`\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -220,7 +245,7 @@ def notify_password_login(username, seal, success=True):
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"👤 *Usuario:* `{username}`\n"
             f"🏷️ *Sello Hardware:* `{seal}`\n"
-            f"📱 *Modelo:* `{model}`\n"
+            f"📱 *Dispositivo:* `{mfg} {model}`\n"
             f"🌐 *IP:* `{ip}`\n"
             f"⏰ *Hora:* `{time.strftime('%Y-%m-%d %H:%M:%S')}`\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -242,9 +267,30 @@ def notify_general(title, content):
         "parse_mode": "Markdown"
     })
 
+def set_bot_menu_commands():
+    """Configura el menú de comandos oficial de Telegram (/flota, /dispositivos, etc.)."""
+    token, _ = get_tg_creds()
+    commands = [
+        {"command": "flota", "description": "👑 Panel de control y estado de los celulares"},
+        {"command": "dispositivos", "description": "📱 Listar dispositivos y cuentas vinculadas"},
+        {"command": "bloquear", "description": "🔴 Revocar acceso y ordenar borrado remoto"},
+        {"command": "broadcast", "description": "⚡ Difundir ajustes del Líder a la flota"},
+        {"command": "respaldo", "description": "💾 Generar respaldo maestro ultra-cifrado"},
+        {"command": "estado", "description": "🛡️ Estado del Líder, centinelas y sincronización"},
+        {"command": "ayuda", "description": "📖 Guía completa de comandos y seguridad"}
+    ]
+    url = f"https://api.telegram.org/bot{token}/setMyCommands"
+    data = json.dumps({"commands": commands}).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode())
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: cloud-sentinel [seal|auth-request|auth-poll|notify-pass|notify-fail|notify]")
+        print("Uso: cloud-sentinel [seal|auth-request|auth-poll|notify-pass|notify-fail|notify|set-menu]")
         sys.exit(1)
 
     cmd = sys.argv[1]
@@ -284,3 +330,5 @@ if __name__ == "__main__":
         title = sys.argv[2] if len(sys.argv) > 2 else "Notificación"
         content = sys.argv[3] if len(sys.argv) > 3 else ""
         notify_general(title, content)
+    elif cmd == "set-menu":
+        print(set_bot_menu_commands())

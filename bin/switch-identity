@@ -3,7 +3,7 @@ set -e
 
 # ==============================================================================
 # switch-identity: Conmutador Multi-Dispositivo Exclusivo del Líder
-# Permite alternar instantáneamente entre los 10 celulares y sus 10 cuentas de Google
+# Permite alternar instantáneamente entre los 10 celulares y sus cuentas de Google
 # ==============================================================================
 
 BLUE='\033[1;34m'
@@ -23,32 +23,28 @@ if [ -z "$LOCAL_SEAL" ] && [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ];
     LOCAL_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null || true)
 fi
 
-# 1. Verificación de Hardware: Exclusivo para el Líder
+# 1. Verificación de Hardware Líder
 if [ "$LOCAL_SEAL" != "$LEADER_SEAL" ]; then
     echo -e "${RED}╔═══════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${RED}║  ⛔ ACCESO DENEGADO: FUNCIÓN EXCLUSIVA DEL LÍDER                  ║${NC}"
     echo -e "${RED}╚═══════════════════════════════════════════════════════════════════╝${NC}"
-    echo -e "${YELLOW}[!] Este dispositivo (${LOCAL_SEAL}) es un nodo de trabajo aislado.${NC}"
-    echo -e "${GRAY}    Por seguridad, cada celular solo puede acceder a su propia identidad.${NC}"
+    echo -e "${YELLOW}[!] Este dispositivo no posee privilegios de conmutación.${NC}"
     exit 1
 fi
 
-# 2. Localizar el repositorio del proyecto
 REPO_DIR=""
 CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
 [ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
-if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
-fi
 if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
     REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
 fi
 
 CREDS_DIR="$REPO_DIR/credenciales"
 mkdir -p "$CREDS_DIR"
+PASS="09032000Mi."
 
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
-CURRENT_ACTIVE="Miguel (Líder)_ums9230-sp_6300-3724801c"
+CURRENT_ACTIVE="ums9230-sp_6300-3724801c"
 [ -f "$ACTIVE_FILE" ] && CURRENT_ACTIVE=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$CURRENT_ACTIVE")
 
 clear 2>/dev/null || true
@@ -58,7 +54,6 @@ echo -e "${CYAN}║      Alterna entre los 10 celulares y sus cuentas de Google 
 echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# 3. Listar dispositivos registrados
 FOLDERS=()
 INDEX=1
 echo -e "${BOLD}Dispositivos y cuentas disponibles en la flota:${NC}"
@@ -66,31 +61,30 @@ echo -e "${BLUE}─────────────────────�
 
 for d in "$CREDS_DIR"/*; do
     [ -d "$d" ] || continue
-    BASENAME=$(basename "$d")
-    FOLDERS+=("$BASENAME")
-    
-    META_FILE="$d/metadata.json"
-    USER_NAME="$BASENAME"
-    DEV_SEAL=""
-    ACCOUNTS="10"
-    ROLE="Worker"
-    
-    if [ -f "$META_FILE" ]; then
-        USER_NAME=$(python3 -c "import json; print(json.load(open('$META_FILE')).get('username', '$BASENAME'))" 2>/dev/null || echo "$BASENAME")
-        DEV_SEAL=$(python3 -c "import json; print(json.load(open('$META_FILE')).get('device_seal', ''))" 2>/dev/null || echo "")
-        ACCOUNTS=$(python3 -c "import json; print(json.load(open('$META_FILE')).get('accounts_count', '10'))" 2>/dev/null || echo "10")
-        ROLE=$(python3 -c "import json; print(json.load(open('$META_FILE')).get('role', 'Worker'))" 2>/dev/null || echo "Worker")
+    SEAL=$(basename "$d")
+    [[ "$SEAL" == .* ]] && continue
+    FOLDERS+=("$SEAL")
+
+    ENC_FILE="$d/metadata.enc"
+    META="{}"
+    if [ -f "$ENC_FILE" ]; then
+        META=$(openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}_${SEAL}" -in "$ENC_FILE" 2>/dev/null || echo "{}")
     fi
 
+    USER_NAME=$(python3 -c "import json; print(json.loads('''$META''').get('username', '$SEAL'))" 2>/dev/null || echo "$SEAL")
+    MODEL=$(python3 -c "import json; print(json.loads('''$META''').get('device_model', 'Android'))" 2>/dev/null || echo "Android")
+    ROLE=$(python3 -c "import json; print(json.loads('''$META''').get('role', 'Worker'))" 2>/dev/null || echo "Worker")
+    ACCOUNTS=$(python3 -c "import json; print(json.loads('''$META''').get('accounts_limit', 'Ilimitadas'))" 2>/dev/null || echo "Ilimitadas")
+
     TAG=""
-    if [ "$BASENAME" = "$CURRENT_ACTIVE" ]; then
+    if [ "$SEAL" = "$CURRENT_ACTIVE" ]; then
         TAG=" ${GREEN}(ACTIVO EN ESTE MOMENTO)${NC}"
     fi
 
     if [ "$ROLE" = "Líder" ]; then
-        echo -e " [${INDEX}] ${YELLOW}⭐ ${USER_NAME}${NC} [${DEV_SEAL}] (${ACCOUNTS} cuentas)${TAG}"
+        echo -e " [${INDEX}] ${YELLOW}⭐ ${USER_NAME}${NC} [${MODEL}] (${ACCOUNTS})${TAG}"
     else
-        echo -e " [${INDEX}] 📱 ${USER_NAME} [${DEV_SEAL}] (${ACCOUNTS} cuentas)${TAG}"
+        echo -e " [${INDEX}] 📱 ${USER_NAME} [${MODEL}] (${ACCOUNTS})${TAG}"
     fi
     INDEX=$((INDEX + 1))
 done
@@ -102,8 +96,6 @@ echo ""
 TOTAL_ITEMS=${#FOLDERS[@]}
 if [ "$TOTAL_ITEMS" -eq 0 ]; then
     echo -e "${YELLOW}[*] No hay otros dispositivos registrados aún en 'credenciales/'.${NC}"
-    echo -e "${GRAY}Cuando instales en otros celulares, aparecerán automáticamente aquí.${NC}"
-    echo ""
     read -p "Presiona ENTER para salir..." dummy
     exit 0
 fi
@@ -121,22 +113,18 @@ if ! [[ "$CHOICE" =~ ^[0-9]+$ ]] || [ "$CHOICE" -lt 1 ] || [ "$CHOICE" -gt "$TOT
     exit 1
 fi
 
-TARGET_FOLDER="${FOLDERS[$((CHOICE - 1))]}"
+TARGET_SEAL="${FOLDERS[$((CHOICE - 1))]}"
 
-if [ "$TARGET_FOLDER" = "$CURRENT_ACTIVE" ]; then
-    echo -e "${GREEN}[✓] La identidad '${TARGET_FOLDER}' ya se encuentra activa en este dispositivo.${NC}"
+if [ "$TARGET_SEAL" = "$CURRENT_ACTIVE" ]; then
+    echo -e "${GREEN}[✓] La identidad seleccionada ya se encuentra activa en este dispositivo.${NC}"
     exit 0
 fi
 
 echo ""
 echo -e "${YELLOW}[*] Guardando estado actual de '${CURRENT_ACTIVE}'...${NC}"
 
-# Guardar estado actual
 CURRENT_VAULT_DIR="$CREDS_DIR/$CURRENT_ACTIVE"
 if [ -d "$CURRENT_VAULT_DIR" ]; then
-    EXTRACTED_SEAL=$(echo "$CURRENT_ACTIVE" | awk -F'_' '{print $NF}')
-    [ -z "$EXTRACTED_SEAL" ] && EXTRACTED_SEAL="$LEADER_SEAL"
-    
     tar -czf - \
         --exclude="cache2" \
         --exclude="startupCache" \
@@ -148,33 +136,26 @@ if [ -d "$CURRENT_VAULT_DIR" ]; then
         --exclude="*.log" \
         --exclude="*.sock" \
         -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-        openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${EXTRACTED_SEAL}" -out "$CURRENT_VAULT_DIR/vault.enc" 2>/dev/null || true
+        openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}_${CURRENT_ACTIVE}" -out "$CURRENT_VAULT_DIR/vault.enc" 2>/dev/null || true
 fi
 
-echo -e "${CYAN}[*] Desempaquetando identidad seleccionada: '${TARGET_FOLDER}'...${NC}"
-TARGET_VAULT_DIR="$CREDS_DIR/$TARGET_FOLDER"
-TARGET_VAULT="$TARGET_VAULT_DIR/vault.enc"
+echo -e "${CYAN}[*] Desempaquetando identidad seleccionada: '${TARGET_SEAL}'...${NC}"
+TARGET_VAULT="$CREDS_DIR/$TARGET_SEAL/vault.enc"
 
 if [ -f "$TARGET_VAULT" ]; then
-    TARGET_SEAL=$(echo "$TARGET_FOLDER" | awk -F'_' '{print $NF}')
-    [ -z "$TARGET_SEAL" ] && TARGET_SEAL="$LEADER_SEAL"
-
-    # Limpiar entorno actual de forma segura
     rm -rf "$HOME/.config/Code - OSS/User" "$HOME/.config/zen" 2>/dev/null || true
     mkdir -p "$HOME/.config"
 
-    # Descifrar el baúl seleccionado en memoria RAM directamente a destino
-    openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${TARGET_SEAL}" -in "$TARGET_VAULT" 2>/dev/null | \
+    openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}_${TARGET_SEAL}" -in "$TARGET_VAULT" 2>/dev/null | \
         tar -xzf - -C "$HOME/.config" 2>/dev/null || true
 
-    echo "$TARGET_FOLDER" > "$ACTIVE_FILE"
-    echo -e "${GREEN}[✓] ¡Conmutación exitosa! Ahora estás operando con: '${TARGET_FOLDER}'${NC}"
+    echo "$TARGET_SEAL" > "$ACTIVE_FILE"
+    echo -e "${GREEN}[✓] ¡Conmutación exitosa! Ahora estás operando con: '${TARGET_SEAL}'${NC}"
 
-    # Notificar a Telegram
     if command -v cloud-sentinel >/dev/null 2>&1; then
-        cloud-sentinel notify "🔄 *CONMUTACIÓN DE IDENTIDAD EN DISPOSITIVO LÍDER*" "📱 Perfil activo cambiado a: \`${TARGET_FOLDER}\`" >/dev/null 2>&1 || true
+        cloud-sentinel notify "🔄 *CONMUTACIÓN DE IDENTIDAD EN DISPOSITIVO LÍDER*" "📱 Perfil activo cambiado a: \`${TARGET_SEAL}\`" >/dev/null 2>&1 || true
     fi
 else
-    echo -e "${RED}[!] Error: No se encontró el archivo de baúl cifrado 'vault.enc' en ${TARGET_FOLDER}.${NC}"
+    echo -e "${RED}[!] Error: No se encontró 'vault.enc' en ${TARGET_SEAL}.${NC}"
     exit 1
 fi

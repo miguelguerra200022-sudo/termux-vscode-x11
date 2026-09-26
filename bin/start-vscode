@@ -13,6 +13,16 @@ if [ "$1" = "--switch" ] || [ "$1" = "-s" ]; then
 fi
 
 # 0.1 Cargar y verificar bóveda cifrada en memoria (Cero Contraseñas en disco)
+REPO_DIR=""
+CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
+fi
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+fi
+
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 LEADER_SEAL="ums9230-sp_6300-3724801c"
 LOCAL_SEAL=""
@@ -24,22 +34,25 @@ if [ -z "$LOCAL_SEAL" ] && [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ];
 fi
 [ -z "$LOCAL_SEAL" ] && LOCAL_SEAL="$LEADER_SEAL"
 
-ACTIVE_ID="Miguel (Líder)_ums9230-sp_6300-3724801c"
-[ -f "$ACTIVE_FILE" ] && ACTIVE_ID=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$ACTIVE_ID")
+ACTIVE_SEAL="ums9230-sp_6300-3724801c"
+[ -f "$ACTIVE_FILE" ] && ACTIVE_SEAL=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$ACTIVE_SEAL")
+VAULT_ENC=""
+TARGET_SEAL="$ACTIVE_SEAL"
 
-REPO_DIR=""
-CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
-[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
-if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+if [ -f "$REPO_DIR/credenciales/$ACTIVE_SEAL/vault.enc" ]; then
+    VAULT_ENC="$REPO_DIR/credenciales/$ACTIVE_SEAL/vault.enc"
+else
+    MATCH=$(find "$REPO_DIR/credenciales" -maxdepth 1 -type d -name "*${ACTIVE_SEAL}" 2>/dev/null | head -n 1)
+    if [ -n "$MATCH" ] && [ -f "$MATCH/vault.enc" ]; then
+        VAULT_ENC="$MATCH/vault.enc"
+        TARGET_SEAL=$(basename "$MATCH")
+    fi
 fi
 
-VAULT_ENC="$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc"
 if [ ! -d "$HOME/.config/Code - OSS/User" ] || [ ! -d "$HOME/.config/zen" ]; then
-    if [ -f "$VAULT_ENC" ]; then
-        echo "[*] Restaurando credenciales y cuentas en RAM para: $ACTIVE_ID..."
-        EXTRACTED_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
-        openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${EXTRACTED_SEAL}" -in "$VAULT_ENC" 2>/dev/null | \
+    if [ -n "$VAULT_ENC" ] && [ -f "$VAULT_ENC" ]; then
+        echo "[*] Restaurando credenciales y cuentas en RAM para: $TARGET_SEAL..."
+        openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${TARGET_SEAL}" -in "$VAULT_ENC" 2>/dev/null | \
             tar -xzf - -C "$HOME/.config" 2>/dev/null || true
     fi
 fi

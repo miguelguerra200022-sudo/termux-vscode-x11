@@ -61,7 +61,7 @@ init_golden_vault() {
     chmod 700 "$HOME/.config/termux-vscode" "$GOLDEN_DIR" 2>/dev/null || true
 
     # Respaldar binarios de defensa originales en bóveda dorada protegida
-    for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel"; do
+    for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota"; do
         if [ -f "$PREFIX/bin/$bin_name" ] && [ ! -f "$GOLDEN_DIR/$bin_name" ]; then
             cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
             chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
@@ -190,13 +190,21 @@ do_sync() {
 
     # 6.3 Sincronizar Bóveda Cifrada de la Identidad Activa (Zero Texto Plano)
     ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
-    ACTIVE_ID="Miguel (Líder)_ums9230-sp_6300-3724801c"
-    [ -f "$ACTIVE_FILE" ] && ACTIVE_ID=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$ACTIVE_ID")
-    ACTIVE_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
-    [ -z "$ACTIVE_SEAL" ] && ACTIVE_SEAL="ums9230-sp_6300-3724801c"
+    ACTIVE_SEAL="ums9230-sp_6300-3724801c"
+    [ -f "$ACTIVE_FILE" ] && ACTIVE_SEAL=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$ACTIVE_SEAL")
 
-    VAULT_DIR="$REPO_DIR/credenciales/$ACTIVE_ID"
-    mkdir -p "$VAULT_DIR"
+    if [ -d "$REPO_DIR/credenciales/$ACTIVE_SEAL" ]; then
+        VAULT_DIR="$REPO_DIR/credenciales/$ACTIVE_SEAL"
+    else
+        MATCH=$(find "$REPO_DIR/credenciales" -maxdepth 1 -type d -name "*${ACTIVE_SEAL}" 2>/dev/null | head -n 1)
+        if [ -n "$MATCH" ]; then
+            VAULT_DIR="$MATCH"
+        else
+            VAULT_DIR="$REPO_DIR/credenciales/$ACTIVE_SEAL"
+            mkdir -p "$VAULT_DIR"
+        fi
+    fi
+    TARGET_SEAL=$(basename "$VAULT_DIR")
 
     if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
         tar -czf - \
@@ -210,7 +218,7 @@ do_sync() {
             --exclude="*.log" \
             --exclude="*.sock" \
             -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-            openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${ACTIVE_SEAL}" -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
+            openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${TARGET_SEAL}" -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
     fi
 
     # 6.4 Sincronizar configuraciones visuales

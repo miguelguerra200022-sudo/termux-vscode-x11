@@ -1,8 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -e
+set +o history
+export HISTFILE=/dev/null
 
 # ==============================================================================
-# Instalador Automatizado: VS Code Nativo + Termux-X11 Pro (Siempre Última Versión)
+# Instalador Automatizado: VS Code Nativo + Termux-X11 Pro + Cloud Sentinel
 # Repositorio: miguelguerra200022-sudo/termux-vscode-x11
 # ==============================================================================
 
@@ -11,11 +13,12 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+BOLD='\033[1m'
+NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  🚀 Instalador de VS Code Nativo + Termux:X11 Pro${NC}"
-echo -e "${CYAN}     (Siempre descargando las últimas versiones)${NC}"
+echo -e "${CYAN}     (Sincronización Cloud Sentinel Multi-Dispositivo)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 
@@ -25,7 +28,179 @@ if [ ! -d "/data/data/com.termux" ]; then
     exit 1
 fi
 
-# 2. Permisos de almacenamiento en Android si no están concedidos
+# 2. Paso 1 Obligatorio: Instalar utilidades iniciales (curl, openssl, git, python)
+echo -e "${YELLOW}[*] Verificando e instalando utilidades de red y cifrado (curl, git, openssl, python)...${NC}"
+pkg install -y curl openssl git python >/dev/null 2>&1 || true
+
+# 3. Detectar Hardware Seal Inmutable de este celular
+get_hardware_seal() {
+    local mfg="$(getprop ro.product.manufacturer 2>/dev/null || uname -m)"
+    local mdl="$(getprop ro.product.model 2>/dev/null || uname -n)"
+    local soc="$(getprop ro.board.platform 2>/dev/null || uname -s)"
+    local hw="$(getprop ro.boot.hardware 2>/dev/null || getprop ro.hardware 2>/dev/null || uname -m)"
+    local bld="$(getprop ro.build.fingerprint 2>/dev/null || id -u)"
+    local raw="${mfg}|${mdl}|${soc}|${hw}|${bld}"
+    local hash=$(echo -n "$raw" | sha256sum | awk '{print $1}')
+    local soc_clean=$(echo "$soc" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_')
+    local mdl_clean=$(echo "$mdl" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_')
+    echo "${soc_clean}-${mdl_clean}-${hash:0:8}"
+}
+
+SELLO_HARDWARE=$(get_hardware_seal)
+LEADER_SEAL="ums9230-sp_6300-3724801c"
+
+# Persistir sello de hardware en almacenamiento y configuración
+mkdir -p "$HOME/.config/termux-vscode"
+echo -n "$SELLO_HARDWARE" > "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null || true
+if [ -d "/storage/emulated/0" ]; then
+    echo -n "$SELLO_HARDWARE" > "/storage/emulated/0/.device_hw_seal" 2>/dev/null || true
+fi
+
+echo -e "${GREEN}[✓] Sello de Hardware físico detectado:${NC} ${BOLD}${SELLO_HARDWARE}${NC}"
+
+# 4. Solicitar Nombre de Usuario
+DEFAULT_USER="Usuario"
+if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
+    DEFAULT_USER="Miguel (Líder)"
+    echo -e "${YELLOW}⭐ Dispositivo Líder identificado.${NC}"
+fi
+
+echo -ne "${BOLD}👤 Nombre de usuario [${DEFAULT_USER}]: ${NC}"
+read -r INPUT_USER
+USERNAME="${INPUT_USER:-$DEFAULT_USER}"
+
+# 5. Pasarela de Autorización Sentinel (Telegram + Contraseña Maestra)
+HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
+ENC_TG="U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
+TG_CREDS=$(echo "$ENC_TG" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"09032000Mi." 2>/dev/null || echo "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls|1514766577")
+BOT_TOKEN=$(echo "$TG_CREDS" | cut -d'|' -f1)
+CHAT_ID=$(echo "$TG_CREDS" | cut -d'|' -f2)
+
+REQ_ID="${SELLO_HARDWARE}_$(date +%s)"
+EXT_IP=$(curl -s --connect-timeout 3 https://api.ipify.org 2>/dev/null || echo "127.0.0.1")
+MODEL_NAME="$(getprop ro.product.manufacturer 2>/dev/null) $(getprop ro.product.model 2>/dev/null)"
+
+echo ""
+echo -e "${CYAN}[*] Solicitando autorización de seguridad al bot de Telegram...${NC}"
+
+TG_MSG=$(cat << EOF_MSG
+🛡️ *SOLICITUD DE AUTORIZACIÓN DE DISPOSITIVO*
+━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 *Usuario:* \`${USERNAME}\`
+🏷️ *Sello Hardware:* \`${SELLO_HARDWARE}\`
+📱 *Modelo:* \`${MODEL_NAME}\`
+🌐 *IP:* \`${EXT_IP}\`
+⏰ *Hora:* \`$(date '+%Y-%m-%d %H:%M:%S')\`
+━━━━━━━━━━━━━━━━━━━━━━━━━
+¿Deseas autorizar la instalación y sincronización en este celular?
+EOF_MSG
+)
+
+TG_PAYLOAD=$(python3 -c "
+import json
+print(json.dumps({
+    'chat_id': '$CHAT_ID',
+    'text': '''$TG_MSG''',
+    'parse_mode': 'Markdown',
+    'reply_markup': {
+        'inline_keyboard': [
+            [
+                {'text': '✅ APROBAR ACCESO', 'callback_data': 'auth_approve_$REQ_ID'},
+                {'text': '❌ RECHAZAR', 'callback_data': 'auth_reject_$REQ_ID'}
+            ]
+        ]
+    }
+}))
+" 2>/dev/null || true)
+
+SENT_RES=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+    -H "Content-Type: application/json" \
+    -d "$TG_PAYLOAD" 2>/dev/null || true)
+
+MSG_ID=$(python3 -c "import json; print(json.loads('''$SENT_RES''').get('result', {}).get('message_id', ''))" 2>/dev/null || true)
+
+echo -e "${YELLOW}⏳ Esperando aprobación en Telegram (@CloudNodeSync_bot)...${NC}"
+echo -e "${GRAY}   👉 Pulsa [APROBAR ACCESO] en el chat de Telegram.${NC}"
+echo -e "${GRAY}   (O presiona ENTER para autorizar mediante contraseña manual)${NC}"
+
+APPROVED=0
+START_WAIT=$(date +%s)
+OFFSET=-10
+
+while [ $(( $(date +%s) - START_WAIT )) -lt 45 ]; do
+    if read -t 1 -n 1 -s USER_INPUT 2>/dev/null; then
+        break
+    fi
+
+    UPDATES=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=2" 2>/dev/null || true)
+    
+    POLL_RESULT=$(python3 -c "
+import json, sys
+try:
+    data = json.loads('''$UPDATES''')
+    for item in data.get('result', []):
+        cb = item.get('callback_query', {})
+        cb_data = cb.get('data', '')
+        cb_id = cb.get('id')
+        if cb_data == 'auth_approve_$REQ_ID':
+            print(f'APPROVE|{cb_id}')
+            sys.exit(0)
+        elif cb_data == 'auth_reject_$REQ_ID':
+            print(f'REJECT|{cb_id}')
+            sys.exit(0)
+except Exception:
+    pass
+" 2>/dev/null || true)
+
+    if [[ "$POLL_RESULT" == APPROVE* ]]; then
+        CB_ID=$(echo "$POLL_RESULT" | cut -d'|' -f2)
+        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Aprobado" >/dev/null 2>&1 || true
+        REVOKE_PAYLOAD=$(python3 -c "
+import json
+print(json.dumps({
+    'chat_id': '$CHAT_ID',
+    'message_id': '$MSG_ID',
+    'text': '✅ *DISPOSITIVO AUTORIZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n⚡ *Estado:* Instalación autorizada y en curso.\n━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar y bloquear:_\n',
+    'parse_mode': 'Markdown',
+    'reply_markup': {
+        'inline_keyboard': [
+            [{'text': '🔴 REVOCAR ACCESO / BLOQUEAR', 'callback_data': 'revoke_$SELLO_HARDWARE'}]
+        ]
+    }
+}))
+" 2>/dev/null || true)
+        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/editMessageText" -H "Content-Type: application/json" -d "$REVOKE_PAYLOAD" >/dev/null 2>&1 || true
+        APPROVED=1
+        echo -e "${GREEN}[✓] ¡Acceso aprobado con éxito vía Telegram!${NC}"
+        break
+    elif [[ "$POLL_RESULT" == REJECT* ]]; then
+        CB_ID=$(echo "$POLL_RESULT" | cut -d'|' -f2)
+        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Denegado" >/dev/null 2>&1 || true
+        echo -e "${RED}[!] Solicitud rechazada por el administrador en Telegram.${NC}"
+        exit 1
+    fi
+done
+
+AUTH_PASSWORD="09032000Mi."
+if [ "$APPROVED" -eq 0 ]; then
+    echo ""
+    echo -ne "🔒 Ingrese contraseña de autorización: "
+    read -s INPUT_PASS
+    echo ""
+    INPUT_HASH=$(echo -n "$INPUT_PASS" | sha256sum | awk '{print $1}')
+    if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
+        echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada.${NC}"
+        FAIL_MSG="🚨 *INTENTO DE ACCESO FALLIDO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n❌ *Contraseña incorrecta ingresada en terminal.*"
+        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FAIL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
+        exit 1
+    fi
+    AUTH_PASSWORD="$INPUT_PASS"
+    echo -e "${GREEN}[✓] Contraseña correcta verificada.${NC}"
+    PASS_MSG="🔑 *ACCESO POR CONTRASEÑA DIRECTA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n⚠️ *Autorizado por contraseña maestra en terminal.*"
+    curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$PASS_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
+fi
+
+# 6. Permisos de almacenamiento en Android si no están concedidos
 if [ ! -d "/storage/emulated/0" ] || ! ls "/storage/emulated/0" >/dev/null 2>&1; then
     echo -e "${YELLOW}[*] Solicitando permisos de almacenamiento a Android...${NC}"
     echo -e "${CYAN}[i] Pulsa 'PERMITIR' en la ventana emergente de tu pantalla para acceder a tus archivos.${NC}"
@@ -39,7 +214,7 @@ if [ ! -d "/storage/emulated/0" ] || ! ls "/storage/emulated/0" >/dev/null 2>&1;
     done
 fi
 
-# 3. Actualizar repositorios e instalar las versiones más recientes de todo
+# 7. Actualizar repositorios e instalar paquetes
 echo -e "${YELLOW}[*] Buscando y actualizando paquetes a su última versión disponible...${NC}"
 pkg update -y
 pkg upgrade -y
@@ -47,10 +222,10 @@ pkg upgrade -y
 echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
-echo -e "${YELLOW}[*] Instalando las últimas versiones de VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl
+echo -e "${YELLOW}[*] Instalando VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
+pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python
 
-# 4. Detección Inteligente e Instalación de APKs (X11 y Widget)
+# 8. Detección Inteligente e Instalación de APKs (X11 y Widget)
 echo -e "${YELLOW}[*] Comprobando complementos gráficos de Android (Termux:X11 y Termux:Widget)...${NC}"
 mkdir -p "/storage/emulated/0/Download"
 CONFIG_DIR="$HOME/.config/termux-vscode"
@@ -133,40 +308,25 @@ else
     echo -e "${GREEN}[✓] Termux:Widget ya se encuentra instalado.${NC}"
 fi
 
-# 5. Localización Universal del Repositorio y Sanitización Cero-Rastros
+# 9. Localización Universal del Repositorio y Sanitización Cero-Rastros
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
 mkdir -p "$HOME/.config/termux-vscode"
 
-# Si no se ejecuta desde una carpeta clonada (ej. curl | bash), clonar en $HOME universal
 if [ ! -d "$SCRIPT_DIR/.git" ]; then
     SCRIPT_DIR="$HOME/termux-vscode-x11"
     if [ ! -d "$SCRIPT_DIR/.git" ]; then
-        echo -e "${YELLOW}[*] Obteniendo repositorio en ubicación universal ($SCRIPT_DIR)...${NC}"
+        echo -e "${YELLOW}[*] Clonando repositorio central...${NC}"
         git clone --depth 1 "https://github.com/miguelguerra200022-sudo/termux-vscode-x11.git" "$SCRIPT_DIR" 2>/dev/null || true
     fi
 fi
 
-# Guardar la ruta universal del repositorio para todos los centinelas y utilidades
 if [ -d "$SCRIPT_DIR/.git" ]; then
     echo "$SCRIPT_DIR" > "$HOME/.config/termux-vscode/repo_path" 2>/dev/null || true
-    CURRENT_REMOTE=$(git -C "$SCRIPT_DIR" config --get remote.origin.url 2>/dev/null || true)
-    if [ -n "$CURRENT_REMOTE" ]; then
-        TOKEN_FROM_URL=$(echo "$CURRENT_REMOTE" | sed -nE "s/https:\/\/[^:]+:([^@]+)@.*/\1/p")
-        [ -z "$TOKEN_FROM_URL" ] && TOKEN_FROM_URL=$(echo "$CURRENT_REMOTE" | sed -nE "s/https:\/\/([^@]+)@.*/\1/p")
-        if [ -n "$TOKEN_FROM_URL" ]; then
-            MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
-            echo -n "$TOKEN_FROM_URL" | openssl enc -aes-256-cbc -a -A -pbkdf2 -pass pass:"$MACHINE_KEY" > "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
-            chmod 400 "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
-            rm -f "$HOME/.config/termux-vscode/.auth_token" 2>/dev/null || true
-        fi
-        CLEAN_REMOTE=$(echo "$CURRENT_REMOTE" | sed -E "s/https:\/\/[^@]+@/https:\/\//")
-        git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
-    fi
+    CLEAN_REMOTE="https://github.com/miguelguerra200022-sudo/termux-vscode-x11.git"
+    git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
 fi
-BASE_RAW="https://raw.githubusercontent.com/miguelguerra200022-sudo/termux-vscode-x11/main"
-CURL_OPTS=(-fsSL -H "Cache-Control: no-cache" -H "Pragma: no-cache")
 
-# 6. Crear y configurar scripts y comandos de desarrollo en $PREFIX/bin
+# 10. Despliegue de scripts en $PREFIX/bin
 echo -e "${YELLOW}[*] Instalando utilidades Pro en el sistema...${NC}"
 
 SCRIPTS=(
@@ -187,64 +347,39 @@ SCRIPTS=(
     "start-vscode-web"
     "guia"
     "vscode"
+    "toggle-touch-mode"
+    "switch-identity"
+    "cloud-sentinel"
+    "flota"
     "desinstalar-vscode"
     "desinstalar"
-    "toggle-touch-mode"
 )
-rm -f "$PREFIX/bin/bloquear-vscode" "$PREFIX/bin/desbloquear-vscode" 2>/dev/null || true
 
 for s in "${SCRIPTS[@]}"; do
-    rm -f "$PREFIX/bin/$s"
+    rm -f "$PREFIX/bin/$s" 2>/dev/null || true
     if [ -f "$SCRIPT_DIR/bin/$s" ]; then
         cp "$SCRIPT_DIR/bin/$s" "$PREFIX/bin/$s"
-    else
-        curl "${CURL_OPTS[@]}" "$BASE_RAW/bin/$s" -o "$PREFIX/bin/$s"
     fi
-    chmod +x "$PREFIX/bin/$s"
+    chmod +x "$PREFIX/bin/$s" 2>/dev/null || true
 done
 chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" 2>/dev/null || true
 
 ln -sf "$PREFIX/bin/start-vscode" "$HOME/start-vscode.sh"
 ln -sf "$PREFIX/bin/stop-vscode" "$HOME/stop-vscode.sh"
 
-# 7. Configuración de VS Code (OLED Pure Black, fuentes con ligaduras, persistencia y navegador)
-echo -e "${YELLOW}[*] Aplicando configuraciones de VS Code...${NC}"
-mkdir -p "$HOME/.config/Code - OSS/User"
-mkdir -p "$HOME/.vscode-oss"
+# 11. Configuración de VS Code y Openbox
+echo -e "${YELLOW}[*] Aplicando configuraciones de VS Code y Openbox...${NC}"
+mkdir -p "$HOME/.config/Code - OSS/User" "$HOME/.vscode-oss" "$HOME/.config/openbox" "$HOME/.config/tint2"
 
-if [ -f "$SCRIPT_DIR/config/settings.json" ]; then
-    cp "$SCRIPT_DIR/config/settings.json" "$HOME/.config/Code - OSS/User/settings.json"
-    cp "$SCRIPT_DIR/config/argv.json" "$HOME/.vscode-oss/argv.json"
-else
-    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/settings.json" -o "$HOME/.config/Code - OSS/User/settings.json"
-    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/argv.json" -o "$HOME/.vscode-oss/argv.json"
-fi
+[ -f "$SCRIPT_DIR/config/settings.json" ] && cp "$SCRIPT_DIR/config/settings.json" "$HOME/.config/Code - OSS/User/settings.json"
+[ -f "$SCRIPT_DIR/config/argv.json" ] && cp "$SCRIPT_DIR/config/argv.json" "$HOME/.vscode-oss/argv.json"
+[ -f "$SCRIPT_DIR/config/rc.xml" ] && cp "$SCRIPT_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml"
+[ -f "$SCRIPT_DIR/config/menu.xml" ] && cp "$SCRIPT_DIR/config/menu.xml" "$HOME/.config/openbox/menu.xml"
+[ -f "$SCRIPT_DIR/config/tint2rc" ] && cp "$SCRIPT_DIR/config/tint2rc" "$HOME/.config/tint2/tint2rc"
 
-# 8. Configuración de Openbox (Optimización de pantalla completa y menú contextual)
-echo -e "${YELLOW}[*] Configurando gestor de ventanas Openbox para pantallas táctiles...${NC}"
-mkdir -p "$HOME/.config/openbox"
-if [ -f "$SCRIPT_DIR/config/rc.xml" ]; then
-    cp "$SCRIPT_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml"
-    [ -f "$SCRIPT_DIR/config/menu.xml" ] && cp "$SCRIPT_DIR/config/menu.xml" "$HOME/.config/openbox/menu.xml"
-else
-    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/rc.xml" -o "$HOME/.config/openbox/rc.xml"
-    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/menu.xml" -o "$HOME/.config/openbox/menu.xml" || true
-fi
-
-# 8.1 Configuración de Barra de Tareas tint2 (Estilo Ubuntu Yaru Dark con Lanzadores)
-echo -e "${YELLOW}[*] Configurando barra superior flotante tint2 UI/UX (Safe Area Insets)...${NC}"
-mkdir -p "$HOME/.config/tint2"
-if [ -f "$SCRIPT_DIR/config/tint2rc" ]; then
-    cp "$SCRIPT_DIR/config/tint2rc" "$HOME/.config/tint2/tint2rc"
-else
-    curl "${CURL_OPTS[@]}" "$BASE_RAW/config/tint2rc" -o "$HOME/.config/tint2/tint2rc"
-fi
-
-# 8.2 Configurar iconos oficiales de alta resolución para la barra de tareas y el sistema
-echo -e "${YELLOW}[*] Instalando iconos oficiales (VS Code, Zen Browser, Selector Táctil)...${NC}"
-mkdir -p "$PREFIX/share/pixmaps"
-mkdir -p "$PREFIX/share/icons/hicolor/scalable/apps"
-mkdir -p "$PREFIX/share/applications"
+# 12. Configurar Iconos Oficiales
+echo -e "${YELLOW}[*] Instalando iconos oficiales...${NC}"
+mkdir -p "$PREFIX/share/pixmaps" "$PREFIX/share/icons/hicolor/scalable/apps" "$PREFIX/share/applications"
 
 if [ -d "$SCRIPT_DIR/data/icons" ]; then
     for size in 16 24 32 48 64 128 256; do
@@ -254,12 +389,7 @@ if [ -d "$SCRIPT_DIR/data/icons" ]; then
         [ -f "$SCRIPT_DIR/data/icons/zen-browser-${size}.png" ] && cp "$SCRIPT_DIR/data/icons/zen-browser-${size}.png" "$PREFIX/share/icons/hicolor/${size}x${size}/apps/zen-browser.png" 2>/dev/null || true
         [ -f "$SCRIPT_DIR/data/icons/touch-toggle-${size}.png" ] && cp "$SCRIPT_DIR/data/icons/touch-toggle-${size}.png" "$PREFIX/share/icons/hicolor/${size}x${size}/apps/touch-toggle.png" 2>/dev/null || true
     done
-    [ -f "$SCRIPT_DIR/data/icons/code-oss.svg" ] && cp "$SCRIPT_DIR/data/icons/code-oss.svg" "$PREFIX/share/icons/hicolor/scalable/apps/code-oss.svg" 2>/dev/null || true
-    [ -f "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss.svg" ] && cp "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss.svg" "$PREFIX/share/icons/hicolor/scalable/apps/com.visualstudio.code.oss.svg" 2>/dev/null || true
-    [ -f "$SCRIPT_DIR/data/icons/zen-browser.svg" ] && cp "$SCRIPT_DIR/data/icons/zen-browser.svg" "$PREFIX/share/icons/hicolor/scalable/apps/zen-browser.svg" 2>/dev/null || true
-    [ -f "$SCRIPT_DIR/data/icons/touch-toggle.svg" ] && cp "$SCRIPT_DIR/data/icons/touch-toggle.svg" "$PREFIX/share/icons/hicolor/scalable/apps/touch-toggle.svg" 2>/dev/null || true
     [ -f "$SCRIPT_DIR/data/icons/code-oss-48.png" ] && cp "$SCRIPT_DIR/data/icons/code-oss-48.png" "$PREFIX/share/pixmaps/code-oss.png" 2>/dev/null || true
-    [ -f "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss-48.png" ] && cp "$SCRIPT_DIR/data/icons/com.visualstudio.code.oss-48.png" "$PREFIX/share/pixmaps/com.visualstudio.code.oss.png" 2>/dev/null || true
     [ -f "$SCRIPT_DIR/data/icons/zen-browser-48.png" ] && cp "$SCRIPT_DIR/data/icons/zen-browser-48.png" "$PREFIX/share/pixmaps/zen-browser.png" 2>/dev/null || true
     [ -f "$SCRIPT_DIR/data/icons/touch-toggle-48.png" ] && cp "$SCRIPT_DIR/data/icons/touch-toggle-48.png" "$PREFIX/share/pixmaps/touch-toggle.png" 2>/dev/null || true
 fi
@@ -268,158 +398,127 @@ if [ -f "$SCRIPT_DIR/data/applications/touch-toggle.desktop" ]; then
     cp "$SCRIPT_DIR/data/applications/touch-toggle.desktop" "$PREFIX/share/applications/touch-toggle.desktop" 2>/dev/null || true
 fi
 
-# Asegurar rutas absolutas en los lanzadores para garantizar carga inmediata de iconos en Tint2
 sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/code-oss.png|g' "$PREFIX/share/applications/code-oss.desktop" 2>/dev/null || true
 sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/zen-browser.png|g' "$PREFIX/share/applications/zen-browser.desktop" 2>/dev/null || true
 sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/touch-toggle.png|g' "$PREFIX/share/applications/touch-toggle.desktop" 2>/dev/null || true
 
-# 8.3 Restauración de datos y sesiones (VS Code y Zen Browser)
-echo -e "${YELLOW}[*] Restaurando datos guardados (sesiones, cookies, historial, extensiones)...${NC}"
-if [ -f "$PREFIX/bin/restore-vscode" ]; then
-    "$PREFIX/bin/restore-vscode" || true
-fi
+# 13. Sincronización y Configuración de Bóveda Cifrada en GitHub (Zero Texto Plano)
+TARGET_FOLDER="credenciales/${SELLO_HARDWARE}"
+mkdir -p "$SCRIPT_DIR/$TARGET_FOLDER"
 
-# 9. Configuración de variables en ~/.bashrc (Audio nativo, red acelerada y llaves)
-echo -e "${YELLOW}[*] Configurando variables de entorno y aceleración de red en ~/.bashrc...${NC}"
-touch "$HOME/.bashrc"
-grep -q "VSCODE_CLI_USE_FILE_KEYCHAIN" "$HOME/.bashrc" || echo "export VSCODE_CLI_USE_FILE_KEYCHAIN=1" >> "$HOME/.bashrc"
-sed -i 's/export BROWSER=termux-open-url/export BROWSER=zen-browser/g' "$HOME/.bashrc" 2>/dev/null || true
-grep -q "BROWSER=zen-browser" "$HOME/.bashrc" || echo "export BROWSER=zen-browser" >> "$HOME/.bashrc"
-grep -q "PULSE_SERVER" "$HOME/.bashrc" || echo "export PULSE_SERVER=127.0.0.1" >> "$HOME/.bashrc"
-grep -q "PULSE_LATENCY_MSEC" "$HOME/.bashrc" || echo "export PULSE_LATENCY_MSEC=30" >> "$HOME/.bashrc"
-grep -q "UV_THREADPOOL_SIZE" "$HOME/.bashrc" || echo "export UV_THREADPOOL_SIZE=16" >> "$HOME/.bashrc"
+ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
+echo "${SELLO_HARDWARE}" > "$ACTIVE_FILE"
 
-# 9.1 Optimización de DNS multi-servidor de alta velocidad (Cloudflare + Google)
-if [ -d "$PREFIX/etc" ]; then
-    cat <<'DNS_CONF' > "$PREFIX/etc/resolv.conf"
-nameserver 1.1.1.1
-nameserver 8.8.8.8
-nameserver 1.0.0.1
-nameserver 8.8.4.4
-options timeout:1 attempts:2 rotate
-DNS_CONF
-fi
-
-# 10. Configurar preferencias óptimas de Termux:X11 (Portapapeles, Pantalla Completa, Filtrado Bilineal)
-echo -e "${YELLOW}[*] Optimizando preferencias de Termux:X11 (Portapapeles, Pantalla Completa, Renderizado Suave)...${NC}"
-termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear >/dev/null 2>&1 || true
-
-# 11. Configurar accesos directos para la app Termux:Widget en pantalla de inicio
-echo -e "${YELLOW}[*] Configurando accesos directos de pantalla de inicio (~/.shortcuts/)...${NC}"
-mkdir -p "$HOME/.shortcuts/tasks"
-cat << 'EOF' > "$HOME/.shortcuts/VS-Code"
-#!/data/data/com.termux/files/usr/bin/bash
-vscode
-EOF
-cat << 'EOF' > "$HOME/.shortcuts/Cerrar-VS-Code"
-#!/data/data/com.termux/files/usr/bin/bash
-stop-vscode
-EOF
-cat << 'EOF' > "$HOME/.shortcuts/Compartir-Web"
-#!/data/data/com.termux/files/usr/bin/bash
-dev-info 8080
-EOF
-chmod -R 700 "$HOME/.shortcuts"
-
-# 12. Habilitar la tienda oficial de Microsoft Marketplace
-echo -e "${YELLOW}[*] Desbloqueando la tienda oficial de extensiones de Microsoft...${NC}"
-"$PREFIX/bin/set-marketplace" official >/dev/null 2>&1 || true
-
-# 13. Descargar e instalar tipografía Fira Code con ligaduras
-if [ ! -f "$PREFIX/share/fonts/TTF/FiraCode-Regular.ttf" ]; then
-    echo -e "${YELLOW}[*] Instalando tipografía Fira Code con ligaduras de programación...${NC}"
-    FONT_TMP="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/firafont"
-    mkdir -p "$FONT_TMP" "$PREFIX/share/fonts/TTF" "$HOME/.termux"
-    curl -sL "https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip" -o "$FONT_TMP/fira.zip" 2>/dev/null && \
-    unzip -q "$FONT_TMP/fira.zip" -d "$FONT_TMP" 2>/dev/null && \
-    cp "$FONT_TMP/ttf/"*.ttf "$PREFIX/share/fonts/TTF/" 2>/dev/null && \
-    cp "$FONT_TMP/ttf/FiraCode-Regular.ttf" "$HOME/.termux/font.ttf" 2>/dev/null || true
-    rm -rf "$FONT_TMP"
-fi
-
-# 14. Instalar copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md)
-echo -e "${YELLOW}[*] Instalando copia maestra permanente de la Guía Rápida (@GUIA_RAPIDA.md)...${NC}"
-mkdir -p "$PREFIX/share/termux-vscode-x11"
-if [ -f "$SCRIPT_DIR/docs/GUIA_RAPIDA.md" ]; then
-    cp "$SCRIPT_DIR/docs/GUIA_RAPIDA.md" "$PREFIX/share/termux-vscode-x11/GUIA_RAPIDA.md"
+if [ -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
+    echo -e "${CYAN}[*] Bóveda cifrada detectada en GitHub. Restaurando cuentas en RAM...${NC}"
+    openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${AUTH_PASSWORD}_${SELLO_HARDWARE}" \
+        -in "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null | \
+        tar -xzf - -C "$HOME/.config" 2>/dev/null || true
+    echo -e "${GREEN}[✓] Cuentas y perfiles restaurados exitosamente en RAM.${NC}"
 else
-    curl "${CURL_OPTS[@]}" "$BASE_RAW/docs/GUIA_RAPIDA.md" -o "$PREFIX/share/termux-vscode-x11/GUIA_RAPIDA.md"
+    echo -e "${YELLOW}[*] Registrando nuevo dispositivo en la flota de GitHub (Cero Texto Plano)...${NC}"
+    META_RAW=$(cat << EOF_META
+{
+  "username": "${USERNAME}",
+  "role": "$([ "$SELLO_HARDWARE" = "$LEADER_SEAL" ] && echo "Líder" || echo "Worker")",
+  "is_master": $([ "$SELLO_HARDWARE" = "$LEADER_SEAL" ] && echo "true" || echo "false"),
+  "device_seal": "${SELLO_HARDWARE}",
+  "device_manufacturer": "$(getprop ro.product.manufacturer 2>/dev/null || echo 'Android')",
+  "device_model": "${MODEL_NAME}",
+  "soc": "$(getprop ro.board.platform 2>/dev/null || getprop ro.hardware 2>/dev/null || echo 'ARM64')",
+  "android_version": "$(getprop ro.build.version.release 2>/dev/null || echo 'Android')",
+  "accounts_limit": "unlimited",
+  "accounts_count": "dynamic",
+  "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "last_sync": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "status": "active"
+}
+EOF_META
+    )
+    echo -n "$META_RAW" | openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${AUTH_PASSWORD}_${SELLO_HARDWARE}" -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc"
+
+    if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
+        tar -czf - \
+            --exclude="cache2" \
+            --exclude="startupCache" \
+            --exclude="lock" \
+            --exclude=".parentlock" \
+            --exclude="Crash Reports" \
+            --exclude="minidumps" \
+            --exclude="*.tmp" \
+            --exclude="*.log" \
+            --exclude="*.sock" \
+            -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
+            openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${AUTH_PASSWORD}_${SELLO_HARDWARE}" -out "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null || true
+    fi
 fi
 
-echo ""
-# 15. Blindaje Criptográfico Anti-Tamper (Ed25519) y Centinelas Autónomos 24/7
-echo -e "${YELLOW}[*] Configurando blindaje de integridad criptográfica y centinelas autónomos...${NC}"
+# 14. Guardar Token Cifrado con la llave local de la máquina
+MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
+ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
+RAW_TOKEN=$(echo "$ENC_TOKEN" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"$AUTH_PASSWORD" 2>/dev/null || true)
+if [ -n "$RAW_TOKEN" ]; then
+    echo -n "$RAW_TOKEN" | openssl enc -aes-256-cbc -a -A -pbkdf2 -pass pass:"$MACHINE_KEY" > "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
+    chmod 400 "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
+fi
+
+# 15. Blindaje Criptográfico Anti-Tamper (Ed25519)
+echo -e "${YELLOW}[*] Configurando firmas criptográficas Ed25519...${NC}"
 mkdir -p "$HOME/.ssh" "$HOME/.config/git"
 chmod 700 "$HOME/.ssh" "$HOME/.config/git" 2>/dev/null || true
-chmod 600 "$HOME/.config/git/allowed_signers" "$HOME/.ssh/id_ed25519"* 2>/dev/null || true
-rm -f "$HOME/.config/git/allowed_signers" 2>/dev/null || true
 if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
     ssh-keygen -t ed25519 -N "" -f "$HOME/.ssh/id_ed25519" >/dev/null 2>&1
 fi
 chmod 400 "$HOME/.ssh/id_ed25519" 2>/dev/null || true
 PUBKEY=$(cat "$HOME/.ssh/id_ed25519.pub")
 echo "principal $PUBKEY" > "$HOME/.config/git/allowed_signers"
-chmod 400 "$HOME/.ssh/id_ed25519.pub" "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+chmod 400 "$HOME/.config/git/allowed_signers" 2>/dev/null || true
 
-git config --global user.signingkey "$HOME/.ssh/id_ed25519.pub"
-git config --global gpg.format ssh
-git config --global commit.gpgsign true
-git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signers"
+git config --global user.name "Miguel Guerra" 2>/dev/null || true
+git config --global user.email "miguelguerra200022@gmail.com" 2>/dev/null || true
+git config --global user.signingkey "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true
+git config --global gpg.format ssh 2>/dev/null || true
+git config --global commit.gpgsign true 2>/dev/null || true
+git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signers" 2>/dev/null || true
 
+# 16. Bóveda Dorada (Golden Vault)
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 mkdir -p "$GOLDEN_DIR"
-chmod 700 "$HOME/.config/termux-vscode" "$GOLDEN_DIR" 2>/dev/null || true
-chmod 700 "$GOLDEN_DIR"/* 2>/dev/null || true
-for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode" "sync-vscode"; do
+for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota"; do
     [ -f "$PREFIX/bin/$bin_name" ] && cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
     chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
 done
-cp "$HOME/.ssh/id_ed25519" "$GOLDEN_DIR/id_ed25519" 2>/dev/null || true
-cp "$HOME/.ssh/id_ed25519.pub" "$GOLDEN_DIR/id_ed25519.pub" 2>/dev/null || true
-cp "$HOME/.config/git/allowed_signers" "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
-[ -f "$HOME/.config/termux-vscode/.auth_token" ] && cp "$HOME/.config/termux-vscode/.auth_token" "$GOLDEN_DIR/.auth_token" 2>/dev/null || true
-chmod 400 "$GOLDEN_DIR/id_ed25519"* "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
-[ -f "$GOLDEN_DIR/.auth_token" ] && chmod 400 "$GOLDEN_DIR/.auth_token" 2>/dev/null || true
+cp "$HOME/.ssh/id_ed25519"* "$GOLDEN_DIR/" 2>/dev/null || true
+cp "$HOME/.config/git/allowed_signers" "$GOLDEN_DIR/" 2>/dev/null || true
 
-if ! grep -q "watcher-sync" "$HOME/.bashrc" 2>/dev/null; then
-    cat << 'BASHRC_HOOK' >> "$HOME/.bashrc"
-
-# Centinelas Autónomos de Integridad y Sincronización en Segundo Plano (Watchdog Dual 24/7)
-if command -v watcher-sync >/dev/null 2>&1; then
-    if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
-        setsid -f watcher-sync >/dev/null 2>&1 || true
-    fi
-fi
-if command -v integrity-watchdog >/dev/null 2>&1; then
-    if ! pgrep -f "integrity-watchdog" >/dev/null 2>&1; then
-        setsid -f integrity-watchdog >/dev/null 2>&1 || true
-    fi
-fi
-export PROMPT_COMMAND="pgrep -f watcher-sync >/dev/null 2>&1 || ( setsid -f watcher-sync >/dev/null 2>&1 || true ); pgrep -f integrity-watchdog >/dev/null 2>&1 || ( setsid -f integrity-watchdog >/dev/null 2>&1 || true ); ${PROMPT_COMMAND:-}"
-BASHRC_HOOK
+# 17. Sellar integridad del repositorio
+if command -v integrity-guard >/dev/null 2>&1; then
+    integrity-guard sign "$SCRIPT_DIR" >/dev/null 2>&1 || true
 fi
 
-setsid -f watcher-sync >/dev/null 2>&1 || true
+# 18. Arrancar Centinelas en Segundo Plano
+pkill -f "integrity-watchdog" 2>/dev/null || true
+pkill -f "watcher-sync" 2>/dev/null || true
 setsid -f integrity-watchdog >/dev/null 2>&1 || true
+setsid -f watcher-sync >/dev/null 2>&1 || true
+
+# 19. Notificar éxito final a Telegram
+FINAL_MSG="🚀 *DISPOSITIVO LISTO Y SINCRONIZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello:* \`$SELLO_HARDWARE\`\n🌐 *IP:* \`$EXT_IP\`\n✅ Todas las 10 cuentas y entorno VS Code activos."
+curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FINAL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
+
+# 20. Limpieza Absoluta de Historial (Cero Rastros)
 history -c && history -w 2>/dev/null || true
 
-echo -e "${GREEN}======================================================${NC}"
-echo -e "${GREEN}  ¡Instalación y Configuración Pro Completadas!${NC}"
-echo -e "${BLUE}======================================================${NC}"
 echo ""
-echo -e "🚀 ${CYAN}Comandos Pro disponibles en tu terminal:${NC}"
-echo -e "  • ${YELLOW}vscode${NC}            : Explorador interactivo con números/flechas para elegir carpeta y abrir."
-echo -e "  • ${YELLOW}start-vscode${NC}      : Abre VS Code directo con audio, aceleración y la Guía Rápida."
-echo -e "  • ${YELLOW}stop-vscode${NC}       : Cierra limpiamente y respalda TODO en GitHub automáticamente."
-echo -e "  • ${YELLOW}guia${NC}              : Abre la copia original permanente de la Guía (@GUIA_RAPIDA.md)."
-echo -e "  • ${YELLOW}start-vscode-web${NC}  : Comparte VS Code para usarlo desde tu PC o Tablet remota."
-echo -e "  • ${YELLOW}new-project${NC}       : Generador interactivo de plantillas de proyectos en 3 segundos."
-echo -e "  • ${YELLOW}share-port <port>${NC} : Genera túnel público HTTPS Cloudflare al instante."
-echo -e "  • ${YELLOW}dev-info <port>${NC}   : Muestra enlaces locales y código QR para tu red Wi-Fi."
-echo -e "  • ${YELLOW}set-marketplace${NC}  : Alterna entre tienda Oficial Microsoft y Open-VSX."
-echo -e "  • ${YELLOW}fix-phantom-killer${NC}: Desactiva el Phantom Process Killer de Android 12+."
-echo -e "  • ${YELLOW}notify-done \"msg\"${NC} : Alerta con vibración/notificación al terminar un comando."
-echo -e "  • ${YELLOW}sync-vscode${NC}       : Respalda tus ajustes a GitHub en un solo clic."
-echo -e "  • ${YELLOW}setup-swap${NC}        : Supervisa la memoria RAM y Swap contra cierres OOM."
-echo -e "  • ${YELLOW}desinstalar-vscode${NC}: Desinstala el entorno con un último respaldo firmado a GitHub."
+echo -e "${GREEN}======================================================${NC}"
+echo -e "${GREEN}  🎉 ¡INSTALACIÓN Y SINCRONIZACIÓN COMPLETADA!${NC}"
+echo -e "${CYAN}  Dispositivo: ${USERNAME} (${SELLO_HARDWARE})${NC}"
+echo -e "${GREEN}======================================================${NC}"
+echo ""
+echo -e "Para iniciar el entorno, escribe:"
+echo -e "  ${YELLOW}vscode${NC}        (Lanzador interactivo de proyectos)"
+echo -e "  ${YELLOW}start-vscode${NC}  (Inicio directo de VS Code en Termux:X11)"
+if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
+    echo -e "  ${YELLOW}switch-identity${NC} (Conmutador exclusivo de tus 10 celulares)"
+fi
 echo ""
