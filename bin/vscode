@@ -170,34 +170,38 @@ def get_key():
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 def classify_key(k):
-    """Clasifica cualquier combinación de teclas física, virtual o secuencia ANSI."""
+    """Clasifica cualquier combinación de teclas física, virtual o secuencia ANSI sin conflictos."""
     if not k:
         return 'NONE'
     if k in ('\t', '\x1b[Z'):
         return 'TAB'
     if k in ('q', 'Q', '\x03'):
         return 'QUIT'
-    # Flecha Arriba, W o K (soporta \x1b[A, \x1bOA, etc.)
+    # Flecha Arriba, W o K (soporta \x1b[A, \x1bOA, \x1b[1;5A, etc.)
     if k in ('w', 'W', 'k', 'K') or '[A' in k or 'OA' in k or (k.startswith('\x1b') and k.endswith('A')):
         return 'UP'
-    # Flecha Abajo, S o J (soporta \x1b[B, \x1bOB, etc.)
+    # Flecha Abajo, S o J (soporta \x1b[B, \x1bOB, \x1b[1;5B, etc.)
     if k in ('s', 'S', 'j', 'J') or '[B' in k or 'OB' in k or (k.startswith('\x1b') and k.endswith('B')):
         return 'DOWN'
-    # ENTER o Flecha Derecha (soporta \x1b[C, \x1bOC, etc.)
-    if k in ('\r', '\n') or '[C' in k or 'OC' in k or (k.startswith('\x1b') and k.endswith('C')):
+    # ENTER EXCLUSIVO (Entrar a carpeta o abrir proyecto seleccionado)
+    if k in ('\r', '\n'):
         return 'ENTER'
-    # Flecha Izquierda, Backspace, A o ESC (soporta \x1b[D, \x1bOD, etc.)
-    if k in ('a', 'A', 'h', 'H', '\x7f', '\b') or '[D' in k or 'OD' in k or (k.startswith('\x1b') and k.endswith('D')) or k == '\x1b':
-        return 'BACK'
-    # Paginación
-    if k in ('p', 'P'):
-        return 'PREV'
-    if k in ('n', 'N'):
+    # Flecha Derecha o N: Siguiente página (desplazar hacia siguientes carpetas)
+    if k in ('n', 'N') or '[C' in k or 'OC' in k or (k.startswith('\x1b') and k.endswith('C')):
         return 'NEXT'
+    # Flecha Izquierda o P: Página anterior (desplazar hacia carpetas anteriores)
+    if k in ('p', 'P') or '[D' in k or 'OD' in k or (k.startswith('\x1b') and k.endswith('D')):
+        return 'PREV'
+    # Volver / Subir nivel: ESC o Backspace (o letra A)
+    if k in ('\x7f', '\b', '\x1b', 'a', 'A'):
+        return 'BACK'
+    # Búsqueda / Filtro rápido por nombre
+    if k in ('/', 'f', 'F'):
+        return 'SEARCH'
     # Editar descripción
     if k in ('e', 'E'):
         return 'EDIT'
-    # Borrar
+    # Borrar del historial
     if k in ('d', 'D') or '[3~' in k:
         return 'DELETE'
     # Entrada numérica directa
@@ -380,6 +384,7 @@ def main():
     page_size = 10
     current_page = 0
     status_msg = ""
+    search_filter = ""
 
     # Determinar posición inicial del cursor (en la primera carpeta si existen)
     initial_subdirs = get_subdirs(current_dir)
@@ -395,7 +400,14 @@ def main():
         # Preparar datos según pestaña activa
         if active_tab == 0:
             current_dir = normalize_path(current_dir)
-            subdirs = get_subdirs(current_dir)
+            all_subdirs = get_subdirs(current_dir)
+            
+            # Aplicar filtro de búsqueda si está activo
+            if search_filter:
+                subdirs = [d for d in all_subdirs if search_filter.lower() in d.lower()]
+            else:
+                subdirs = all_subdirs
+
             total_dirs = len(subdirs)
             total_pages = max(1, ((total_dirs - 1) // page_size) + 1)
             if current_page >= total_pages:
@@ -453,6 +465,8 @@ def main():
         if active_tab == 0:
             is_storage_root = (current_dir == STORAGE_ROOT)
             print(f"{YELLOW}Ruta actual:{NC} {CYAN}{BOLD}{current_dir}{NC}")
+            if search_filter:
+                print(f" {YELLOW}🔍 Filtro activo:{NC} {BOLD}\"{search_filter}\"{NC} {GRAY}(coincidencias: {len(subdirs)}) • Pulsa [ / ] para limpiar{NC}")
             print(div_line)
 
             # Opción 0: Abrir en VS Code
@@ -481,10 +495,14 @@ def main():
 
             # Listado de subcarpetas (1 a 10)
             if not visible_subdirs:
-                print(f"   {GRAY}(No hay subcarpetas en este directorio){NC}")
-                print(f"   {CYAN}👉 Pulsa [0] para abrir este proyecto en VS Code o [..] para volver.{NC}")
+                if search_filter:
+                    print(f"   {GRAY}(No se encontraron carpetas con: '{search_filter}'){NC}")
+                    print(f"   {CYAN}👉 Pulsa [/] o ESC para limpiar la búsqueda.{NC}")
+                else:
+                    print(f"   {GRAY}(No hay subcarpetas en este directorio){NC}")
+                    print(f"   {CYAN}👉 Pulsa [0] para abrir este proyecto en VS Code o [..] para volver.{NC}")
             else:
-                name_w = 22
+                name_w = 20
                 for idx, dname in enumerate(visible_subdirs):
                     item_cursor = idx + 2
                     is_sel = (cursor_idx == item_cursor)
@@ -492,40 +510,43 @@ def main():
                     
                     full_p = os.path.join(current_dir, dname)
                     desc = descriptions.get(full_p, "")
+                    is_git = os.path.isdir(os.path.join(full_p, '.git'))
+                    git_tag = "[git] " if is_git else ""
                     
                     display_name = dname if len(dname) <= name_w else (dname[:name_w - 3] + "...")
                     padded_name = display_name.ljust(name_w)
-                    rem = cols - 10 - name_w - 3
+                    rem = cols - 12 - name_w - len(git_tag) - 3
 
                     if is_sel:
                         desc_text = f"│ {desc}" if desc else "│"
-                        raw_line = f" > [{num:2d}] 📁 {padded_name} {desc_text}".ljust(cols - 2)
+                        raw_line = f" > [{num:2d}] 📁 {padded_name} {git_tag}{desc_text}".ljust(cols - 2)
                         print(f"{HL_CYAN} {raw_line}{NC}")
                     else:
+                        git_color_tag = f"{GREEN}[git]{NC} " if is_git else ""
                         if desc:
                             display_desc = desc if len(desc) <= rem else (desc[:rem - 3] + "...")
                             desc_part = f"{GRAY}│{NC} {YELLOW}\"{display_desc}\"{NC}"
                         else:
                             desc_part = f"{GRAY}│ —{NC}"
-                        print(f"   [{num:2d}] 📁 {padded_name} {desc_part}")
+                        print(f"   [{num:2d}] 📁 {padded_name} {git_color_tag}{desc_part}")
 
             print(div_line)
 
-            # Paginación
-            prev_s = "« [P] Anterior" if current_page > 0 else "              "
-            next_s = "[N] Siguiente »" if current_page < (total_pages - 1) else "              "
+            # Paginación con flechas explícitas
+            prev_s = "« [← / P] Anterior" if current_page > 0 else "                  "
+            next_s = "[→ / N] Siguiente »" if current_page < (total_pages - 1) else "                  "
             rango_s = f"Carpetas {start_idx + 1}-{end_idx} de {total_dirs}" if total_dirs > 0 else "0 carpetas"
             print(f" {CYAN}{prev_s}{NC}    {BOLD}Pág {current_page + 1}/{total_pages} ({rango_s}){NC}    {CYAN}{next_s}{NC}")
             print(div_line)
 
-            # Guía explicativa
+            # Guía explicativa sin conflictos
             print(f"💡 {BOLD}Guía de navegación:{NC}")
-            print(f" • {YELLOW}Flechas ↑/↓ o W/S{NC}: Mover cursor  • {YELLOW}ENTER o →{NC}: Entrar / Abrir")
-            print(f" • {YELLOW}← o ESC o A{NC}      : Subir nivel   • {YELLOW}TAB{NC}      : Ver Historial")
-            print(f" • {YELLOW}[1-10]{NC}            : Salto directo • {YELLOW}[E]{NC}      : Poner descripción")
-            print(f" • {YELLOW}[P / N]{NC}           : Cambiar pág   • {YELLOW}[Q]{NC}      : Salir")
+            print(f" • {YELLOW}Flechas ↑/↓ o W/S{NC}   : Mover cursor       • {YELLOW}ENTER{NC}          : Entrar o Abrir")
+            print(f" • {YELLOW}Flechas ←/→ o P/N{NC}   : Cambiar de página  • {YELLOW}ESC o Backspace{NC}: Subir un nivel")
+            print(f" • {YELLOW}[1-9]{NC}               : Salto numérico     • {YELLOW}[ / ]{NC}          : Buscar / Filtrar")
+            print(f" • {YELLOW}[E]{NC}                 : Poner descripción  • {YELLOW}TAB{NC}            : Ver Historial")
             print(div_line)
-            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {BOLD}{WHITE}esc/←{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Moverse  {BOLD}{WHITE}e{NC}{GRAY} Descrip  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
 
         # ------------------ CONTENIDO PESTAÑA 1: HISTORIAL ------------------
         else:
@@ -568,8 +589,8 @@ def main():
             print(div_line)
 
             # Paginación Historial
-            prev_s = "« [P] Anterior" if current_page > 0 else "              "
-            next_s = "[N] Siguiente »" if current_page < (total_pages - 1) else "              "
+            prev_s = "« [← / P] Anterior" if current_page > 0 else "                  "
+            next_s = "[→ / N] Siguiente »" if current_page < (total_pages - 1) else "                  "
             rango_s = f"Proyectos {start_idx + 1}-{end_idx} de {total_hist}" if total_hist > 0 else "0 proyectos"
             print(f" {CYAN}{prev_s}{NC}    {BOLD}Pág {current_page + 1}/{total_pages} ({rango_s}){NC}    {CYAN}{next_s}{NC}")
             print(div_line)
@@ -577,13 +598,14 @@ def main():
             # Guía Historial
             print(f"💡 {BOLD}Guía de Historial:{NC}")
             print(f" • {YELLOW}Flechas ↑/↓ o W/S + ENTER{NC}: Abre el proyecto seleccionado en VS Code")
+            print(f" • {YELLOW}Flechas ←/→ o P/N{NC}        : Cambiar página de proyectos")
             print(f" • {YELLOW}[1-{min(len(visible_hist), 10)}]{NC}              : Abre directo ese número")
             print(f" • {YELLOW}[E]{NC}                       : Editar la descripción de este proyecto")
             print(f" • {YELLOW}[D]{NC}                       : Eliminar este proyecto del historial")
-            print(f" • {YELLOW}TAB o [0]{NC}                : Volver al Explorador de carpetas")
+            print(f" • {YELLOW}TAB o ESC o [0]{NC}          : Volver al Explorador de carpetas")
             print(f" • {YELLOW}[Q]{NC}                       : Salir sin abrir nada")
             print(div_line)
-            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}↑/↓{NC}{GRAY} Moverse  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
 
         if status_msg:
             print(f"\n{YELLOW}⚠️  {status_msg}{NC}")
@@ -632,11 +654,19 @@ def main():
                         cursor_idx = items_on_screen - 1
 
             elif action == 'BACK':
-                if is_storage_root:
+                # Si hay un filtro de búsqueda activo, ESC lo limpia primero
+                if search_filter:
+                    search_filter = ""
+                    current_page = 0
+                    subdirs_now = get_subdirs(current_dir)
+                    cursor_idx = 2 if subdirs_now else 0
+                    status_msg = "Filtro de búsqueda limpiado."
+                elif is_storage_root:
                     status_msg = "Límite alcanzado: Raíz del teléfono (/storage/emulated/0)."
                 else:
                     parent = os.path.dirname(os.path.abspath(current_dir))
                     current_dir = normalize_path(parent)
+                    search_filter = ""
                     subdirs_now = get_subdirs(current_dir)
                     cursor_idx = 2 if subdirs_now else 0
                     current_page = 0
@@ -653,29 +683,59 @@ def main():
                     else:
                         parent = os.path.dirname(os.path.abspath(current_dir))
                         current_dir = normalize_path(parent)
+                        search_filter = ""
                         subdirs_now = get_subdirs(current_dir)
                         cursor_idx = 2 if subdirs_now else 0
                         current_page = 0
                 else:
                     folder_selected = visible_subdirs[cursor_idx - 2]
                     current_dir = normalize_path(os.path.join(current_dir, folder_selected))
+                    search_filter = ""
                     subdirs_now = get_subdirs(current_dir)
                     cursor_idx = 2 if subdirs_now else 0
                     current_page = 0
 
+            # Flecha Derecha o N: Siguiente página de carpetas
             elif action == 'NEXT':
                 if current_page < total_pages - 1:
                     current_page += 1
                     cursor_idx = 2
+                    status_msg = f"Página {current_page + 1} de {total_pages}"
                 else:
                     status_msg = "Ya estás en la última página."
 
+            # Flecha Izquierda o P: Página anterior de carpetas
             elif action == 'PREV':
                 if current_page > 0:
                     current_page -= 1
                     cursor_idx = 2
+                    status_msg = f"Página {current_page + 1} de {total_pages}"
                 else:
                     status_msg = "Ya estás en la primera página."
+
+            elif action == 'SEARCH':
+                sys.stdout.write("\033[H\033[J")
+                cols = min(get_term_cols(), 72)
+                print(f"{BLUE}" + "═" * cols + f"{NC}")
+                print(f"{GREEN}  🔍 BUSCAR / FILTRAR CARPETAS{NC}")
+                print(f"{BLUE}" + "═" * cols + f"{NC}")
+                print(f"Ruta actual: {CYAN}{current_dir}{NC}\n")
+                if search_filter:
+                    print(f"Filtro actual: {YELLOW}\"{search_filter}\"{NC}")
+                print("Escribe el nombre de la carpeta a buscar:")
+                print(f" • {YELLOW}ENTER{NC} : Aplicar filtro (o ENTER vacío para quitarlo).")
+                print(f" • {YELLOW}ESC{NC}   : Cancelar y volver.\n")
+                q = prompt_text_with_esc(f"{BOLD}🔍 Buscar:{NC} ")
+                if q is not None:
+                    search_filter = q.strip()
+                    current_page = 0
+                    all_sub = get_subdirs(current_dir)
+                    matching = [d for d in all_sub if search_filter.lower() in d.lower()] if search_filter else all_sub
+                    cursor_idx = 2 if matching else 0
+                    if search_filter:
+                        status_msg = f"Filtro aplicado: '{search_filter}' ({len(matching)} carpetas)."
+                    else:
+                        status_msg = "Filtro eliminado (mostrando todas las carpetas)."
 
             elif action == 'EDIT':
                 if cursor_idx >= 2:
@@ -695,6 +755,7 @@ def main():
                 elif 1 <= val <= len(visible_subdirs):
                     folder_selected = visible_subdirs[val - 1]
                     current_dir = normalize_path(os.path.join(current_dir, folder_selected))
+                    search_filter = ""
                     subdirs_now = get_subdirs(current_dir)
                     cursor_idx = 2 if subdirs_now else 0
                     current_page = 0
@@ -724,6 +785,22 @@ def main():
                     else:
                         status_msg = f"La carpeta ya no existe: {target}"
 
+            elif action == 'NEXT':
+                if current_page < total_pages - 1:
+                    current_page += 1
+                    cursor_idx = 0
+                    status_msg = f"Página {current_page + 1} de {total_pages}"
+                else:
+                    status_msg = "Ya estás en la última página del historial."
+
+            elif action == 'PREV':
+                if current_page > 0:
+                    current_page -= 1
+                    cursor_idx = 0
+                    status_msg = f"Página {current_page + 1} de {total_pages}"
+                else:
+                    status_msg = "Ya estás en la primera página del historial."
+
             elif action == 'EDIT':
                 if visible_hist:
                     item = visible_hist[cursor_idx]
@@ -746,20 +823,6 @@ def main():
                         save_data(data)
                         status_msg = f"Proyecto '{name_del}' eliminado del historial."
                         cursor_idx = max(0, cursor_idx - 1)
-
-            elif action == 'NEXT':
-                if current_page < total_pages - 1:
-                    current_page += 1
-                    cursor_idx = 0
-                else:
-                    status_msg = "Ya estás en la última página."
-
-            elif action == 'PREV':
-                if current_page > 0:
-                    current_page -= 1
-                    cursor_idx = 0
-                else:
-                    status_msg = "Ya estás en la primera página."
 
             elif action.startswith('DIGIT_'):
                 val = int(action.split('_')[1])
