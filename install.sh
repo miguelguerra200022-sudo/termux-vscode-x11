@@ -223,7 +223,7 @@ echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
 pkg install -y x11-repo
 
 echo -e "${YELLOW}[*] Instalando VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python
+pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff
 
 # 8. Detección Inteligente e Instalación de APKs (X11 y Widget)
 echo -e "${YELLOW}[*] Comprobando complementos gráficos de Android (Termux:X11 y Termux:Widget)...${NC}"
@@ -351,6 +351,9 @@ SCRIPTS=(
     "switch-identity"
     "cloud-sentinel"
     "flota"
+    "termux-runner"
+    "vault-logs"
+    "gitops-sync"
     "desinstalar-vscode"
     "desinstalar"
 )

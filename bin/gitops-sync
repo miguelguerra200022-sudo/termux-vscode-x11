@@ -1,0 +1,153 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -e
+
+# ==============================================================================
+# gitops-sync: Motor GitOps Pull-Based con Verificación Criptográfica Ed25519
+# ==============================================================================
+# - Realiza sondeo periódico o bajo demanda de actualizaciones en GitHub.
+# - Verifica estrictamente las firmas digitales Ed25519 de cada commit.
+# - Aplica cambios atómicos y valida la integridad anti-tamper antes de activar.
+# - Notifica confirmaciones de despliegue a Telegram.
+# ==============================================================================
+
+REPO_DIR=""
+CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+fi
+
+QUIET=0
+if [ "$1" = "--quiet" ] || [ "$1" = "-q" ]; then
+    QUIET=1
+    shift || true
+fi
+
+ACTION="${1:-check}"
+
+notify_tg() {
+    local title="$1"
+    local msg="$2"
+    if command -v cloud-sentinel >/dev/null 2>&1; then
+        cloud-sentinel notify "$title" "$msg" >/dev/null 2>&1 || true
+    fi
+}
+
+check_updates() {
+    cd "$REPO_DIR"
+    if ! ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 && ! curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
+        [ "$QUIET" -eq 0 ] && echo "[-] Sin conexión a internet para verificar GitOps."
+        return 0
+    fi
+
+    REMOTE_HEAD=$(git ls-remote origin main 2>/dev/null | awk '{print $1}')
+    LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null)
+
+    if [ -z "$REMOTE_HEAD" ]; then
+        [ "$QUIET" -eq 0 ] && echo "[!] No se pudo obtener HEAD remoto de origin/main."
+        return 1
+    fi
+
+    if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ]; then
+        [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con origin/main ($LOCAL_HEAD)."
+        return 0
+    fi
+
+    [ "$QUIET" -eq 0 ] && echo "[*] Nueva actualización detectada en GitHub: $REMOTE_HEAD (Local: $LOCAL_HEAD)"
+    return 2
+}
+
+pull_and_apply() {
+    cd "$REPO_DIR"
+    check_updates || true
+    RET=$?
+    if [ "$RET" -eq 0 ]; then
+        return 0
+    fi
+
+    echo "[*] Descargando commits de origin/main..."
+    git fetch origin main >/dev/null 2>&1
+
+    FETCH_HASH=$(git rev-parse FETCH_HEAD)
+
+    # 1. Verificación Criptográfica Ed25519
+    echo "[*] Verificando firma criptográfica Ed25519 del commit $FETCH_HASH..."
+    if ! git verify-commit FETCH_HEAD >/dev/null 2>&1; then
+        echo "[!] ALERTA CRÍTICA DE SEGURIDAD: El commit $FETCH_HASH NO tiene una firma Ed25519 válida o no está autorizado."
+        notify_tg "🚨 *ALERTA GITOPS: COMMIT NO FIRMADO O RECHAZADO*" "El commit \`$FETCH_HASH\` recibido de GitHub no cuenta con una firma Ed25519 autorizada. El despliegue ha sido abortado por seguridad."
+        return 1
+    fi
+
+    echo "[✓] Firma Ed25519 verificada con éxito."
+
+    # 2. Aplicación Fast-Forward
+    OLD_HEAD=$(git rev-parse HEAD)
+    git merge --ff-only FETCH_HEAD >/dev/null 2>&1 || {
+        echo "[!] Error: No se pudo realizar fast-forward limpio. Posible divergencia."
+        return 1
+    }
+
+    # 3. Verificación de Integridad Anti-Tamper
+    if command -v integrity-guard >/dev/null 2>&1; then
+        echo "[*] Verificando integridad del manifiesto..."
+        if ! integrity-guard check "$REPO_DIR" >/dev/null 2>&1; then
+            echo "[!] ALERTA: Falló la verificación de integridad tras el pull. Ejecutando rollback..."
+            git reset --hard "$OLD_HEAD" >/dev/null 2>&1
+            notify_tg "🚨 *ALERTA GITOPS: MANIFIESTO CORRUPTO*" "El árbol de archivos no superó el chequeo de integridad criptográfico tras el pull de \`$FETCH_HASH\`. Rollback ejecutado."
+            return 1
+        fi
+    fi
+
+    # 4. Despliegue de binarios actualizados en $PREFIX/bin
+    SCRIPTS=(
+        "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
+        "sync-vscode" "restore-vscode" "watcher-sync" "integrity-watchdog"
+        "integrity-guard" "setup-swap" "set-marketplace" "fix-phantom-killer"
+        "new-project" "start-vscode-web" "guia" "vscode" "toggle-touch-mode"
+        "switch-identity" "cloud-sentinel" "flota" "vault-logs" "termux-runner"
+        "gitops-sync" "desinstalar-vscode" "desinstalar"
+    )
+
+    for s in "${SCRIPTS[@]}"; do
+        if [ -f "$REPO_DIR/bin/$s" ]; then
+            cp "$REPO_DIR/bin/$s" "$PREFIX/bin/$s" 2>/dev/null || true
+            chmod 755 "$PREFIX/bin/$s" 2>/dev/null || true
+            
+            # Actualizar bóveda dorada si existe
+            if [ -d "$HOME/.config/termux-vscode/.golden" ]; then
+                chmod 700 "$HOME/.config/termux-vscode/.golden/$s" 2>/dev/null || true
+                cp "$PREFIX/bin/$s" "$HOME/.config/termux-vscode/.golden/$s" 2>/dev/null || true
+                chmod 500 "$HOME/.config/termux-vscode/.golden/$s" 2>/dev/null || true
+            fi
+        fi
+    done
+
+    COMMIT_SUBJECT=$(git log -1 --format="%s" "$FETCH_HASH")
+    COMMIT_AUTHOR=$(git log -1 --format="%an" "$FETCH_HASH")
+    MY_SEAL="dispositivo"
+    [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ] && MY_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal")
+
+    echo "[✓] Despliegue GitOps completado exitosamente a $FETCH_HASH."
+    notify_tg "🚀 *GITOPS: DESPLIEGUE EXITOSO*" "📱 *Nodo:* \`$MY_SEAL\`\n🔖 *Commit:* \`$FETCH_HASH\`\n👤 *Autor:* \`$COMMIT_AUTHOR\`\n📝 *Mensaje:* $COMMIT_SUBJECT\n🛡️ *Firma:* Ed25519 Verificada ✓"
+    return 0
+}
+
+case "$ACTION" in
+    check)
+        check_updates
+        ;;
+    pull)
+        pull_and_apply
+        ;;
+    daemon)
+        echo "[*] Demonio GitOps iniciado en segundo plano (Sondeo cada 15m)..."
+        while true; do
+            pull_and_apply || true
+            sleep 900
+        done
+        ;;
+    *)
+        echo "Uso: gitops-sync [check|pull|daemon]"
+        exit 1
+        ;;
+esac

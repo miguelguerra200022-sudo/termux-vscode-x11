@@ -142,6 +142,9 @@ SCRIPTS=(
     "switch-identity"
     "cloud-sentinel"
     "flota"
+    "termux-runner"
+    "vault-logs"
+    "gitops-sync"
     "desinstalar-vscode"
     "desinstalar"
 )

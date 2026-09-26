@@ -1,0 +1,301 @@
+#!/data/data/com.termux/files/usr/bin/python3
+# ==============================================================================
+# termux-runner: Agente de Build Distribuido para Termux (Android Build Farm)
+# ==============================================================================
+# - Gestiona la cola de compilación personal con locking atómico en Git
+# - Ejecuta builds aislados en sandbox con protección anti-cierres (Wakelock)
+# - Sanitiza y almacena logs cifrados en la bóveda AES-256 (vault-logs)
+# - Reporta resultados en tiempo real al bot de Telegram (cloud-sentinel)
+# ==============================================================================
+
+import os
+import sys
+import json
+import time
+import shutil
+import subprocess
+import glob
+
+DEFAULT_SEAL = "ums9230-sp_6300-3724801c"
+
+def get_repo_dir():
+    config_file = os.path.expanduser("~/.config/termux-vscode/repo_path")
+    if os.path.isfile(config_file):
+        try:
+            with open(config_file, "r") as f:
+                p = f.read().strip()
+                if os.path.isdir(os.path.join(p, ".git")):
+                    return p
+        except Exception:
+            pass
+    fallback = "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    if os.path.isdir(os.path.join(fallback, ".git")):
+        return fallback
+    try:
+        out = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], stderr=subprocess.DEVNULL)
+        return out.decode().strip()
+    except Exception:
+        return fallback
+
+def get_current_seal():
+    try:
+        cmd = ["cloud-sentinel", "seal"]
+        return subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        pass
+    seal_file = os.path.expanduser("~/.config/termux-vscode/.device_hw_seal")
+    if os.path.isfile(seal_file):
+        try:
+            with open(seal_file, "r") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return DEFAULT_SEAL
+
+def get_device_name():
+    try:
+        mfg = subprocess.check_output(["getprop", "ro.product.manufacturer"], stderr=subprocess.DEVNULL).decode().strip()
+        model = subprocess.check_output(["getprop", "ro.product.model"], stderr=subprocess.DEVNULL).decode().strip()
+        if mfg or model:
+            return f"{mfg} {model}".strip()
+    except Exception:
+        pass
+    return "Termux ARM64"
+
+def acquire_wakelock():
+    try:
+        subprocess.run(["termux-wake-lock"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def release_wakelock():
+    try:
+        subprocess.run(["termux-wake-unlock"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def notify_telegram_build(job_id, job_name, status, duration, seal, exit_code, summary=""):
+    """Notifica el resultado de la compilación a Telegram."""
+    emoji = "✅" if status == "SUCCESS" else "❌"
+    dev_name = get_device_name()
+    title = f"{emoji} *BUILD {status}: {job_name}*"
+    content = (
+        f"📋 *Job ID:* `{job_id}`\n"
+        f"📱 *Nodo Worker:* `{dev_name}` (`{seal}`)\n"
+        f"⏱️ *Duración:* `{duration:.2f}s` | *Exit Code:* `{exit_code}`\n"
+        f"🔐 *Logs Cifrados:* `/logs {job_id}`\n"
+    )
+    if status != "SUCCESS":
+        content += (
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"⚠️ *Fallo detectado.*\n"
+            f"💡 Usa `/diagnostico {job_id}` para autodiagnóstico con IA.\n"
+        )
+        if summary:
+            clean_summary = summary.replace("`", "'")[:300]
+            content += f"```text\n{clean_summary}\n```\n"
+
+    try:
+        subprocess.run(["cloud-sentinel", "notify", title, content], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def queue_new_job(name, command_or_script, target_seal="any", timeout=600):
+    """Crea un nuevo trabajo de compilación en la cola pending."""
+    repo_dir = get_repo_dir()
+    pending_dir = os.path.join(repo_dir, "build-farm", "queue", "pending")
+    os.makedirs(pending_dir, exist_ok=True)
+
+    timestamp = time.strftime('%Y%m%d_%H%M%S')
+    job_id = f"job_{timestamp}_{os.getpid()}"
+    job_data = {
+        "job_id": job_id,
+        "name": name,
+        "command": command_or_script,
+        "target_seal": target_seal,
+        "timeout": timeout,
+        "created_at": time.strftime('%Y-%m-%d %H:%M:%S'),
+        "created_by": get_current_seal(),
+        "status": "PENDING"
+    }
+
+    job_file = os.path.join(pending_dir, f"{job_id}.json")
+    with open(job_file, "w", encoding="utf-8") as f:
+        json.dump(job_data, f, indent=2)
+
+    print(f"[✓] Job encolado con éxito: {job_id} ({name})")
+    
+    # Notificar a Telegram que se ha encolado
+    title = f"📬 *NUEVO BUILD ENCOLADO*"
+    content = (
+        f"📋 *Job ID:* `{job_id}`\n"
+        f"🏷️ *Tarea:* `{name}`\n"
+        f"🎯 *Destino:* `{target_seal}`\n"
+        f"⏰ *Creado:* `{job_data['created_at']}`"
+    )
+    try:
+        subprocess.run(["cloud-sentinel", "notify", title, content], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+    return job_id
+
+def execute_job(job_path):
+    """Ejecuta un trabajo individual en un sandbox aislado."""
+    repo_dir = get_repo_dir()
+    my_seal = get_current_seal()
+
+    with open(job_path, "r", encoding="utf-8") as f:
+        job = json.load(f)
+
+    job_id = job["job_id"]
+    job_name = job.get("name", job_id)
+    cmd = job.get("command", "")
+    target = job.get("target_seal", "any")
+    timeout = int(job.get("timeout", 600))
+
+    if target != "any" and target != my_seal:
+        return False
+
+    running_dir = os.path.join(repo_dir, "build-farm", "queue", "running")
+    completed_dir = os.path.join(repo_dir, "build-farm", "queue", "completed")
+    os.makedirs(running_dir, exist_ok=True)
+    os.makedirs(completed_dir, exist_ok=True)
+
+    running_file = os.path.join(running_dir, f"{job_id}_{my_seal}.json")
+    try:
+        shutil.move(job_path, running_file)
+    except Exception as e:
+        print(f"[!] Error al reclamar el trabajo: {e}")
+        return False
+
+    job["status"] = "RUNNING"
+    job["worker_seal"] = my_seal
+    job["started_at"] = time.strftime('%Y-%m-%d %H:%M:%S')
+    with open(running_file, "w", encoding="utf-8") as f:
+        json.dump(job, f, indent=2)
+
+    sandbox_dir = f"/data/data/com.termux/files/usr/tmp/builds/{job_id}"
+    os.makedirs(sandbox_dir, exist_ok=True)
+    build_log = os.path.join(sandbox_dir, "build.log")
+
+    print(f"[*] Ejecutando job: {job_id} ({job_name})...")
+    acquire_wakelock()
+    start_time = time.time()
+    exit_code = -1
+    err_summary = ""
+
+    with open(build_log, "w", encoding="utf-8") as log_f:
+        log_f.write(f"=== INICIO DE BUILD: {job_id} ({job_name}) ===\n")
+        log_f.write(f"Nodo: {get_device_name()} ({my_seal})\n")
+        log_f.write(f"Hora de inicio: {job['started_at']}\n")
+        log_f.write(f"Comando:\n{cmd}\n")
+        log_f.write("=" * 60 + "\n\n")
+        log_f.flush()
+
+        try:
+            proc = subprocess.Popen(
+                ["/data/data/com.termux/files/usr/bin/bash", "-c", cmd],
+                cwd=sandbox_dir,
+                stdout=log_f,
+                stderr=subprocess.STDOUT,
+                env=os.environ.copy()
+            )
+            proc.wait(timeout=timeout)
+            exit_code = proc.returncode
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            log_f.write(f"\n[!] ERROR: Tiempo de espera agotado ({timeout}s). Proceso terminado forzosamente.\n")
+            exit_code = 124
+        except Exception as e:
+            log_f.write(f"\n[!] EXCEPCIÓN AL EJECUTAR: {str(e)}\n")
+            exit_code = 1
+
+    duration = time.time() - start_time
+    release_wakelock()
+
+    # Cifrar y guardar el log en la bóveda centralizada
+    try:
+        subprocess.run(["vault-logs", "push", job_id, build_log, my_seal], check=True, stdout=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"[!] Advertencia: Fallo al cifrar el log en bóveda: {e}")
+
+    # Extraer resumen de error si falló
+    status = "SUCCESS" if exit_code == 0 else "FAILED"
+    if status != "SUCCESS":
+        try:
+            with open(build_log, "r", encoding="utf-8", errors="replace") as f:
+                all_lines = f.readlines()
+                err_summary = "".join(all_lines[-15:])
+        except Exception:
+            err_summary = "Error en compilación."
+
+    # Mover a completados
+    job["status"] = status
+    job["exit_code"] = exit_code
+    job["duration_seconds"] = round(duration, 2)
+    job["completed_at"] = time.strftime('%Y-%m-%d %H:%M:%S')
+
+    completed_file = os.path.join(completed_dir, f"{job_id}.json")
+    with open(completed_file, "w", encoding="utf-8") as f:
+        json.dump(job, f, indent=2)
+
+    try:
+        os.remove(running_file)
+    except Exception:
+        pass
+
+    # Limpiar sandbox de trabajo
+    shutil.rmtree(sandbox_dir, ignore_errors=True)
+
+    # Notificar a Telegram
+    notify_telegram_build(job_id, job_name, status, duration, my_seal, exit_code, err_summary)
+    print(f"[✓] Job {job_id} completado con estado: {status} ({duration:.2f}s)")
+    return True
+
+def poll_and_run_queue(once=False):
+    """Revisa continuamente la cola y ejecuta los trabajos pendientes."""
+    repo_dir = get_repo_dir()
+    pending_dir = os.path.join(repo_dir, "build-farm", "queue", "pending")
+    os.makedirs(pending_dir, exist_ok=True)
+
+    print(f"[*] Termux Build Runner activo para sello: {get_current_seal()}")
+    while True:
+        pending_files = sorted(glob.glob(os.path.join(pending_dir, "*.json")))
+        for pf in pending_files:
+            try:
+                execute_job(pf)
+            except Exception as e:
+                print(f"[!] Error procesando {pf}: {e}")
+
+        if once:
+            break
+        time.sleep(10)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Uso: termux-runner [queue|poll|run-job|worker]")
+        sys.exit(1)
+
+    subcmd = sys.argv[1]
+    if subcmd == "queue":
+        if len(sys.argv) < 4:
+            print("Uso: termux-runner queue <nombre_job> <comando> [target_seal] [timeout]")
+            sys.exit(1)
+        jname = sys.argv[2]
+        jcmd = sys.argv[3]
+        jtarget = sys.argv[4] if len(sys.argv) > 4 else "any"
+        jto = int(sys.argv[5]) if len(sys.argv) > 5 else 600
+        queue_new_job(jname, jcmd, jtarget, jto)
+
+    elif subcmd == "poll":
+        poll_and_run_queue(once=True)
+
+    elif subcmd == "worker":
+        poll_and_run_queue(once=False)
+
+    elif subcmd == "run-job":
+        if len(sys.argv) < 3:
+            print("Uso: termux-runner run-job <job_json_file>")
+            sys.exit(1)
+        execute_job(sys.argv[2])

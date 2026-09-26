@@ -1,0 +1,265 @@
+#!/data/data/com.termux/files/usr/bin/python3
+# ==============================================================================
+# vault-logs: Bóveda Cifrada Centralizada de Logs de Compilación y Errores (AES-256)
+# ==============================================================================
+# Cero Texto Plano en Disco: Los logs se sanean de secretos, se comprimen y se
+# cifran con AES-256-CBC (PBKDF2, 100,000 iteraciones). La lectura se ejecuta en RAM.
+# ==============================================================================
+
+import os
+import sys
+import re
+import gzip
+import time
+import subprocess
+import glob
+
+MASTER_PASS = "09032000Mi."
+DEFAULT_SEAL = "ums9230-sp_6300-3724801c"
+
+def get_repo_dir():
+    config_file = os.path.expanduser("~/.config/termux-vscode/repo_path")
+    if os.path.isfile(config_file):
+        try:
+            with open(config_file, "r") as f:
+                p = f.read().strip()
+                if os.path.isdir(os.path.join(p, ".git")):
+                    return p
+        except Exception:
+            pass
+    fallback = "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    if os.path.isdir(os.path.join(fallback, ".git")):
+        return fallback
+    try:
+        out = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], stderr=subprocess.DEVNULL)
+        return out.decode().strip()
+    except Exception:
+        return fallback
+
+def get_current_seal():
+    try:
+        cmd = ["cloud-sentinel", "seal"]
+        return subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        pass
+    seal_file = os.path.expanduser("~/.config/termux-vscode/.device_hw_seal")
+    if os.path.isfile(seal_file):
+        try:
+            with open(seal_file, "r") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return DEFAULT_SEAL
+
+def sanitize_content(text):
+    """Purga de forma proactiva tokens, contraseñas y llaves de los logs."""
+    # GitHub PAT
+    text = re.sub(r'ghp_[A-Za-z0-9_]{20,}', '[REDACTED_GH_TOKEN]', text)
+    # Telegram Bot Token
+    text = re.sub(r'\d{8,11}:[A-Za-z0-9_-]{30,}', '[REDACTED_TG_TOKEN]', text)
+    # Contraseña maestra
+    text = text.replace(MASTER_PASS, '[REDACTED_SECRET]')
+    # Parámetros pass:xxx
+    text = re.sub(r'pass:[^\s]+', 'pass:[REDACTED]', text)
+    return text
+
+def encrypt_log(raw_text, seal):
+    """Sanitiza, comprime con gzip y cifra con AES-256-CBC."""
+    sanitized = sanitize_content(raw_text).encode("utf-8")
+    compressed = gzip.compress(sanitized, compresslevel=9)
+    key = f"{MASTER_PASS}_{seal}"
+
+    cmd = [
+        "openssl", "enc", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000",
+        "-pass", f"pass:{key}"
+    ]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    encrypted, err = proc.communicate(input=compressed)
+    if proc.returncode != 0:
+        raise RuntimeError(f"Fallo de cifrado OpenSSL: {err.decode()}")
+    return encrypted
+
+def decrypt_log(enc_bytes, seal):
+    """Descifra con AES-256-CBC y descomprime gzip directamente en memoria RAM."""
+    key = f"{MASTER_PASS}_{seal}"
+    cmd = [
+        "openssl", "enc", "-d", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000",
+        "-pass", f"pass:{key}"
+    ]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    compressed, err = proc.communicate(input=enc_bytes)
+    if proc.returncode != 0:
+        raise RuntimeError(f"Fallo de descifrado OpenSSL: {err.decode()}")
+    decompressed = gzip.decompress(compressed)
+    return decompressed.decode("utf-8", errors="replace")
+
+def cmd_push(job_id, log_file, seal=None):
+    seal = seal or get_current_seal()
+    repo_dir = get_repo_dir()
+    logs_dir = os.path.join(repo_dir, "telemetry", "logs", seal)
+    os.makedirs(logs_dir, exist_ok=True)
+
+    if not os.path.isfile(log_file):
+        print(f"[!] Error: El archivo de log '{log_file}' no existe.")
+        sys.exit(1)
+
+    with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+        raw_text = f.read()
+
+    encrypted_data = encrypt_log(raw_text, seal)
+    out_file = os.path.join(logs_dir, f"{job_id}.log.enc")
+
+    with open(out_file, "wb") as f:
+        f.write(encrypted_data)
+    os.chmod(out_file, 0o600)
+
+    print(f"[✓] Log cifrado con éxito: {out_file} ({len(encrypted_data)} bytes)")
+    return out_file
+
+def cmd_list(seal=None):
+    repo_dir = get_repo_dir()
+    base_dir = os.path.join(repo_dir, "telemetry", "logs")
+    if not os.path.isdir(base_dir):
+        print("[-] No hay logs registrados en la bóveda.")
+        return
+
+    pattern = os.path.join(base_dir, seal or "*", "*.log.enc")
+    files = glob.glob(pattern)
+    if not files:
+        print("[-] No se encontraron registros de logs cifrados.")
+        return
+
+    print("═══════════════════════════════════════════════════════════════════")
+    print("  🔐 REGISTROS DE COMPILACIÓN CIFRADOS EN BÓVEDA")
+    print("═══════════════════════════════════════════════════════════════════")
+    for f in sorted(files, key=os.path.getmtime, reverse=True):
+        f_seal = os.path.basename(os.path.dirname(f))
+        job_id = os.path.basename(f).replace(".log.enc", "")
+        size_kb = round(os.path.getsize(f) / 1024, 2)
+        mtime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(f)))
+        print(f" • [{mtime}] Job: {job_id} | Sello: {f_seal} | Tamaño Cifrado: {size_kb} KB")
+    print("═══════════════════════════════════════════════════════════════════")
+
+def cmd_read(job_id, seal=None, tail_n=None, only_failed=False):
+    repo_dir = get_repo_dir()
+    base_dir = os.path.join(repo_dir, "telemetry", "logs")
+
+    target_file = None
+    target_seal = seal
+
+    if seal:
+        candidate = os.path.join(base_dir, seal, f"{job_id}.log.enc")
+        if os.path.isfile(candidate):
+            target_file = candidate
+    else:
+        matches = glob.glob(os.path.join(base_dir, "*", f"{job_id}.log.enc"))
+        if matches:
+            target_file = matches[0]
+            target_seal = os.path.basename(os.path.dirname(target_file))
+
+    if not target_file or not os.path.isfile(target_file):
+        print(f"[!] Log para Job ID '{job_id}' no encontrado.")
+        sys.exit(1)
+
+    with open(target_file, "rb") as f:
+        enc_bytes = f.read()
+
+    plain_text = decrypt_log(enc_bytes, target_seal)
+
+    lines = plain_text.splitlines()
+    if only_failed:
+        error_regex = re.compile(r'(error|fatal|fail|exception|undefined reference|cannot find)', re.IGNORECASE)
+        filtered = [l for l in lines if error_regex.search(l)]
+        if filtered:
+            lines = filtered[-50:]
+        else:
+            lines = lines[-30:]
+
+    if tail_n and tail_n > 0:
+        lines = lines[-tail_n:]
+
+    output = "\n".join(lines)
+    print(output)
+    return output
+
+def cmd_export(job_id, seal=None):
+    """Exporta el log descifrado a un archivo temporal efímero en $TMPDIR."""
+    repo_dir = get_repo_dir()
+    base_dir = os.path.join(repo_dir, "telemetry", "logs")
+    target_file = None
+    target_seal = seal
+
+    if seal:
+        candidate = os.path.join(base_dir, seal, f"{job_id}.log.enc")
+        if os.path.isfile(candidate):
+            target_file = candidate
+    else:
+        matches = glob.glob(os.path.join(base_dir, "*", f"{job_id}.log.enc"))
+        if matches:
+            target_file = matches[0]
+            target_seal = os.path.basename(os.path.dirname(target_file))
+
+    if not target_file:
+        print(f"[!] Log para Job ID '{job_id}' no encontrado.")
+        sys.exit(1)
+
+    with open(target_file, "rb") as f:
+        enc_bytes = f.read()
+
+    plain_text = decrypt_log(enc_bytes, target_seal)
+    tmp_path = f"/data/data/com.termux/files/usr/tmp/{job_id}_decrypted.log"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        f.write(plain_text)
+    os.chmod(tmp_path, 0o600)
+    print(tmp_path)
+    return tmp_path
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Uso: vault-logs [push|list|read|export] ...")
+        sys.exit(1)
+
+    action = sys.argv[1]
+    if action == "push":
+        if len(sys.argv) < 4:
+            print("Uso: vault-logs push <job_id> <log_file> [seal]")
+            sys.exit(1)
+        jid = sys.argv[2]
+        lfile = sys.argv[3]
+        sl = sys.argv[4] if len(sys.argv) > 4 else None
+        cmd_push(jid, lfile, sl)
+
+    elif action == "list":
+        sl = sys.argv[2] if len(sys.argv) > 2 else None
+        cmd_list(sl)
+
+    elif action == "read":
+        if len(sys.argv) < 3:
+            print("Uso: vault-logs read <job_id> [seal] [--tail N] [--failed]")
+            sys.exit(1)
+        jid = sys.argv[2]
+        sl = None
+        tail_val = None
+        failed_flag = False
+
+        idx = 3
+        while idx < len(sys.argv):
+            arg = sys.argv[idx]
+            if arg == "--failed":
+                failed_flag = True
+            elif arg == "--tail" and idx + 1 < len(sys.argv):
+                tail_val = int(sys.argv[idx+1])
+                idx += 1
+            elif not arg.startswith("--"):
+                sl = arg
+            idx += 1
+
+        cmd_read(jid, sl, tail_val, failed_flag)
+
+    elif action == "export":
+        if len(sys.argv) < 3:
+            print("Uso: vault-logs export <job_id> [seal]")
+            sys.exit(1)
+        jid = sys.argv[2]
+        sl = sys.argv[3] if len(sys.argv) > 3 else None
+        cmd_export(jid, sl)
