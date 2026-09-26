@@ -193,7 +193,16 @@ if [ -f "$MASTER_GUIDE" ]; then
 fi
 
 # 11. Iniciar VS Code con aceleración de red real y rendimiento optimizado
-USER_NAME_DISPLAY=$(echo "$ACTIVE_ID" | awk -F'_' '{print $1}')
+USER_NAME_DISPLAY="Miguel (Líder)"
+if [ "$TARGET_SEAL" != "ums9230-sp_6300-3724801c" ]; then
+    META_ENC="$REPO_DIR/credenciales/$TARGET_SEAL/metadata.enc"
+    if [ -f "$META_ENC" ]; then
+        DEC_USER=$(openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${TARGET_SEAL}" -in "$META_ENC" 2>/dev/null | grep -o '"username": *"[^"]*"' | cut -d'"' -f4 || true)
+        [ -n "$DEC_USER" ] && USER_NAME_DISPLAY="$DEC_USER"
+    else
+        USER_NAME_DISPLAY="$TARGET_SEAL"
+    fi
+fi
 echo -e "[+] Lanzando VS Code [Perfil: ${USER_NAME_DISPLAY}]..."
 shift || true
 ELECTRON_FLAGS="--no-sandbox --disable-gpu --password-store=basic --enable-features=NetworkServiceInProcess,ParallelDownloading --disable-renderer-backgrounding --disable-background-timer-throttling --disable-backgrounding-occluded-windows --js-flags=--max-old-space-size=2048"
