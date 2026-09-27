@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -e
 
-echo -e "\033[1;33m[*] Apagando entorno de desarrollo...\033[0m"
+echo "Cerrando..."
 
 # 1. Liberar wakelock de Android
 command -v termux-wake-unlock >/dev/null 2>&1 && termux-wake-unlock
@@ -24,6 +24,7 @@ pkill -9 -f "zen-browser" 2>/dev/null || true
 pkill -9 -f "orientation-sentinel" 2>/dev/null || true
 pkill -9 -x "tint2" 2>/dev/null || true
 pkill -9 -x "openbox" 2>/dev/null || true
+pkill -9 -f "pcmanfm" 2>/dev/null || true
 pkill -9 -f "termux-x11" 2>/dev/null || true
 pulseaudio --kill 2>/dev/null || true
 
@@ -75,5 +76,3 @@ if command -v integrity-watchdog >/dev/null 2>&1; then
         setsid -f integrity-watchdog >/dev/null 2>&1 || true
     fi
 fi
-
-echo -e "\033[1;32m[✓] Entorno apagado exitosamente.\033[0m"
