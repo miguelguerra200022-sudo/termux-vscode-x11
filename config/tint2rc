@@ -11,10 +11,10 @@
 #  - Selector de modo: Trackpad (Precisión) <-> Simulated Touchscreen (Pulsación Larga = Clic Derecho).
 # ==============================================================================
 
-# Background 1: Panel principal flotante (Curvatura adaptada al teléfono)
-rounded = 12
+# Background 1: Panel principal extendido (Pegado al borde horizontal)
+rounded = 0
 border_width = 1
-border_sides = TBLR
+border_sides = B
 background_color = #181818 100
 border_color = #333333 100
 background_color_hover = #181818 100
@@ -92,8 +92,8 @@ border_color_pressed = #3d3d3d 100
 # Panel Principal (Posición SUPERIOR Flotante por debajo de la Cámara)
 # ------------------------------------------------------------------------------
 panel_items = LTSC
-panel_size = 94% 42
-panel_margin = 14 38
+panel_size = 100% 38
+panel_margin = 0 0
 panel_padding = 6 2 6
 panel_background_id = 1
 wm_menu = 0
