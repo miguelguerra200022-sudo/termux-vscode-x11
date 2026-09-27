@@ -218,6 +218,9 @@ sync_desktop_launcher() {
     local slug="$1"
     mkdir -p "$HOME/Desktop" "$HOME/.local/share/applications"
 
+    # Descargar / asegurar icono oficial bajo demanda si aún no existe
+    command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "$slug" >/dev/null 2>&1 || true
+
     local desktop_found=""
     for d in "$PREFIX/share/applications/${slug}.desktop" \
              "$HOME/.local/share/applications/${slug}.desktop" \
@@ -238,6 +241,7 @@ sync_desktop_launcher() {
     fi
 
     command -v openbox >/dev/null 2>&1 && openbox --reconfigure >/dev/null 2>&1 || true
+    command -v pcmanfm >/dev/null 2>&1 && pcmanfm --reconfigure >/dev/null 2>&1 || true
 }
 
 remove_desktop_launcher() {
@@ -257,7 +261,15 @@ remove_desktop_launcher() {
               "$HOME/.local/share/applications/zen-browser.desktop" 2>/dev/null || true
     fi
 
+    # Eliminar el icono oficial de disco para no ocupar espacio
+    if [ "$slug" != "vscode" ] && [ "$slug" != "zen-browser" ]; then
+        command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon --clean "$slug" >/dev/null 2>&1 || true
+        rm -f "/data/data/com.termux/files/usr/share/pixmaps/${slug}.png" \
+              "/data/data/com.termux/files/usr/share/pixmaps/${slug}.svg" 2>/dev/null || true
+    fi
+
     command -v openbox >/dev/null 2>&1 && openbox --reconfigure >/dev/null 2>&1 || true
+    command -v pcmanfm >/dev/null 2>&1 && pcmanfm --reconfigure >/dev/null 2>&1 || true
 }
 
 # ------------------------------------------------------------------------------

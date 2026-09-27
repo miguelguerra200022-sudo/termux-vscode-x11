@@ -56,7 +56,7 @@ def request_storage_permission():
     print(f"{BLUE}" + "═" * cols + f"{NC}")
     print(f"{GREEN}  📱 PERMISO DE ALMACENAMIENTO DE ANDROID (PRIMER INICIO){NC}")
     print(f"{BLUE}" + "═" * cols + f"{NC}")
-    print("Para que VS Code pueda explorar y abrir las carpetas de tu teléfono")
+    print("Para que Code Stack Sh pueda explorar y abrir las carpetas de tu teléfono")
     print("(como Descargas, Documentos, Proyectos, etc.), Termux necesita permiso.")
     print(f"{GRAY}" + "─" * cols + f"{NC}")
     try:
@@ -290,7 +290,7 @@ def prompt_text_with_esc(prompt_str):
         sys.stdout.write('\n')
         sys.stdout.flush()
 
-def launch_vscode_with_desc(target_path):
+def launch_workspace_with_desc(target_path):
     """Pide descripción si es la primera vez y lanza start-vscode. Retorna False si se canceló con ESC."""
     target_path = normalize_path(target_path)
     data = load_data()
@@ -306,7 +306,7 @@ def launch_vscode_with_desc(target_path):
         print(f"Ruta: {CYAN}{target_path}{NC}\n")
         print("Escribe una breve descripción para recordar de qué trata este proyecto:")
         print(f"{GRAY}(Ejemplo: 'Bot de trading', 'Tienda web con React', 'Scripts de trabajo'){NC}\n")
-        print(f" • {YELLOW}ENTER{NC} : Abrir en VS Code (sin descripción si lo dejas vacío).")
+        print(f" • {YELLOW}ENTER{NC} : Iniciar Code Stack Sh (sin descripción si lo dejas vacío).")
         print(f" • {YELLOW}ESC{NC}   : Volver al explorador (cancelar apertura).\n")
         
         nueva_desc = prompt_text_with_esc(f"{BOLD}👉 Descripción:{NC} ")
@@ -323,7 +323,7 @@ def launch_vscode_with_desc(target_path):
     else:
         add_to_history(target_path)
 
-    print(f"\n{GREEN}[✓] Abriendo en VS Code:{NC} {CYAN}{target_path}{NC}\n")
+    print(f"\n{GREEN}[✓] Iniciando estación de trabajo Code Stack Sh:{NC} {CYAN}{target_path}{NC}\n")
     os.execvp("start-vscode", ["start-vscode", target_path])
     return True
 
@@ -366,7 +366,7 @@ def main():
     if raw_args:
         target = raw_args[0]
         if os.path.exists(target):
-            launch_vscode_with_desc(os.path.abspath(target))
+            launch_workspace_with_desc(os.path.abspath(target))
             return
         else:
             print(f"{RED}[!] La ruta no existe: {target}{NC}")
@@ -459,8 +459,12 @@ def main():
                 active_user = open(active_file).read().strip().split('_')[0]
             except Exception:
                 pass
-        title_text = f"VS CODE PRO  •  👑 {active_user.upper()}"
+        title_text = f"CODE STACK SH  •  👑 {active_user.upper()}"
         print(f"{BLUE}║{WHITE}{BOLD} {title_text.center(cols - 4)} {BLUE}║{NC}")
+        slogan_l1 = "«La libertad de programar sin necesidad de una PC: ingeniería portátil"
+        slogan_l2 = "en una estación de trabajo completa, autónoma y lista para crear.»"
+        print(f"{BLUE}║{YELLOW} {slogan_l1.center(cols - 4)} {BLUE}║{NC}")
+        print(f"{BLUE}║{YELLOW} {slogan_l2.center(cols - 4)} {BLUE}║{NC}")
         print(f"{BLUE}╚" + "═" * (cols - 2) + f"╝{NC}")
 
         # Pestañas de navegación interactiva
@@ -483,13 +487,13 @@ def main():
                 print(f" {YELLOW}🔍 Filtro activo:{NC} {BOLD}\"{search_filter}\"{NC} {GRAY}(coincidencias: {len(subdirs)}) • Pulsa [ / ] para limpiar{NC}")
             print(div_line)
 
-            # Opción 0: Abrir en VS Code
+            # Opción 0: Iniciar entorno
             if cursor_idx == 0:
-                line_0 = " > [ 0] 🚀 [ ABRIR ESTA CARPETA EN VS CODE ]".ljust(cols - 2)
+                line_0 = " > [ 0] 🚀 [ INICIAR ENTORNO DE ESCRITORIO EN ESTA CARPETA ]".ljust(cols - 2)
                 print(f"{HL_GREEN} {line_0}{NC}")
             else:
-                print(f"{GREEN}   [ 0] 🚀 [ ABRIR ESTA CARPETA EN VS CODE ]{NC}")
-            print(f"        {GRAY}└─ Inicia el editor VS Code en este directorio{NC}")
+                print(f"{GREEN}   [ 0] 🚀 [ INICIAR ENTORNO DE ESCRITORIO EN ESTA CARPETA ]{NC}")
+            print(f"        {GRAY}└─ Inicia la estación de trabajo Code Stack Sh en este directorio{NC}")
 
             # Opción 1: Subir de nivel
             if is_storage_root:
@@ -514,7 +518,7 @@ def main():
                     print(f"   {CYAN}👉 Pulsa [/] o ESC para limpiar la búsqueda.{NC}")
                 else:
                     print(f"   {GRAY}(No hay subcarpetas en este directorio){NC}")
-                    print(f"   {CYAN}👉 Pulsa [0] para abrir este proyecto en VS Code o [..] para volver.{NC}")
+                    print(f"   {CYAN}👉 Pulsa [0] para iniciar el entorno en esta carpeta o [..] para volver.{NC}")
             else:
                 name_w = 20
                 for idx, dname in enumerate(visible_subdirs):
@@ -569,7 +573,7 @@ def main():
 
             if not history:
                 print(f"   {GRAY}(No hay proyectos en el historial aún){NC}")
-                print(f"   {CYAN}👉 Se guardarán automáticamente cuando abras carpetas en VS Code.{NC}")
+                print(f"   {CYAN}👉 Se guardarán automáticamente cuando abras carpetas en Code Stack Sh.{NC}")
                 print(f"   {GRAY}Pulsa {BOLD}TAB{NC}{GRAY} para volver al Explorador de carpetas.{NC}")
             else:
                 name_w = 20
@@ -611,7 +615,7 @@ def main():
 
             # Guía Historial
             print(f"💡 {BOLD}Guía de Historial:{NC}")
-            print(f" • {YELLOW}Flechas ↑/↓ o W/S + ENTER{NC}: Abre el proyecto seleccionado en VS Code")
+            print(f" • {YELLOW}Flechas ↑/↓ o W/S + ENTER{NC}: Inicia la estación de trabajo en el proyecto seleccionado")
             print(f" • {YELLOW}Flechas ←/→ o P/N{NC}        : Cambiar página de proyectos")
             print(f" • {YELLOW}[1-{min(len(visible_hist), 10)}]{NC}              : Abre directo ese número")
             print(f" • {YELLOW}[E]{NC}                       : Editar la descripción de este proyecto")
@@ -644,7 +648,7 @@ def main():
             continue
 
         if action == 'QUIT':
-            print(f"\n{YELLOW}[*] Cancelado. Saliendo sin abrir VS Code.{NC}\n")
+            print(f"\n{YELLOW}[*] Cancelado. Saliendo sin iniciar el entorno.{NC}\n")
             sys.exit(0)
 
         if action == 'SWITCH_IDENTITY':
@@ -692,7 +696,7 @@ def main():
 
             elif action == 'ENTER':
                 if cursor_idx == 0:
-                    if launch_vscode_with_desc(current_dir):
+                    if launch_workspace_with_desc(current_dir):
                         return
                     else:
                         status_msg = "Apertura cancelada."
@@ -767,7 +771,7 @@ def main():
             elif action.startswith('DIGIT_'):
                 val = int(action.split('_')[1])
                 if val == 0:
-                    if launch_vscode_with_desc(current_dir):
+                    if launch_workspace_with_desc(current_dir):
                         return
                     else:
                         status_msg = "Apertura cancelada."
@@ -797,7 +801,7 @@ def main():
                 if visible_hist:
                     target = visible_hist[cursor_idx].get("path")
                     if os.path.exists(target):
-                        if launch_vscode_with_desc(target):
+                        if launch_workspace_with_desc(target):
                             return
                         else:
                             status_msg = "Apertura cancelada."
@@ -853,7 +857,7 @@ def main():
                 elif 1 <= val <= len(visible_hist):
                     target = visible_hist[val - 1].get("path")
                     if os.path.exists(target):
-                        if launch_vscode_with_desc(target):
+                        if launch_workspace_with_desc(target):
                             return
                         else:
                             status_msg = "Apertura cancelada."

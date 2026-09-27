@@ -74,6 +74,7 @@ while true; do
                     [ -f "$WALLPAPER_DIR/wallpaper_horizontal.jpg" ] && WP_H="$WALLPAPER_DIR/wallpaper_horizontal.jpg"
                     [ -z "$WP_H" ] && [ -f "$REPO_DIR/data/wallpaper_horizontal.jpg" ] && WP_H="$REPO_DIR/data/wallpaper_horizontal.jpg"
                     if [ -n "$WP_H" ]; then
+                        pcmanfm -w "$WP_H" --wallpaper-mode=stretch >/dev/null 2>&1 || true
                         feh --no-fehbg --bg-scale "$WP_H" >/dev/null 2>&1 || true
                     fi
 
@@ -90,6 +91,7 @@ while true; do
                     [ -f "$WALLPAPER_DIR/wallpaper_vertical.jpg" ] && WP_V="$WALLPAPER_DIR/wallpaper_vertical.jpg"
                     [ -z "$WP_V" ] && [ -f "$REPO_DIR/data/wallpaper_vertical.jpg" ] && WP_V="$REPO_DIR/data/wallpaper_vertical.jpg"
                     if [ -n "$WP_V" ]; then
+                        pcmanfm -w "$WP_V" --wallpaper-mode=stretch >/dev/null 2>&1 || true
                         feh --no-fehbg --bg-scale "$WP_V" >/dev/null 2>&1 || true
                     fi
 
@@ -110,7 +112,10 @@ while true; do
                     WP="$WALLPAPER_DIR/wallpaper_vertical.jpg"
                     [ ! -f "$WP" ] && WP="$REPO_DIR/data/wallpaper_vertical.jpg"
                 fi
-                [ -f "$WP" ] && feh --no-fehbg --bg-scale "$WP" >/dev/null 2>&1 || true
+                if [ -f "$WP" ]; then
+                    pcmanfm -w "$WP" --wallpaper-mode=stretch >/dev/null 2>&1 || true
+                    feh --no-fehbg --bg-scale "$WP" >/dev/null 2>&1 || true
+                fi
             fi
         fi
     fi
