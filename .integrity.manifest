@@ -122,7 +122,7 @@ bf8f57046ee1a0e28e48294446e32957e3d718819a9d20b50f870d0146f86220  ./Programas/11
 def2693b3b898b4895c1a6cb9eb4c6782b5b84bd360ca8e929dee3f2c0b72a0d  ./Programas/11-Gestores_de_Ventanas/instalar-openbox.sh
 4b5d762029274a46d7e8fa2e66dbddc3608d962a6355702aa59021616b35afcb  ./Programas/11-Gestores_de_Ventanas/instalar-xfce4.sh
 84f683fc292679ebee059f9c32043cad60a8cdf8fd85cbf8f3957400e26051fd  ./Programas/README.md
-b882ce778af4bfc65b9d075d8b79810dcec31c75b0132a11fe0bdfba8893b1d6  ./Programas/menu-instalador.sh
+c11ef21865278736b3d6073e114e5b39e15a9195ad1e52c642e9cd298f7948d9  ./Programas/menu-instalador.sh
 33c20df89ee1cc500078537561f0756f030d7cc0d488f194088d026d50888d57  ./README.md
 467d9695c3aa0e98d66de90b4f6ad75a957117a9fb1fb81f5e486247c0b457c9  ./bin/apagar
 511d6a94478d72288d61d8fb0ba19573c674ab4736538a93e88fff072ed390a4  ./bin/cloud-sentinel

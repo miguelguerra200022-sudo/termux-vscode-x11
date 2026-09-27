@@ -18,93 +18,192 @@ INSTALLED_REGISTRY="$HOME/.config/termux-software-center/installed.list"
 mkdir -p "$(dirname "$INSTALLED_REGISTRY")" "$HOME/Desktop"
 
 # ------------------------------------------------------------------------------
-# Lector de entrada con soporte para tecla BORRAR (Backspace) como ATRÁS
+# Lector de entrada con soporte nativo para la tecla BORRAR (Backspace) como ATRÁS
+# Envía los mensajes visuales a stderr para que command substitution $(...) capture
+# únicamente la opción seleccionada.
 # ------------------------------------------------------------------------------
 read_menu_input() {
     local prompt="$1"
     local input=""
     local char=""
-    
-    echo -ne "$prompt"
-    
+
+    echo -ne "$prompt" >&2
+
+    # Si la entrada no es una terminal interactiva (ej. scripts o pipes)
     if [ ! -t 0 ]; then
         read -r input || return 0
         echo "$input"
         return 0
     fi
-    
+
+    local old_stty
+    old_stty=$(stty -g 2>/dev/null || true)
+    # Desactivar modo canónico y eco para capturar la tecla borrar en tiempo real
+    stty -icanon -echo min 1 time 0 2>/dev/null || true
+
+    trap 'stty "$old_stty" 2>/dev/null; exit 130' INT TERM
+
     while IFS= read -r -s -n 1 char; do
-        # Enter (finalizar entrada)
-        if [[ -z "$char" ]]; then
-            echo ""
+        # Tecla ENTER (\r = 13, \n = 10, o vacío)
+        if [ -z "$char" ] || [ "$char" = $'\r' ] || [ "$char" = $'\n' ]; then
+            stty "$old_stty" 2>/dev/null || true
+            trap - INT TERM
+            echo "" >&2
             echo "$input"
             return 0
         fi
-        
+
         # Tecla BORRAR del teclado (Backspace: ASCII 127 o ASCII 8)
-        if [[ "$char" == $'\x7f' ]] || [[ "$char" == $'\b' ]]; then
-            if [[ -z "$input" ]]; then
+        if [ "$char" = $'\x7f' ] || [ "$char" = $'\b' ]; then
+            if [ -z "$input" ]; then
                 # Si el campo está vacío y presiona borrar -> ECHARSE PARA ATRÁS
-                echo ""
+                stty "$old_stty" 2>/dev/null || true
+                trap - INT TERM
+                echo "" >&2
                 echo "__BACK__"
                 return 0
             else
                 # Borrar el último carácter en pantalla y memoria
                 input="${input%?}"
-                echo -ne "\b \b"
+                echo -ne "\b \b" >&2
             fi
             continue
         fi
-        
-        # Cancelar con Ctrl+C
-        if [[ "$char" == $'\x03' ]]; then
-            echo ""
+
+        # Tecla ESC (\x1b)
+        if [ "$char" = $'\x1b' ]; then
+            local extra=""
+            read -r -s -n 2 -t 0.05 extra 2>/dev/null || true
+            if [ -z "$extra" ]; then
+                # Tecla ESC solitaria -> ATRÁS
+                stty "$old_stty" 2>/dev/null || true
+                trap - INT TERM
+                echo "" >&2
+                echo "__BACK__"
+                return 0
+            fi
+            # Ignorar secuencias de escape de flechas
+            continue
+        fi
+
+        # Ctrl+C (\x03) o Ctrl+D (\x04) -> ATRÁS
+        if [ "$char" = $'\x03' ] || [ "$char" = $'\x04' ]; then
+            stty "$old_stty" 2>/dev/null || true
+            trap - INT TERM
+            echo "" >&2
             echo "__BACK__"
             return 0
         fi
 
-        input+="$char"
-        echo -n "$char"
+        # Caracteres normales imprimibles
+        if [[ "$char" =~ [[:print:]] ]]; then
+            input+="$char"
+            echo -n "$char" >&2
+        fi
     done
+
+    stty "$old_stty" 2>/dev/null || true
+    trap - INT TERM
+    echo "" >&2
+    echo "$input"
+    return 0
+}
+
+pause_menu() {
+    local prompt="${1:-Presiona ENTER o borrar para continuar...}"
+    read_menu_input "${YELLOW}$prompt${NC}" >/dev/null
 }
 
 # ------------------------------------------------------------------------------
-# Comprobación de si un programa está instalado
+# Lector ultrarrápido de metadatos (# Nombre y # Tagline) sin procesos hijos
 # ------------------------------------------------------------------------------
+get_program_meta() {
+    local file="$1"
+    _META_NAME=""
+    _META_TAGLINE=""
+    local count=0
+    while IFS= read -r line || [ -n "$line" ]; do
+        ((count++))
+        case "$line" in
+            "# Nombre:"*)
+                _META_NAME="${line#\# Nombre:}"
+                _META_NAME="${_META_NAME#"${_META_NAME%%[![:space:]]*}"}"
+                ;;
+            "# Tagline:"*)
+                _META_TAGLINE="${line#\# Tagline:}"
+                _META_TAGLINE="${_META_TAGLINE#"${_META_TAGLINE%%[![:space:]]*}"}"
+                ;;
+        esac
+        if [ -n "$_META_NAME" ] && [ -n "$_META_TAGLINE" ]; then
+            break
+        fi
+        [ "$count" -ge 25 ] && break
+    done < "$file"
+    # Limpiar posibles paréntesis sobrantes en los extremos
+    _META_TAGLINE="${_META_TAGLINE#\(}"
+    _META_TAGLINE="${_META_TAGLINE%\)}"
+}
+
+# ------------------------------------------------------------------------------
+# Caché de búsqueda ultra-rápida de programas instalados
+# ------------------------------------------------------------------------------
+declare -A INSTALLED_BIN_MAP
+declare -A INSTALLED_DESKTOP_MAP
+
+refresh_installed_cache() {
+    INSTALLED_BIN_MAP=()
+    INSTALLED_DESKTOP_MAP=()
+
+    local b d
+    for b in "$PREFIX/bin"/*; do
+        [ -e "$b" ] && INSTALLED_BIN_MAP["${b##*/}"]=1
+    done
+
+    for d in "$PREFIX/share/applications"/*.desktop \
+             "$HOME/.local/share/applications"/*.desktop \
+             "$HOME/Desktop"/*.desktop; do
+        [ -f "$d" ] && INSTALLED_DESKTOP_MAP["${d##*/}"]=1
+    done
+}
+
 is_program_installed() {
     local pscript="$1"
-    local slug
-    slug=$(basename "$pscript" | sed 's/instalar-//; s/.sh//')
+    local fname="${pscript##*/}"
+    local slug="${fname#instalar-}"
+    slug="${slug%.sh}"
 
-    # 1. Casos especiales notorios
+    # Casos especiales
     if [ "$slug" = "vscode" ]; then
-        if command -v code-oss >/dev/null 2>&1 || [ -f "$PREFIX/share/applications/code-oss.desktop" ] || [ -f "$HOME/.local/share/applications/code-oss.desktop" ] || [ -f "$HOME/Desktop/code-oss.desktop" ]; then
+        if [ -n "${INSTALLED_BIN_MAP["code-oss"]}" ] || \
+           [ -n "${INSTALLED_DESKTOP_MAP["code-oss.desktop"]}" ] || \
+           [ -n "${INSTALLED_DESKTOP_MAP["vscode.desktop"]}" ]; then
             return 0
         fi
     fi
+
     if [ "$slug" = "zen-browser" ]; then
-        if command -v zen-browser >/dev/null 2>&1 || [ -f "$PREFIX/share/applications/zen-browser.desktop" ] || [ -f "$HOME/.local/share/applications/zen-browser.desktop" ] || [ -f "$HOME/Desktop/zen-browser.desktop" ]; then
+        if [ -n "${INSTALLED_BIN_MAP["zen-browser"]}" ] || \
+           [ -n "${INSTALLED_DESKTOP_MAP["zen-browser.desktop"]}" ]; then
             return 0
         fi
     fi
 
-    # 2. Comprobar binario en PATH o $PREFIX/bin
-    if command -v "$slug" >/dev/null 2>&1 || [ -f "$PREFIX/bin/$slug" ]; then
+    # Comprobación por binario
+    if [ -n "${INSTALLED_BIN_MAP["$slug"]}" ]; then
         return 0
     fi
-    local slug_nounder="${slug//-/}"
-    if command -v "$slug_nounder" >/dev/null 2>&1; then
-        return 0
-    fi
-
-    # 3. Comprobar lanzador .desktop
-    if [ -f "$PREFIX/share/applications/${slug}.desktop" ] || \
-       [ -f "$HOME/.local/share/applications/${slug}.desktop" ] || \
-       [ -f "$HOME/Desktop/${slug}.desktop" ]; then
+    local slug_clean="${slug//-/}"
+    if [ -n "${INSTALLED_BIN_MAP["$slug_clean"]}" ]; then
         return 0
     fi
 
-    # 4. Comprobar registro persistente
+    # Comprobación por archivo .desktop
+    if [ -n "${INSTALLED_DESKTOP_MAP["${slug}.desktop"]}" ] || \
+       [ -n "${INSTALLED_DESKTOP_MAP["${slug//-/_}.desktop"]}" ]; then
+        return 0
+    fi
+
+    # Registro persistente
     if [ -f "$INSTALLED_REGISTRY" ] && grep -Fxq "$slug" "$INSTALLED_REGISTRY" 2>/dev/null; then
         return 0
     fi
@@ -113,7 +212,7 @@ is_program_installed() {
 }
 
 # ------------------------------------------------------------------------------
-# Sincronizar icono en el escritorio (~/Desktop) estilo PC
+# Sincronizar lanzador en el Escritorio interactivo (~/Desktop) estilo PC
 # ------------------------------------------------------------------------------
 sync_desktop_launcher() {
     local slug="$1"
@@ -129,7 +228,6 @@ sync_desktop_launcher() {
         fi
     done
 
-    # Casos especiales
     if [ "$slug" = "vscode" ] && [ -f "$PREFIX/share/applications/code-oss.desktop" ]; then
         desktop_found="$PREFIX/share/applications/code-oss.desktop"
     fi
@@ -138,11 +236,10 @@ sync_desktop_launcher() {
         cp -f "$desktop_found" "$HOME/Desktop/" 2>/dev/null || true
         chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
     fi
+
+    command -v openbox >/dev/null 2>&1 && openbox --reconfigure >/dev/null 2>&1 || true
 }
 
-# ------------------------------------------------------------------------------
-# Eliminar icono del escritorio (~/Desktop)
-# ------------------------------------------------------------------------------
 remove_desktop_launcher() {
     local slug="$1"
     rm -f "$HOME/Desktop/${slug}.desktop" \
@@ -159,6 +256,8 @@ remove_desktop_launcher() {
         rm -f "$HOME/Desktop/zen-browser.desktop" "$HOME/Desktop/userapp-Zen-"*.desktop \
               "$HOME/.local/share/applications/zen-browser.desktop" 2>/dev/null || true
     fi
+
+    command -v openbox >/dev/null 2>&1 && openbox --reconfigure >/dev/null 2>&1 || true
 }
 
 # ------------------------------------------------------------------------------
@@ -166,18 +265,31 @@ remove_desktop_launcher() {
 # ------------------------------------------------------------------------------
 do_silent_backup() {
     echo -e "${YELLOW}[*] Asegurando respaldo y persistencia local de seguridad...${NC}"
-    
-    # 1. Sellar integridad criptográfica (Ed25519)
+
+    # 1. Asegurar persistencia de configuraciones de usuario en el árbol local
+    mkdir -p "$REPO_DIR/data/vscode/User" "$REPO_DIR/data/zen"
+    if [ -d "$HOME/.config/Code - OSS/User" ]; then
+        rsync -rltD --no-perms --no-owner --no-group --delete \
+            --exclude=".git" --exclude="checkpoints" --exclude="*.log" --exclude="*.tmp" \
+            "$HOME/.config/Code - OSS/User/" "$REPO_DIR/data/vscode/User/" 2>/dev/null || true
+    fi
+    if [ -d "$HOME/.config/zen" ]; then
+        rsync -rltD --no-perms --no-owner --no-group --delete \
+            --exclude="cache2" --exclude="startupCache" --exclude="Crash Reports" \
+            "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
+    fi
+
+    # 2. Sellar integridad criptográfica (Ed25519)
     if command -v integrity-guard >/dev/null 2>&1; then
         echo -e "${CYAN}[*] Sellando integridad criptográfica (Ed25519)...${NC}"
         integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
     fi
 
-    # 2. Respaldo silencioso
+    # 3. Respaldo silencioso
     if [ -d "$REPO_DIR/.git" ]; then
-        cd "$REPO_DIR"
+        cd "$REPO_DIR" || return 0
         git add -A >/dev/null 2>&1 || true
-        local COMMIT_MSG="sync: respaldo de seguridad ($(date '+%Y-%m-%d %H:%M:%S'))"
+        local COMMIT_MSG="sync: respaldo de seguridad local ($(date '+%Y-%m-%d %H:%M:%S'))"
         git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
 
         local TOKEN=""
@@ -209,83 +321,137 @@ do_silent_backup() {
 }
 
 # ------------------------------------------------------------------------------
-# Desinstalar un programa del sistema
+# Diálogo unificado de Desinstalación (Borrar o Conservar credenciales)
 # ------------------------------------------------------------------------------
-uninstall_selected_program() {
+prompt_and_uninstall() {
     local target_script="$1"
-    local delete_data="$2"
-    local slug
-    slug=$(basename "$target_script" | sed 's/instalar-//; s/.sh//')
-    local pname
-    pname=$(grep -m 1 "^# Nombre:" "$target_script" | sed 's/^# Nombre:[[:space:]]*//')
+    local fname="${target_script##*/}"
+    local slug="${fname#instalar-}"
+    slug="${slug%.sh}"
+
+    get_program_meta "$target_script"
+    local pname="$_META_NAME"
     [ -z "$pname" ] && pname="$slug"
 
-    echo ""
-    echo -e "${BLUE}======================================================${NC}"
-    echo -e "${YELLOW}  🗑️ Desinstalando: ${BOLD}${pname}${NC}"
-    echo -e "${BLUE}======================================================${NC}"
-    echo ""
-
-    # Si se solicitó borrar todos los datos:
-    if [ "$delete_data" = "1" ]; then
-        # Paso previo obligatorio: Respaldo antes de borrar
-        do_silent_backup
-        
-        echo -e "${CYAN}[*] Purgando datos de usuario, configuraciones y cachés...${NC}"
-        if [ "$slug" = "vscode" ]; then
-            rm -rf "$HOME/.config/Code - OSS" "$HOME/.vscode-oss" "$HOME/.config/Code" 2>/dev/null || true
-        elif [ "$slug" = "zen-browser" ]; then
-            rm -rf "$HOME/.config/zen" "$HOME/.zen" "$HOME/.cache/zen" 2>/dev/null || true
-        else
-            rm -rf "$HOME/.config/$slug" "$HOME/.$slug" "$HOME/.local/share/$slug" "$HOME/.cache/$slug" 2>/dev/null || true
+    # Protección de componentes del entorno de ventanas
+    if [ "$slug" = "openbox" ] || [ "$slug" = "tint2" ]; then
+        echo ""
+        echo -e "${RED}[!] AVISO: ${BOLD}${pname}${NC}${RED} es el gestor gráfico principal.${NC}"
+        echo -e "${YELLOW}Desinstalarlo desactivará la interfaz visual de escritorio.${NC}"
+        echo ""
+        echo -e "  [${YELLOW}1${NC}] Cancelar y volver atrás ${GRAY}(Recomendado)${NC}"
+        echo -e "  [${YELLOW}2${NC}] Continuar de todos modos"
+        echo ""
+        local confirm_crit
+        confirm_crit=$(read_menu_input "${BOLD}👉 Opción [1/2]: ${NC}")
+        if [ "$confirm_crit" != "2" ]; then
+            return 0
         fi
-    else
-        echo -e "${GREEN}[*] Conservando credenciales, configuraciones y datos de usuario intactos.${NC}"
     fi
 
-    # Detener procesos activos
-    echo -e "${CYAN}[*] Deteniendo procesos de $pname...${NC}"
-    pkill -9 -f "$slug" 2>/dev/null || true
-    if [ "$slug" = "vscode" ]; then
-        pkill -9 -f "code-oss" 2>/dev/null || true
-    fi
+    while true; do
+        clear
+        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${YELLOW}  ⚠️ OPCIONES DE DESINSTALACIÓN: ${BOLD}${pname}${NC}"
+        echo -e "${BLUE}======================================================${NC}"
+        echo ""
+        echo -e "¿Cómo deseas proceder con la desinstalación?"
+        echo ""
+        echo -e "  [${YELLOW}1${NC}] 🗑️ ${BOLD}Desinstalar aplicación CONSERVANDO credenciales y datos${NC}"
+        echo -e "      ${GRAY}└─ Tus cuentas, preferencias y tokens quedarán guardados.${NC}"
+        echo -e "      ${GRAY}   Si lo vuelves a instalar en el futuro, iniciará con todo listo.${NC}"
+        echo ""
+        echo -e "  [${YELLOW}2${NC}] 💥 ${RED}${BOLD}Desinstalar aplicación y BORRAR TODOS los datos${NC}"
+        echo -e "      ${GRAY}└─ Se asegura un respaldo previo y luego se purgan por${NC}"
+        echo -e "      ${GRAY}   completo carpetas de usuario, configuraciones y tokens.${NC}"
+        echo ""
+        echo -e "  [${YELLOW}0${NC}] ↩️ Cancelar y volver atrás ${GRAY}(o pulsa borrar)${NC}"
+        echo ""
+        local opt_mode
+        opt_mode=$(read_menu_input "${BOLD}👉 Selecciona una opción [1/2/0]: ${NC}")
 
-    # Eliminar binarios y accesos de terminal
-    echo -e "${CYAN}[*] Eliminando ejecutables de $PREFIX/bin...${NC}"
-    rm -f "$PREFIX/bin/$slug" "$PREFIX/bin/${slug//-/}" 2>/dev/null || true
-    if [ "$slug" = "vscode" ]; then
-        rm -f "$PREFIX/bin/code-oss" "$PREFIX/bin/vscode" 2>/dev/null || true
-    fi
+        if [ "$opt_mode" = "0" ] || [ "$opt_mode" = "__BACK__" ] || [ "$opt_mode" = "b" ] || [ "$opt_mode" = "q" ]; then
+            return 0
+        fi
 
-    # Eliminar accesos directos y del escritorio
-    echo -e "${CYAN}[*] Retirando iconos del escritorio y menús...${NC}"
-    remove_desktop_launcher "$slug"
+        if [ -z "$opt_mode" ]; then
+            continue
+        fi
 
-    # Desinstalar paquetes si correspondía a un paquete oficial
-    echo -e "${CYAN}[*] Verificando paquetes del sistema...${NC}"
-    if [ "$slug" = "vscode" ]; then
-        pkg uninstall -y code-oss >/dev/null 2>&1 || true
-    elif [ "$slug" = "zen-browser" ]; then
-        pkg uninstall -y zen-browser >/dev/null 2>&1 || true
-    else
-        pkg uninstall -y "$slug" >/dev/null 2>&1 || true
-    fi
+        if [ "$opt_mode" = "1" ] || [ "$opt_mode" = "2" ]; then
+            local delete_data=0
+            [ "$opt_mode" = "2" ] && delete_data=1
 
-    # Limpiar del registro persistente
-    if [ -f "$INSTALLED_REGISTRY" ]; then
-        grep -Fvx "$slug" "$INSTALLED_REGISTRY" > "$INSTALLED_REGISTRY.tmp" 2>/dev/null || true
-        mv "$INSTALLED_REGISTRY.tmp" "$INSTALLED_REGISTRY" 2>/dev/null || true
-    fi
+            echo ""
+            echo -e "${BLUE}======================================================${NC}"
+            echo -e "${YELLOW}  🗑️ Desinstalando: ${BOLD}${pname}${NC}"
+            echo -e "${BLUE}======================================================${NC}"
+            echo ""
 
-    echo ""
-    echo -e "${GREEN}======================================================${NC}"
-    if [ "$delete_data" = "1" ]; then
-        echo -e "${GREEN}  ✔ ${pname} y todos sus datos han sido eliminados.${NC}"
-    else
-        echo -e "${GREEN}  ✔ ${pname} desinstalado (datos y credenciales conservados).${NC}"
-    fi
-    echo -e "${GREEN}======================================================${NC}"
-    echo ""
+            if [ "$delete_data" = "1" ]; then
+                # Respaldo silencioso de seguridad antes de borrar
+                do_silent_backup
+
+                echo -e "${CYAN}[*] Purgando configuraciones, cachés y datos locales...${NC}"
+                if [ "$slug" = "vscode" ]; then
+                    rm -rf "$HOME/.config/Code - OSS" "$HOME/.vscode-oss" "$HOME/.config/Code" 2>/dev/null || true
+                elif [ "$slug" = "zen-browser" ]; then
+                    rm -rf "$HOME/.config/zen" "$HOME/.zen" "$HOME/.cache/zen" 2>/dev/null || true
+                else
+                    rm -rf "$HOME/.config/$slug" "$HOME/.$slug" "$HOME/.local/share/$slug" "$HOME/.cache/$slug" 2>/dev/null || true
+                fi
+            else
+                echo -e "${GREEN}[*] Conservando credenciales, configuraciones y datos de usuario intactos.${NC}"
+            fi
+
+            # Detener procesos
+            echo -e "${CYAN}[*] Deteniendo procesos de $pname...${NC}"
+            pkill -9 -f "$slug" 2>/dev/null || true
+            if [ "$slug" = "vscode" ]; then
+                pkill -9 -f "code-oss" 2>/dev/null || true
+            fi
+
+            # Eliminar binarios
+            echo -e "${CYAN}[*] Eliminando ejecutables de $PREFIX/bin...${NC}"
+            rm -f "$PREFIX/bin/$slug" "$PREFIX/bin/${slug//-/}" 2>/dev/null || true
+            if [ "$slug" = "vscode" ]; then
+                rm -f "$PREFIX/bin/code-oss" "$PREFIX/bin/vscode" 2>/dev/null || true
+            fi
+
+            # Retirar lanzador del escritorio
+            echo -e "${CYAN}[*] Retirando iconos del escritorio y menús...${NC}"
+            remove_desktop_launcher "$slug"
+
+            # Desinstalar paquetes si aplica
+            echo -e "${CYAN}[*] Verificando paquetes del sistema...${NC}"
+            if [ "$slug" = "vscode" ]; then
+                pkg uninstall -y code-oss >/dev/null 2>&1 || true
+            elif [ "$slug" = "zen-browser" ]; then
+                pkg uninstall -y zen-browser >/dev/null 2>&1 || true
+            else
+                pkg uninstall -y "$slug" >/dev/null 2>&1 || true
+            fi
+
+            # Limpiar registro persistente
+            if [ -f "$INSTALLED_REGISTRY" ]; then
+                grep -Fvx "$slug" "$INSTALLED_REGISTRY" > "$INSTALLED_REGISTRY.tmp" 2>/dev/null || true
+                mv "$INSTALLED_REGISTRY.tmp" "$INSTALLED_REGISTRY" 2>/dev/null || true
+            fi
+
+            echo ""
+            echo -e "${GREEN}======================================================${NC}"
+            if [ "$delete_data" = "1" ]; then
+                echo -e "${GREEN}  ✔ ${pname} y todos sus datos han sido eliminados.${NC}"
+            else
+                echo -e "${GREEN}  ✔ ${pname} desinstalado (datos y credenciales conservados).${NC}"
+            fi
+            echo -e "${GREEN}======================================================${NC}"
+            echo ""
+
+            pause_menu "Presiona ENTER o borrar para continuar..."
+            return 0
+        fi
+    done
 }
 
 # ------------------------------------------------------------------------------
@@ -293,13 +459,7 @@ uninstall_selected_program() {
 # ------------------------------------------------------------------------------
 menu_desinstalar() {
     while true; do
-        clear
-        echo -e "${BLUE}======================================================${NC}"
-        echo -e "${RED}  🗑️ DESINSTALADOR DE PROGRAMAS (SISTEMA LOCAL)${NC}"
-        echo -e "${BLUE}======================================================${NC}"
-        echo ""
-        echo -e "Detectando programas instalados en el dispositivo..."
-        echo ""
+        refresh_installed_cache
 
         local INSTALLED_LIST=()
         for p in "$SCRIPT_DIR"/*/instalar-*.sh; do
@@ -309,24 +469,33 @@ menu_desinstalar() {
             fi
         done
 
+        clear
+        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${RED}  🗑️ DESINSTALADOR DE PROGRAMAS (SISTEMA LOCAL)${NC}"
+        echo -e "${BLUE}======================================================${NC}"
+        echo ""
+
         if [ "${#INSTALLED_LIST[@]}" -eq 0 ]; then
             echo -e "${YELLOW}  ℹ️ No se detectaron programas instalados actualmente.${NC}"
             echo ""
             echo -e "  [${YELLOW}0${NC}] ↩️ Volver al menú principal ${GRAY}(o pulsa borrar)${NC}"
             echo ""
-            local opt
-            opt=$(read_menu_input "${BOLD}👉 Pulsa ENTER o borrar para volver: ${NC}")
+            pause_menu "Pulsa ENTER o borrar para volver..."
             return 0
         fi
 
-        echo -e "Selecciona el programa que deseas desinstalar:"
+        echo -e "Programas detectados en el sistema (${GREEN}${#INSTALLED_LIST[@]} instalados${NC}):"
         echo ""
         local k=1
         for p in "${INSTALLED_LIST[@]}"; do
-            local pname ptagline
-            pname=$(grep -m 1 "^# Nombre:" "$p" | sed 's/^# Nombre:[[:space:]]*//')
-            ptagline=$(grep -m 1 "^# Tagline:" "$p" | sed 's/^# Tagline:[[:space:]]*//')
-            [ -z "$pname" ] && pname=$(basename "$p" | sed 's/instalar-//; s/.sh//')
+            get_program_meta "$p"
+            local pname="$_META_NAME"
+            local ptagline="$_META_TAGLINE"
+            if [ -z "$pname" ]; then
+                local fname="${p##*/}"
+                local slug="${fname#instalar-}"
+                pname="${slug%.sh}"
+            fi
 
             if [ -n "$ptagline" ]; then
                 echo -e "  [${YELLOW}$k${NC}] 📦 ${BOLD}${pname}${NC} ${CYAN}(${ptagline})${NC}"
@@ -342,146 +511,151 @@ menu_desinstalar() {
         local opt_sel
         opt_sel=$(read_menu_input "${BOLD}👉 Selecciona un programa para desinstalar: ${NC}")
 
-        if [ "$opt_sel" = "0" ] || [ "$opt_sel" = "__BACK__" ] || [ "$opt_sel" = "b" ] || [ "$opt_sel" = "q" ] || [ -z "$opt_sel" ]; then
+        if [ "$opt_sel" = "0" ] || [ "$opt_sel" = "__BACK__" ] || [ "$opt_sel" = "b" ] || [ "$opt_sel" = "q" ]; then
             return 0
+        fi
+
+        if [ -z "$opt_sel" ]; then
+            continue
         fi
 
         if [[ "$opt_sel" =~ ^[0-9]+$ ]] && [ "$opt_sel" -ge 1 ] && [ "$opt_sel" -le "${#INSTALLED_LIST[@]}" ]; then
             local target_p="${INSTALLED_LIST[$((opt_sel-1))]}"
-            local sel_name
-            sel_name=$(grep -m 1 "^# Nombre:" "$target_p" | sed 's/^# Nombre:[[:space:]]*//')
-            [ -z "$sel_name" ] && sel_name=$(basename "$target_p")
-
-            while true; do
-                clear
-                echo -e "${BLUE}======================================================${NC}"
-                echo -e "${YELLOW}  ⚠️ OPCIONES DE DESINSTALACIÓN: ${BOLD}${sel_name}${NC}"
-                echo -e "${BLUE}======================================================${NC}"
-                echo ""
-                echo -e "¿Cómo deseas proceder con la desinstalación?"
-                echo ""
-                echo -e "  [${YELLOW}1${NC}] 🗑️ ${BOLD}Desinstalar aplicación CONSERVANDO credenciales y datos${NC}"
-                echo -e "      ${GRAY}└─ Tus cuentas, preferencias y tokens quedarán guardados.${NC}"
-                echo -e "      ${GRAY}   Si lo vuelves a instalar en el futuro, iniciará con todo listo.${NC}"
-                echo ""
-                echo -e "  [${YELLOW}2${NC}] 💥 ${RED}${BOLD}Desinstalar aplicación y BORRAR TODOS los datos${NC}"
-                echo -e "      ${GRAY}└─ Se realiza un respaldo de seguridad previo y luego se${NC}"
-                echo -e "      ${GRAY}   eliminan por completo carpetas de usuario, cachés y tokens.${NC}"
-                echo ""
-                echo -e "  [${YELLOW}0${NC}] ↩️ Cancelar y volver atrás ${GRAY}(o pulsa borrar)${NC}"
-                echo ""
-                local opt_mode
-                opt_mode=$(read_menu_input "${BOLD}👉 Selecciona una opción [1/2/0]: ${NC}")
-
-                if [ "$opt_mode" = "0" ] || [ "$opt_mode" = "__BACK__" ] || [ "$opt_mode" = "b" ] || [ "$opt_mode" = "q" ]; then
-                    break
-                elif [ "$opt_mode" = "1" ]; then
-                    uninstall_selected_program "$target_p" "0"
-                    read_menu_input "${YELLOW}Presiona ENTER o borrar para continuar...${NC}" >/dev/null 2>&1
-                    break
-                elif [ "$opt_mode" = "2" ]; then
-                    uninstall_selected_program "$target_p" "1"
-                    read_menu_input "${YELLOW}Presiona ENTER o borrar para continuar...${NC}" >/dev/null 2>&1
-                    break
-                fi
-            done
+            prompt_and_uninstall "$target_p"
         fi
     done
 }
 
 # ------------------------------------------------------------------------------
-# MENÚ DE BÚSQUEDA RÁPIDA
+# MENÚ DE BÚSQUEDA RÁPIDA (Bucle interactivo con soporte de atrás)
 # ------------------------------------------------------------------------------
 menu_buscar() {
-    clear
-    echo -e "${BLUE}======================================================${NC}"
-    echo -e "${GREEN}  🔍 BÚSQUEDA GLOBAL DE PROGRAMAS (+110 DISPONIBLES)${NC}"
-    echo -e "${BLUE}======================================================${NC}"
-    echo ""
-    local query
-    query=$(read_menu_input "${BOLD}👉 Escribe el nombre o palabra a buscar: ${NC}")
-
-    if [ -z "$query" ] || [ "$query" = "__BACK__" ] || [ "$query" = "0" ]; then
-        return 0
-    fi
-
-    echo ""
-    echo -e "${CYAN}[*] Buscando resultados para: '$query'...${NC}"
-    echo ""
-
-    local MATCHES=()
-    for p in "$SCRIPT_DIR"/*/instalar-*.sh; do
-        [ -f "$p" ] || continue
-        if grep -i -q "$query" "$p" 2>/dev/null || echo "$(basename "$p")" | grep -i -q "$query"; then
-            MATCHES+=("$p")
-        fi
-    done
-
-    if [ "${#MATCHES[@]}" -eq 0 ]; then
-        echo -e "${YELLOW}  ℹ️ No se encontraron coincidencias.${NC}"
+    while true; do
+        clear
+        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${GREEN}  🔍 BÚSQUEDA GLOBAL DE PROGRAMAS (+110 DISPONIBLES)${NC}"
+        echo -e "${BLUE}======================================================${NC}"
         echo ""
-        read_menu_input "${YELLOW}Presiona ENTER o borrar para volver...${NC}" >/dev/null 2>&1
-        return 0
-    fi
+        echo -e "Escribe el nombre o tema a buscar ${GRAY}(o '0' / borrar para volver al menú)${NC}:"
+        echo ""
+        local query
+        query=$(read_menu_input "${BOLD}👉 Buscar: ${NC}")
 
-    local m=1
-    for p in "${MATCHES[@]}"; do
-        local pname ptagline inst_tag=""
-        pname=$(grep -m 1 "^# Nombre:" "$p" | sed 's/^# Nombre:[[:space:]]*//')
-        ptagline=$(grep -m 1 "^# Tagline:" "$p" | sed 's/^# Tagline:[[:space:]]*//')
-        [ -z "$pname" ] && pname=$(basename "$p" | sed 's/instalar-//; s/.sh//')
-
-        if is_program_installed "$p"; then
-            inst_tag=" ${GREEN}[✓ INSTALADO]${NC}"
+        if [ -z "$query" ] || [ "$query" = "__BACK__" ] || [ "$query" = "0" ] || [ "$query" = "q" ] || [ "$query" = "Q" ]; then
+            return 0
         fi
 
-        if [ -n "$ptagline" ]; then
-            echo -e "  [${YELLOW}$m${NC}] 📦 ${BOLD}${pname}${NC} ${CYAN}(${ptagline})${NC}${inst_tag}"
-        else
-            echo -e "  [${YELLOW}$m${NC}] 📦 ${BOLD}${pname}${NC}${inst_tag}"
-        fi
-        ((m++))
-    done
+        echo ""
+        echo -e "${CYAN}[*] Buscando resultados para: '$query'...${NC}"
+        echo ""
 
-    echo ""
-    echo -e "  [${YELLOW}0${NC}] ↩️ Volver ${GRAY}(o pulsa borrar)${NC}"
-    echo ""
-    local opt_b
-    opt_b=$(read_menu_input "${BOLD}👉 Selecciona un número para gestionar/instalar: ${NC}")
+        refresh_installed_cache
 
-    if [ "$opt_b" = "0" ] || [ "$opt_b" = "__BACK__" ] || [ "$opt_b" = "b" ] || [ -z "$opt_b" ]; then
-        return 0
-    fi
+        local MATCHES=()
+        declare -A MATCH_MAP=()
+        while IFS= read -r f; do
+            [ -n "$f" ] && MATCH_MAP["$f"]=1
+        done < <(grep -l -i "$query" "$SCRIPT_DIR"/*/instalar-*.sh 2>/dev/null || true)
 
-    if [[ "$opt_b" =~ ^[0-9]+$ ]] && [ "$opt_b" -ge 1 ] && [ "$opt_b" -le "${#MATCHES[@]}" ]; then
-        local target_script="${MATCHES[$((opt_b-1))]}"
-        local slug
-        slug=$(basename "$target_script" | sed 's/instalar-//; s/.sh//')
-
-        if is_program_installed "$target_script"; then
-            echo ""
-            echo -e "${YELLOW}El programa ya está instalado.${NC}"
-            echo -e "  [1] ⚡ Reinstalar / Actualizar"
-            echo -e "  [2] 🗑️ Desinstalar"
-            echo -e "  [0] ↩️ Volver"
-            echo ""
-            local sub_opt
-            sub_opt=$(read_menu_input "${BOLD}👉 Opción: ${NC}")
-            if [ "$sub_opt" = "1" ]; then
-                bash "$target_script"
-                sync_desktop_launcher "$slug"
-                read_menu_input "${YELLOW}Presiona ENTER o borrar para continuar...${NC}" >/dev/null 2>&1
-            elif [ "$sub_opt" = "2" ]; then
-                uninstall_selected_program "$target_script" "0"
-                read_menu_input "${YELLOW}Presiona ENTER o borrar para continuar...${NC}" >/dev/null 2>&1
+        for p in "$SCRIPT_DIR"/*/instalar-*.sh; do
+            [ -f "$p" ] || continue
+            if [ -n "${MATCH_MAP["$p"]}" ] || [[ "${p##*/}" =~ $query ]]; then
+                MATCHES+=("$p")
             fi
-        else
-            bash "$target_script"
-            sync_desktop_launcher "$slug"
-            echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
-            read_menu_input "${YELLOW}Presiona ENTER o borrar para continuar...${NC}" >/dev/null 2>&1
+        done
+
+        if [ "${#MATCHES[@]}" -eq 0 ]; then
+            echo -e "${YELLOW}  ℹ️ No se encontraron coincidencias para: '$query'.${NC}"
+            echo ""
+            pause_menu "Presiona ENTER o borrar para buscar de nuevo..."
+            continue
         fi
-    fi
+
+        while true; do
+            clear
+            echo -e "${BLUE}======================================================${NC}"
+            echo -e "${GREEN}  🔍 RESULTADOS PARA: '$query' (${#MATCHES[@]} coincidencias)${NC}"
+            echo -e "${BLUE}======================================================${NC}"
+            echo ""
+
+            local m=1
+            for p in "${MATCHES[@]}"; do
+                get_program_meta "$p"
+                local pname="$_META_NAME"
+                local ptagline="$_META_TAGLINE"
+                local inst_tag=""
+                if [ -z "$pname" ]; then
+                    local fname="${p##*/}"
+                    local s="${fname#instalar-}"
+                    pname="${s%.sh}"
+                fi
+
+                if is_program_installed "$p"; then
+                    inst_tag=" ${GREEN}[✓ INSTALADO]${NC}"
+                fi
+
+                if [ -n "$ptagline" ]; then
+                    echo -e "  [${YELLOW}$m${NC}] 📦 ${BOLD}${pname}${NC} ${CYAN}(${ptagline})${NC}${inst_tag}"
+                else
+                    echo -e "  [${YELLOW}$m${NC}] 📦 ${BOLD}${pname}${NC}${inst_tag}"
+                fi
+                ((m++))
+            done
+
+            echo ""
+            echo -e "  [${YELLOW}0${NC}] ↩️ Volver a buscar ${GRAY}(o pulsa borrar)${NC}"
+            echo ""
+            local opt_b
+            opt_b=$(read_menu_input "${BOLD}👉 Selecciona un número para gestionar/instalar: ${NC}")
+
+            if [ "$opt_b" = "0" ] || [ "$opt_b" = "__BACK__" ] || [ "$opt_b" = "b" ] || [ "$opt_b" = "q" ] || [ -z "$opt_b" ]; then
+                break
+            fi
+
+            if [[ "$opt_b" =~ ^[0-9]+$ ]] && [ "$opt_b" -ge 1 ] && [ "$opt_b" -le "${#MATCHES[@]}" ]; then
+                local target_script="${MATCHES[$((opt_b-1))]}"
+                local fname="${target_script##*/}"
+                local slug="${fname#instalar-}"
+                slug="${slug%.sh}"
+
+                get_program_meta "$target_script"
+                local target_name="$_META_NAME"
+                [ -z "$target_name" ] && target_name="$slug"
+
+                if is_program_installed "$target_script"; then
+                    echo ""
+                    echo -e "${YELLOW}[!] ${target_name} ya está instalado en este sistema.${NC}"
+                    echo -e "  [${YELLOW}1${NC}] ⚡ Reinstalar / Actualizar"
+                    echo -e "  [${YELLOW}2${NC}] 🗑️ Desinstalar programa"
+                    echo -e "  [${YELLOW}0${NC}] ↩️ Volver atrás ${GRAY}(o pulsa borrar)${NC}"
+                    echo ""
+                    local sub_opt
+                    sub_opt=$(read_menu_input "${BOLD}👉 Opción [1/2/0]: ${NC}")
+                    if [ "$sub_opt" = "1" ]; then
+                        echo ""
+                        echo -e "${CYAN}⚡ Reinstalando: ${target_name}...${NC}"
+                        echo ""
+                        bash "$target_script"
+                        sync_desktop_launcher "$slug"
+                        echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                        pause_menu "Presiona ENTER o borrar para continuar..."
+                    elif [ "$sub_opt" = "2" ]; then
+                        prompt_and_uninstall "$target_script"
+                    fi
+                else
+                    echo ""
+                    echo -e "${CYAN}⚡ Instalando: ${target_name}...${NC}"
+                    echo ""
+                    bash "$target_script"
+                    sync_desktop_launcher "$slug"
+                    echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                    echo ""
+                    pause_menu "Presiona ENTER o borrar para continuar..."
+                fi
+                refresh_installed_cache
+            fi
+        done
+    done
 }
 
 # ------------------------------------------------------------------------------
@@ -492,9 +666,12 @@ menu_categoria() {
     local sel_path="$SCRIPT_DIR/$sel_cat"
 
     while true; do
+        refresh_installed_cache
+
         clear
-        local cat_title
-        cat_title=$(echo "$sel_cat" | sed 's/^[0-9]*-//; s/_/ /g')
+        local cat_title="${sel_cat#[0-9]*-}"
+        cat_title="${cat_title//_/ }"
+
         echo -e "${BLUE}======================================================${NC}"
         echo -e "${GREEN}  📁 CATEGORÍA: $cat_title${NC}"
         echo -e "${BLUE}======================================================${NC}"
@@ -504,13 +681,17 @@ menu_categoria() {
         local j=1
         for p in "$sel_path"/instalar-*.sh; do
             [ -f "$p" ] || continue
-            local pname ptagline inst_tag=""
-            pname=$(grep -m 1 "^# Nombre:" "$p" | sed 's/^# Nombre:[[:space:]]*//')
-            ptagline=$(grep -m 1 "^# Tagline:" "$p" | sed 's/^# Tagline:[[:space:]]*//')
-            if [ -z "$pname" ]; then
-                pname=$(basename "$p" | sed 's/instalar-//; s/.sh//')
-            fi
             PROGRAMS+=("$p")
+
+            get_program_meta "$p"
+            local pname="$_META_NAME"
+            local ptagline="$_META_TAGLINE"
+            local inst_tag=""
+            if [ -z "$pname" ]; then
+                local fname="${p##*/}"
+                local s="${fname#instalar-}"
+                pname="${s%.sh}"
+            fi
 
             if is_program_installed "$p"; then
                 inst_tag=" ${GREEN}[✓ INSTALADO]${NC}"
@@ -528,19 +709,25 @@ menu_categoria() {
         echo -e "  [${YELLOW}0${NC}] ↩️ Volver a categorías ${GRAY}(o pulsa borrar)${NC}"
         echo ""
         local opt_prog
-        opt_prog=$(read_menu_input "${BOLD}👉 Selecciona un programa para instalar: ${NC}")
+        opt_prog=$(read_menu_input "${BOLD}👉 Selecciona un programa para instalar o gestionar: ${NC}")
 
-        if [ "$opt_prog" = "0" ] || [ "$opt_prog" = "__BACK__" ] || [ "$opt_prog" = "b" ] || [ "$opt_prog" = "q" ] || [ -z "$opt_prog" ]; then
+        if [ "$opt_prog" = "0" ] || [ "$opt_prog" = "__BACK__" ] || [ "$opt_prog" = "b" ] || [ "$opt_prog" = "q" ]; then
             break
+        fi
+
+        if [ -z "$opt_prog" ]; then
+            continue
         fi
 
         if [[ "$opt_prog" =~ ^[0-9]+$ ]] && [ "$opt_prog" -ge 1 ] && [ "$opt_prog" -le "${#PROGRAMS[@]}" ]; then
             local target_script="${PROGRAMS[$((opt_prog-1))]}"
-            local slug
-            slug=$(basename "$target_script" | sed 's/instalar-//; s/.sh//')
-            local target_name
-            target_name=$(grep -m 1 "^# Nombre:" "$target_script" | sed 's/^# Nombre:[[:space:]]*//')
-            [ -z "$target_name" ] && target_name=$(basename "$target_script")
+            local fname="${target_script##*/}"
+            local slug="${fname#instalar-}"
+            slug="${slug%.sh}"
+
+            get_program_meta "$target_script"
+            local target_name="$_META_NAME"
+            [ -z "$target_name" ] && target_name="$slug"
 
             if is_program_installed "$target_script"; then
                 echo ""
@@ -558,10 +745,9 @@ menu_categoria() {
                     bash "$target_script"
                     sync_desktop_launcher "$slug"
                     echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
-                    read_menu_input "${YELLOW}Presiona ENTER o borrar para continuar...${NC}" >/dev/null 2>&1
+                    pause_menu "Presiona ENTER o borrar para continuar..."
                 elif [ "$sub_action" = "2" ]; then
-                    uninstall_selected_program "$target_script" "0"
-                    read_menu_input "${YELLOW}Presiona ENTER o borrar para continuar...${NC}" >/dev/null 2>&1
+                    prompt_and_uninstall "$target_script"
                 fi
             else
                 echo ""
@@ -571,7 +757,7 @@ menu_categoria() {
                 sync_desktop_launcher "$slug"
                 echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
                 echo ""
-                read_menu_input "${YELLOW}Presiona ENTER o borrar para continuar...${NC}" >/dev/null 2>&1
+                pause_menu "Presiona ENTER o borrar para continuar..."
             fi
         fi
     done
@@ -580,63 +766,83 @@ menu_categoria() {
 # ------------------------------------------------------------------------------
 # BUCLE PRINCIPAL DEL CENTRO DE SOFTWARE
 # ------------------------------------------------------------------------------
-while true; do
-    clear
-    echo -e "${BLUE}======================================================${NC}"
-    echo -e "${GREEN}  📦 CENTRO DE SOFTWARE Y APLICACIONES (TERMUX / X11)${NC}"
-    echo -e "${BLUE}======================================================${NC}"
-    echo ""
-    echo -e "Explorar categorías para instalar:"
-    echo ""
+run_main_menu() {
+    while true; do
+        refresh_installed_cache
 
-    CATEGORIES=()
-    i=1
-    for d in "$SCRIPT_DIR"/*/; do
-        [ -d "$d" ] || continue
-        cname=$(basename "$d")
-        CATEGORIES+=("$cname")
-        cname_clean=$(echo "$cname" | sed 's/^[0-9]*-//; s/_/ /g')
-        count=$(find "$d" -maxdepth 1 -name "instalar-*.sh" | wc -l)
-        echo -e "  [${YELLOW}$i${NC}] 📁 $cname_clean (${CYAN}$count programas${NC})"
-        ((i++))
-    done
+        # Contar programas instalados con caché en memoria ultra-rápida (cero subshells)
+        local inst_count=0
+        for p in "$SCRIPT_DIR"/*/instalar-*.sh; do
+            [ -f "$p" ] || continue
+            if is_program_installed "$p"; then
+                ((inst_count++))
+            fi
+        done
 
-    # Contar programas instalados
-    inst_count=0
-    for p in "$SCRIPT_DIR"/*/instalar-*.sh; do
-        [ -f "$p" ] || continue
-        if is_program_installed "$p"; then
-            ((inst_count++))
+        clear
+        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${GREEN}  📦 CENTRO DE SOFTWARE Y APLICACIONES (TERMUX / X11)${NC}"
+        echo -e "${BLUE}======================================================${NC}"
+        echo ""
+        echo -e "Explorar categorías para instalar:"
+        echo ""
+
+        CATEGORIES=()
+        local i=1
+        for d in "$SCRIPT_DIR"/*/; do
+            [ -d "$d" ] || continue
+            local cname="${d%/}"
+            cname="${cname##*/}"
+            CATEGORIES+=("$cname")
+            local cname_clean="${cname#[0-9]*-}"
+            cname_clean="${cname_clean//_/ }"
+
+            local cat_files=("$d"instalar-*.sh)
+            local count=0
+            [ -e "${cat_files[0]}" ] && count="${#cat_files[@]}"
+
+            echo -e "  [${YELLOW}$i${NC}] 📁 $cname_clean (${CYAN}$count programas${NC})"
+            ((i++))
+        done
+
+        echo ""
+        echo -e "${GRAY}------------------------------------------------------${NC}"
+        echo -e "  [${YELLOW}D${NC}] 🗑️ ${BOLD}Desinstalar programas${NC} (${GREEN}$inst_count instalados${NC})"
+        echo -e "  [${YELLOW}B${NC}] 🔍 ${BOLD}Buscar programa${NC} (+110 apps)"
+        echo -e "  [${YELLOW}0${NC}] 🚪 Salir ${GRAY}(o pulsa borrar)${NC}"
+        echo -e "${GRAY}------------------------------------------------------${NC}"
+        echo ""
+
+        local opt_cat
+        opt_cat=$(read_menu_input "${BOLD}👉 Selecciona una opción: ${NC}")
+
+        if [ "$opt_cat" = "0" ] || [ "$opt_cat" = "__BACK__" ] || [ "$opt_cat" = "q" ] || [ "$opt_cat" = "Q" ]; then
+            echo -e "\n${YELLOW}[*] Saliendo del Centro de Software...${NC}\n" >&2
+            exit 0
+        fi
+
+        if [ -z "$opt_cat" ]; then
+            continue
+        fi
+
+        if [ "$opt_cat" = "d" ] || [ "$opt_cat" = "D" ]; then
+            menu_desinstalar
+            continue
+        fi
+
+        if [ "$opt_cat" = "b" ] || [ "$opt_cat" = "B" ]; then
+            menu_buscar
+            continue
+        fi
+
+        if [[ "$opt_cat" =~ ^[0-9]+$ ]] && [ "$opt_cat" -ge 1 ] && [ "$opt_cat" -le "${#CATEGORIES[@]}" ]; then
+            local sel_cat="${CATEGORIES[$((opt_cat-1))]}"
+            menu_categoria "$sel_cat"
         fi
     done
+}
 
-    echo ""
-    echo -e "${GRAY}------------------------------------------------------${NC}"
-    echo -e "  [${YELLOW}D${NC}] 🗑️ ${BOLD}Desinstalar programas${NC} (${GREEN}$inst_count instalados${NC})"
-    echo -e "  [${YELLOW}B${NC}] 🔍 ${BOLD}Buscar programa${NC} (+110 apps)"
-    echo -e "  [${YELLOW}0${NC}] 🚪 Salir ${GRAY}(o pulsa borrar)${NC}"
-    echo -e "${GRAY}------------------------------------------------------${NC}"
-    echo ""
-
-    opt_cat=$(read_menu_input "${BOLD}👉 Selecciona una opción: ${NC}")
-
-    if [ "$opt_cat" = "0" ] || [ "$opt_cat" = "__BACK__" ] || [ "$opt_cat" = "q" ] || [ "$opt_cat" = "Q" ]; then
-        echo -e "\n${YELLOW}[*] Saliendo del Centro de Software...${NC}\n"
-        exit 0
-    fi
-
-    if [ "$opt_cat" = "d" ] || [ "$opt_cat" = "D" ]; then
-        menu_desinstalar
-        continue
-    fi
-
-    if [ "$opt_cat" = "b" ] || [ "$opt_cat" = "B" ]; then
-        menu_buscar
-        continue
-    fi
-
-    if [[ "$opt_cat" =~ ^[0-9]+$ ]] && [ "$opt_cat" -ge 1 ] && [ "$opt_cat" -le "${#CATEGORIES[@]}" ]; then
-        sel_cat="${CATEGORIES[$((opt_cat-1))]}"
-        menu_categoria "$sel_cat"
-    fi
-done
+# Ejecutar bucle principal solo cuando se ejecuta directamente el script
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    run_main_menu
+fi
