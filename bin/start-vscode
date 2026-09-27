@@ -144,6 +144,17 @@ for userapp in "$HOME/.local/share/applications/userapp-Zen-"*.desktop; do
     fi
 done
 
+# 8.1.1 Gestor de Iconos en el Escritorio (Estilo PC)
+mkdir -p "$HOME/Desktop" "$HOME/.config/pcmanfm/default"
+[ -f "$REPO_DIR/config/desktop-items-0.conf" ] && cp -f "$REPO_DIR/config/desktop-items-0.conf" "$HOME/.config/pcmanfm/default/desktop-items-0.conf" 2>/dev/null || true
+[ -f "$PREFIX/share/applications/code-oss.desktop" ] && cp -f "$PREFIX/share/applications/code-oss.desktop" "$HOME/Desktop/" 2>/dev/null || true
+[ -f "$PREFIX/share/applications/zen-browser.desktop" ] && cp -f "$PREFIX/share/applications/zen-browser.desktop" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
+if ! pgrep -f "pcmanfm --desktop" >/dev/null 2>&1; then
+    pcmanfm --desktop >/dev/null 2>&1 &
+    disown
+fi
+
 # 8.2 Preparar perfiles adaptativos de tint2 (Vertical flotante y Horizontal pegado)
 TINT2_DIR="$HOME/.config/tint2"
 mkdir -p "$TINT2_DIR"
