@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: GNU Emacs
-# Tagline: The extensible, customizable, self-documenting real-time display editor
-# Instalador: GNU Emacs (The extensible, customizable, self-documenting real-time display editor)
+# Tagline: El editor visual extensible, personalizable y autodocumentado en tiempo real
+# Instalador: GNU Emacs (El editor visual extensible, personalizable y autodocumentado en tiempo real)
 # Descripción: Entorno extensible y personalizable con modo Org y Magit.
 # URL Oficial: https://www.gnu.org/software/emacs/
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando GNU Emacs${NC}"
-echo -e "${CYAN}  (The extensible, customizable, self-documenting real-time display editor)${NC}"
+echo -e "${CYAN}  (El editor visual extensible, personalizable y autodocumentado en tiempo real)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

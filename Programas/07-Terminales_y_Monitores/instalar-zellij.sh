@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Zellij
-# Tagline: A terminal workspace with batteries included - Fast, intuitive and modern multiplexer in Rust
-# Instalador: Zellij (A terminal workspace with batteries included - Fast, intuitive and modern multiplexer in Rust)
+# Tagline: Espacio de trabajo y multiplexor de terminal intuitivo para desarrolladores con soporte de plugins
+# Instalador: Zellij (Espacio de trabajo y multiplexor de terminal intuitivo para desarrolladores con soporte de plugins)
 # Descripción: Multiplexor moderno en Rust con interfaz visual interactiva y plugins.
 # URL Oficial: https://zellij.dev
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Zellij${NC}"
-echo -e "${CYAN}  (A terminal workspace with batteries included - Fast, intuitive and modern multiplexer in Rust)${NC}"
+echo -e "${CYAN}  (Espacio de trabajo y multiplexor de terminal intuitivo para desarrolladores con soporte de plugins)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

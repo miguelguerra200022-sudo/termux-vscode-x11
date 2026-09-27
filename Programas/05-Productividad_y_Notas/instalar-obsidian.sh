@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Obsidian
-# Tagline: Sharpen your thinking - The private and flexible writing app that adapts to how you think
-# Instalador: Obsidian (Sharpen your thinking - The private and flexible writing app that adapts to how you think)
+# Tagline: La base de conocimiento privada y flexible que se adapta a tu manera de pensar
+# Instalador: Obsidian (La base de conocimiento privada y flexible que se adapta a tu manera de pensar)
 # Descripción: Base de conocimiento personal y red de notas Markdown enlazadas.
 # URL Oficial: https://obsidian.md
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Obsidian${NC}"
-echo -e "${CYAN}  (Sharpen your thinking - The private and flexible writing app that adapts to how you think)${NC}"
+echo -e "${CYAN}  (La base de conocimiento privada y flexible que se adapta a tu manera de pensar)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Draw.io
-# Tagline: Security-first diagramming for teams - Flowcharts, network diagrams, and system architecture
-# Instalador: Draw.io (Security-first diagramming for teams - Flowcharts, network diagrams, and system architecture)
+# Tagline: Software de diagramación y mapas conceptuales de nivel empresarial, libre y seguro
+# Instalador: Diagrams.net (Draw.io) (Software de diagramación y mapas conceptuales de nivel empresarial, libre y seguro)
 # Descripción: Herramienta de diagramas de arquitectura, flujos de datos y mapas.
 # URL Oficial: https://www.drawio.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Draw.io${NC}"
-echo -e "${CYAN}  (Security-first diagramming for teams - Flowcharts, network diagrams, and system architecture)${NC}"
+echo -e "${CYAN}  (Software de diagramación y mapas conceptuales de nivel empresarial, libre y seguro)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

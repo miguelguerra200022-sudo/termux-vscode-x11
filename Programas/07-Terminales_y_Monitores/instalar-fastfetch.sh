@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Fastfetch
-# Tagline: An extremely fast and feature-rich system information display tool written in C
-# Instalador: Fastfetch (An extremely fast and feature-rich system information display tool written in C)
+# Tagline: Herramienta rápida y personalizable para mostrar información del sistema al instante
+# Instalador: Fastfetch (Herramienta rápida y personalizable para mostrar información del sistema al instante)
 # Descripción: Herramienta de información de hardware y sistema ultra-rápida en C.
 # URL Oficial: https://github.com/fastfetch-cli/fastfetch
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Fastfetch${NC}"
-echo -e "${CYAN}  (An extremely fast and feature-rich system information display tool written in C)${NC}"
+echo -e "${CYAN}  (Herramienta rápida y personalizable para mostrar información del sistema al instante)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

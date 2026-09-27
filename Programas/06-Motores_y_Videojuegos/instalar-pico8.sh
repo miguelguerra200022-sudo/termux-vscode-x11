@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: PICO-8
-# Tagline: A fantasy console for making, sharing and playing tiny games and chiptune music
-# Instalador: PICO-8 (A fantasy console for making, sharing and playing tiny games and chiptune music)
+# Tagline: Consola de fantasía para crear, compartir y jugar videojuegos diminutos estilo retro
+# Instalador: PICO-8 (Consola de fantasía para crear, compartir y jugar videojuegos diminutos estilo retro)
 # Descripción: Fantasía de consola para diseño, música y programación de juegos pixel-art.
 # URL Oficial: https://www.lexaloffle.com/pico-8.php
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando PICO-8${NC}"
-echo -e "${CYAN}  (A fantasy console for making, sharing and playing tiny games and chiptune music)${NC}"
+echo -e "${CYAN}  (Consola de fantasía para crear, compartir y jugar videojuegos diminutos estilo retro)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 pkg install -y pico8 || true

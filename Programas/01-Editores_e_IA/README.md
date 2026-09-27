@@ -1,21 +1,29 @@
-# Categoría: 01-Editores e IA
+# Editores de Código y Entornos con Inteligencia Artificial
 
-Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
+Esta categoría contiene instaladores automatizados optimizados para **Termux y Termux:X11**.
 
-| Programa | Instalador | Descripción Oficial (Tagline) |
-| :--- | :--- | :--- |
-| **AstroNvim** | [`instalar-astronvim.sh`](./instalar-astronvim.sh) | *(Aesthetic, blazing fast and modular configuration framework for Neovim)* |
-| **Cursor** | [`instalar-cursor.sh`](./instalar-cursor.sh) | *(The AI Code Editor - Built to make you extraordinarily productive)* |
-| **GNU Emacs** | [`instalar-emacs.sh`](./instalar-emacs.sh) | *(The extensible, customizable, self-documenting real-time display editor)* |
-| **Google Antigravity IDE** | [`instalar-google-antigravity.sh`](./instalar-google-antigravity.sh) | *(Advanced Agentic Coding Environment designed by Google DeepMind)* |
-| **Helix** | [`instalar-helix.sh`](./instalar-helix.sh) | *(A post-modern modal text editor built in Rust with zero configuration)* |
-| **Kakoune** | [`instalar-kakoune.sh`](./instalar-kakoune.sh) | *(Modal editor with multiple selections and interactive visual feedback)* |
-| **LazyVim** | [`instalar-lazyvim.sh`](./instalar-lazyvim.sh) | *(A Neovim setup powered by lazy.nvim to easily customize and extend your config)* |
-| **LunarVim** | [`instalar-lunarvim.sh`](./instalar-lunarvim.sh) | *(An IDE layer for Neovim with sane defaults, autocompletion and LSP preconfigured)* |
-| **Micro** | [`instalar-micro.sh`](./instalar-micro.sh) | *(A modern and intuitive terminal-based text editor with full mouse support)* |
-| **Neovim** | [`instalar-neovim.sh`](./instalar-neovim.sh) | *(Vim-fork focused on extensibility, Lua scripting and native LSP)* |
-| **Trae** | [`instalar-trae.sh`](./instalar-trae.sh) | *(An adaptive AI IDE that transforms how developers collaborate with AI)* |
-| **Void** | [`instalar-void-editor.sh`](./instalar-void-editor.sh) | *(The open-source AI code editor alternative to Cursor)* |
-| **Visual Studio Code** | [`instalar-vscode.sh`](./instalar-vscode.sh) | *(Code editing. Redefined. Free, built on open source, runs everywhere)* |
-| **Windsurf** | [`instalar-windsurf.sh`](./instalar-windsurf.sh) | *(The first agentic IDE - Keeps developers in the flow state with Cascade AI)* |
-| **Zed** | [`instalar-zed.sh`](./instalar-zed.sh) | *(A high-performance, multiplayer code editor from the creators of Atom and Tree-sitter)* |
+## Programas Disponibles
+
+| Script de Instalación | Nombre Oficial | Presentación Oficial de los Creadores |
+|---|---|---|
+| `instalar-astronvim.sh` | **AstroNvim** | Framework de configuración estético, ultrarrápido y modular para Neovim |
+| `instalar-cursor.sh` | **Cursor** | El editor de código con IA diseñado para hacerte extraordinariamente productivo |
+| `instalar-emacs.sh` | **GNU Emacs** | El editor visual extensible, personalizable y autodocumentado en tiempo real |
+| `instalar-google-antigravity.sh` | **Google Antigravity IDE** | Entorno de desarrollo agéntico avanzado diseñado por Google DeepMind |
+| `instalar-helix.sh` | **Helix** | Editor modal posmoderno escrito en Rust con configuración cero |
+| `instalar-kakoune.sh` | **Kakoune** | Editor de texto modal con selecciones múltiples y retroalimentación visual interactiva |
+| `instalar-lazyvim.sh` | **LazyVim** | Configuración para Neovim impulsada por lazy.nvim para personalizar y extender fácilmente |
+| `instalar-lunarvim.sh` | **LunarVim** | Capa IDE para Neovim con valores predeterminados sensatos, autocompletado y LSP preconfigurado |
+| `instalar-micro.sh` | **Micro** | Editor de texto moderno e intuitivo para terminal con soporte completo para ratón |
+| `instalar-neovim.sh` | **Neovim** | Editor de texto basado en Vim enfocado en extensibilidad, Lua y LSP nativo |
+| `instalar-trae.sh` | **Trae** | IDE adaptativo con IA que transforma la forma en que los desarrolladores colaboran con la IA |
+| `instalar-void-editor.sh` | **Void** | El editor de código de código abierto con IA alternativo a Cursor |
+| `instalar-vscode.sh` | **Visual Studio Code** | Edición de código redefinida: gratuito, de código abierto y funciona en todas partes |
+| `instalar-windsurf.sh` | **Windsurf** | El primer IDE agéntico del mundo impulsado por los flujos de Cascade AI |
+| `instalar-zed.sh` | **Zed** | Editor de código colaborativo de alto rendimiento creado por los autores de Atom y Tree-sitter |
+
+## Uso
+Para instalar cualquiera de estos programas, ejecuta el script correspondiente o abre el menú principal:
+```bash
+programas
+```

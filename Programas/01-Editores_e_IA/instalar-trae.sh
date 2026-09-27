@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Trae
-# Tagline: An adaptive AI IDE that transforms how developers collaborate with AI
-# Instalador: Trae (An adaptive AI IDE that transforms how developers collaborate with AI)
+# Tagline: IDE adaptativo con IA que transforma la forma en que los desarrolladores colaboran con la IA
+# Instalador: Trae (IDE adaptativo con IA que transforma la forma en que los desarrolladores colaboran con la IA)
 # Descripción: Editor adaptativo inteligente con agentes integrados.
 # URL Oficial: https://trae.ai
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Trae${NC}"
-echo -e "${CYAN}  (An adaptive AI IDE that transforms how developers collaborate with AI)${NC}"
+echo -e "${CYAN}  (IDE adaptativo con IA que transforma la forma en que los desarrolladores colaboran con la IA)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

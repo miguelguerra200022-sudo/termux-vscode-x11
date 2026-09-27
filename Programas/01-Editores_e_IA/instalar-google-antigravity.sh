@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Google Antigravity IDE
-# Tagline: Advanced Agentic Coding Environment designed by Google DeepMind
-# Instalador: Google Antigravity IDE (Advanced Agentic Coding Environment designed by Google DeepMind)
+# Tagline: Entorno de desarrollo agéntico avanzado diseñado por Google DeepMind
+# Instalador: Google Antigravity IDE (Entorno de desarrollo agéntico avanzado diseñado por Google DeepMind)
 # Descripción: Entorno agéntico avanzado de Google DeepMind para pair-programming autónomo.
 # URL Oficial: https://deepmind.google
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Google Antigravity IDE${NC}"
-echo -e "${CYAN}  (Advanced Agentic Coding Environment designed by Google DeepMind)${NC}"
+echo -e "${CYAN}  (Entorno de desarrollo agéntico avanzado diseñado por Google DeepMind)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor Google Antigravity (agy CLI)...${NC}"

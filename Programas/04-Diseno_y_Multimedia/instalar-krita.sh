@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Krita
-# Tagline: Free and open-source painting tool designed for concept artists, illustrators and comic creators
-# Instalador: Krita (Free and open-source painting tool designed for concept artists, illustrators and comic creators)
+# Tagline: Programa profesional de pintura digital e ilustración libre para artistas
+# Instalador: Krita (Programa profesional de pintura digital e ilustración libre para artistas)
 # Descripción: Software profesional de pintura digital, ilustración conceptual y cómics.
 # URL Oficial: https://krita.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Krita${NC}"
-echo -e "${CYAN}  (Free and open-source painting tool designed for concept artists, illustrators and comic creators)${NC}"
+echo -e "${CYAN}  (Programa profesional de pintura digital e ilustración libre para artistas)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

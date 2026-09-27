@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Thorium
-# Tagline: The fastest browser on Earth - Compiler-optimized Chromium fork for maximum speed
-# Instalador: Thorium (The fastest browser on Earth - Compiler-optimized Chromium fork for maximum speed)
+# Tagline: El navegador más rápido de la Tierra optimizado por compilador con base Chromium
+# Instalador: Thorium (El navegador más rápido de la Tierra optimizado por compilador con base Chromium)
 # Descripción: Navegador hiper-optimizado para máxima velocidad de compilación y carga.
 # URL Oficial: https://thorium.rocks
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Thorium${NC}"
-echo -e "${CYAN}  (The fastest browser on Earth - Compiler-optimized Chromium fork for maximum speed)${NC}"
+echo -e "${CYAN}  (El navegador más rápido de la Tierra optimizado por compilador con base Chromium)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando Termux User Repository (TUR)...${NC}"

@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: PyCharm
-# Tagline: The Python IDE for professional developers by JetBrains
-# Instalador: PyCharm (The Python IDE for professional developers by JetBrains)
+# Tagline: El IDE de Python para desarrolladores profesionales creado por JetBrains
+# Instalador: PyCharm (El IDE de Python para desarrolladores profesionales creado por JetBrains)
 # Descripción: IDE completo para Python con soporte para virtualenvs y depuración.
 # URL Oficial: https://www.jetbrains.com/pycharm
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando PyCharm${NC}"
-echo -e "${CYAN}  (The Python IDE for professional developers by JetBrains)${NC}"
+echo -e "${CYAN}  (El IDE de Python para desarrolladores profesionales creado por JetBrains)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

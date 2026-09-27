@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: VLC media player
-# Tagline: Free and open source cross-platform multimedia player that plays most multimedia files
-# Instalador: VLC media player (Free and open source cross-platform multimedia player that plays most multimedia files)
+# Tagline: El reproductor multimedia multiplataforma libre y de código abierto que reproduce todo
+# Instalador: VLC media player (El reproductor multimedia multiplataforma libre y de código abierto que reproduce todo)
 # Descripción: Reproductor multimedia universal acelerado con soporte de audio.
 # URL Oficial: https://www.videolan.org/vlc
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando VLC media player${NC}"
-echo -e "${CYAN}  (Free and open source cross-platform multimedia player that plays most multimedia files)${NC}"
+echo -e "${CYAN}  (El reproductor multimedia multiplataforma libre y de código abierto que reproduce todo)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete vlc...${NC}"

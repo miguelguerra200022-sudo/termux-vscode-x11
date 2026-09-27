@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Logseq
-# Tagline: A privacy-first, open-source platform for connected knowledge management and notes
-# Instalador: Logseq (A privacy-first, open-source platform for connected knowledge management and notes)
+# Tagline: Plataforma de gestión del conocimiento basada en privacidad y enlaces bidireccionales
+# Instalador: Logseq (Plataforma de gestión del conocimiento basada en privacidad y enlaces bidireccionales)
 # Descripción: Plataforma de pensamiento reflexivo basada en grafos locales.
 # URL Oficial: https://logseq.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Logseq${NC}"
-echo -e "${CYAN}  (A privacy-first, open-source platform for connected knowledge management and notes)${NC}"
+echo -e "${CYAN}  (Plataforma de gestión del conocimiento basada en privacidad y enlaces bidireccionales)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

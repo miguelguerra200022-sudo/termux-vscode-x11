@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Helix
-# Tagline: A post-modern modal text editor built in Rust with zero configuration
-# Instalador: Helix (A post-modern modal text editor built in Rust with zero configuration)
+# Tagline: Editor modal posmoderno escrito en Rust con configuración cero
+# Instalador: Helix (Editor modal posmoderno escrito en Rust con configuración cero)
 # Descripción: Editor modal moderno en Rust con selección múltiple y configuración zero.
 # URL Oficial: https://helix-editor.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Helix${NC}"
-echo -e "${CYAN}  (A post-modern modal text editor built in Rust with zero configuration)${NC}"
+echo -e "${CYAN}  (Editor modal posmoderno escrito en Rust con configuración cero)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

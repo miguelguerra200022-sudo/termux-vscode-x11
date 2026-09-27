@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: MongoDB
-# Tagline: The leading modern, general purpose document database platform
-# Instalador: MongoDB (The leading modern, general purpose document database platform)
+# Tagline: Plataforma de base de datos de documentos moderna diseñada para desarrolladores
+# Instalador: MongoDB (Plataforma de base de datos de documentos moderna diseñada para desarrolladores)
 # Descripción: Base de datos basada en documentos para aplicaciones modernas.
 # URL Oficial: https://www.mongodb.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando MongoDB${NC}"
-echo -e "${CYAN}  (The leading modern, general purpose document database platform)${NC}"
+echo -e "${CYAN}  (Plataforma de base de datos de documentos moderna diseñada para desarrolladores)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

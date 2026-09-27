@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: LunarVim
-# Tagline: An IDE layer for Neovim with sane defaults, autocompletion and LSP preconfigured
-# Instalador: LunarVim (An IDE layer for Neovim with sane defaults, autocompletion and LSP preconfigured)
+# Tagline: Capa IDE para Neovim con valores predeterminados sensatos, autocompletado y LSP preconfigurado
+# Instalador: LunarVim (Capa IDE para Neovim con valores predeterminados sensatos, autocompletado y LSP preconfigurado)
 # Descripción: Configuración completa tipo IDE preconfigurada para Neovim.
 # URL Oficial: https://www.lunarvim.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando LunarVim${NC}"
-echo -e "${CYAN}  (An IDE layer for Neovim with sane defaults, autocompletion and LSP preconfigured)${NC}"
+echo -e "${CYAN}  (Capa IDE para Neovim con valores predeterminados sensatos, autocompletado y LSP preconfigurado)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias base (Neovim, Git, Node, Python, Ripper)...${NC}"

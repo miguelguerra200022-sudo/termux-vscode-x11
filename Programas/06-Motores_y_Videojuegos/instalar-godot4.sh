@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Godot 4
-# Tagline: The game engine you have been waiting for - Next-gen Vulkan rendering, physics and GDScript
-# Instalador: Godot 4 (The game engine you have been waiting for - Next-gen Vulkan rendering, physics and GDScript)
+# Tagline: Motor de videojuegos 2D y 3D de vanguardia, totalmente libre y de código abierto
+# Instalador: Godot Engine 4 (Motor de videojuegos 2D y 3D de vanguardia, totalmente libre y de código abierto)
 # Descripción: Motor de nueva generación con renderizado moderno y GDScript 2.0.
 # URL Oficial: https://godotengine.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Godot 4${NC}"
-echo -e "${CYAN}  (The game engine you have been waiting for - Next-gen Vulkan rendering, physics and GDScript)${NC}"
+echo -e "${CYAN}  (Motor de videojuegos 2D y 3D de vanguardia, totalmente libre y de código abierto)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando Termux User Repository (TUR)...${NC}"

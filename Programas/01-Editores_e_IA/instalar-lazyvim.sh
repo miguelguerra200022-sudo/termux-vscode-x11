@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: LazyVim
-# Tagline: A Neovim setup powered by lazy.nvim to easily customize and extend your config
-# Instalador: LazyVim (A Neovim setup powered by lazy.nvim to easily customize and extend your config)
+# Tagline: Configuración para Neovim impulsada por lazy.nvim para personalizar y extender fácilmente
+# Instalador: LazyVim (Configuración para Neovim impulsada por lazy.nvim para personalizar y extender fácilmente)
 # Descripción: La configuración modular más rápida y popular para Neovim con lazy.nvim.
 # URL Oficial: https://www.lazyvim.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando LazyVim${NC}"
-echo -e "${CYAN}  (A Neovim setup powered by lazy.nvim to easily customize and extend your config)${NC}"
+echo -e "${CYAN}  (Configuración para Neovim impulsada por lazy.nvim para personalizar y extender fácilmente)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias base (Neovim, Git, Node, Python, Ripper)...${NC}"

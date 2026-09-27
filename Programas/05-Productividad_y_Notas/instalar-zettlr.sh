@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Zettlr
-# Tagline: A supercharged markdown editor for academic research and note-taking
-# Instalador: Zettlr (A supercharged markdown editor for academic research and note-taking)
+# Tagline: Editor Markdown para investigadores, periodistas y escritores académicos
+# Instalador: Zettlr (Editor Markdown para investigadores, periodistas y escritores académicos)
 # Descripción: Editor Markdown académico con gestión bibliográfica Zotero y LaTeX.
 # URL Oficial: https://www.zettlr.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Zettlr${NC}"
-echo -e "${CYAN}  (A supercharged markdown editor for academic research and note-taking)${NC}"
+echo -e "${CYAN}  (Editor Markdown para investigadores, periodistas y escritores académicos)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

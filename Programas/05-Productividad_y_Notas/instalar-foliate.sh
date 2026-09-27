@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Foliate
-# Tagline: A simple and modern eBook viewer for Linux desktops with clean typography
-# Instalador: Foliate (A simple and modern eBook viewer for Linux desktops with clean typography)
+# Tagline: Lector de libros electrónicos elegante, moderno y libre para el escritorio de Linux
+# Instalador: Foliate (Lector de libros electrónicos elegante, moderno y libre para el escritorio de Linux)
 # Descripción: Lector moderno de libros digitales (EPUB, PDF, MOBI, CBR) para X11.
 # URL Oficial: https://johnfactotum.github.io/foliate/
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Foliate${NC}"
-echo -e "${CYAN}  (A simple and modern eBook viewer for Linux desktops with clean typography)${NC}"
+echo -e "${CYAN}  (Lector de libros electrónicos elegante, moderno y libre para el escritorio de Linux)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete foliate...${NC}"

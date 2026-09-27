@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Visual Studio Code
-# Tagline: Code editing. Redefined. Free, built on open source, runs everywhere
-# Instalador: Visual Studio Code (Code editing. Redefined. Free, built on open source, runs everywhere)
+# Tagline: Edición de código redefinida: gratuito, de código abierto y funciona en todas partes
+# Instalador: Visual Studio Code (Edición de código redefinida: gratuito, de código abierto y funciona en todas partes)
 # Descripción: Entorno de desarrollo nativo en Termux optimizado para Termux:X11.
 # URL Oficial: https://github.com/microsoft/vscode
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Visual Studio Code${NC}"
-echo -e "${CYAN}  (Code editing. Redefined. Free, built on open source, runs everywhere)${NC}"
+echo -e "${CYAN}  (Edición de código redefinida: gratuito, de código abierto y funciona en todas partes)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Verificando e instalando Code - OSS nativo para Termux:X11...${NC}"

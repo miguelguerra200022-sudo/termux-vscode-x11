@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Fluxbox
-# Tagline: Lightweight and highly configurable window manager with built-in tabbed windows
-# Instalador: Fluxbox (Lightweight and highly configurable window manager with built-in tabbed windows)
+# Tagline: Gestor de ventanas ligero y extremadamente rápido para X11 con soporte para pestañas
+# Instalador: Fluxbox (Gestor de ventanas ligero y extremadamente rápido para X11 con soporte para pestañas)
 # Descripción: Gestor minimalista con agrupación de ventanas en pestañas integradas.
 # URL Oficial: http://fluxbox.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Fluxbox${NC}"
-echo -e "${CYAN}  (Lightweight and highly configurable window manager with built-in tabbed windows)${NC}"
+echo -e "${CYAN}  (Gestor de ventanas ligero y extremadamente rápido para X11 con soporte para pestañas)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete fluxbox...${NC}"

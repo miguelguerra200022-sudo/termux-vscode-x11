@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: mpv
-# Tagline: A free, open-source, and cross-platform media player with high-quality video output
-# Instalador: mpv (A free, open-source, and cross-platform media player with high-quality video output)
+# Tagline: Reproductor multimedia de línea de comandos potente, rápido y con aceleración por hardware
+# Instalador: MPV (Reproductor multimedia de línea de comandos potente, rápido y con aceleración por hardware)
 # Descripción: Reproductor ultra-ligero de audio y video con scripts Lua y bajo consumo.
 # URL Oficial: https://mpv.io
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando mpv${NC}"
-echo -e "${CYAN}  (A free, open-source, and cross-platform media player with high-quality video output)${NC}"
+echo -e "${CYAN}  (Reproductor multimedia de línea de comandos potente, rápido y con aceleración por hardware)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete mpv...${NC}"

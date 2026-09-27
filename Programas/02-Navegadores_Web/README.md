@@ -1,16 +1,24 @@
-# Categoría: 02-Navegadores Web
+# Navegadores Web (Gráficos y Terminal)
 
-Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
+Esta categoría contiene instaladores automatizados optimizados para **Termux y Termux:X11**.
 
-| Programa | Instalador | Descripción Oficial (Tagline) |
-| :--- | :--- | :--- |
-| **BadWolf** | [`instalar-badwolf.sh`](./instalar-badwolf.sh) | *(Minimalist and privacy-oriented WebKitGTK+ browser with strict isolation)* |
-| **Chromium** | [`instalar-chromium.sh`](./instalar-chromium.sh) | *(The open-source browser project building a safer, faster way to experience the web)* |
-| **Dillo** | [`instalar-dillo.sh`](./instalar-dillo.sh) | *(Multi-platform graphical web browser known for its speed and tiny memory footprint)* |
-| **Mozilla Firefox** | [`instalar-firefox.sh`](./instalar-firefox.sh) | *(The independent, people-first browser committed to privacy and open web standards)* |
-| **Floorp** | [`instalar-floorp.sh`](./instalar-floorp.sh) | *(The most customizable and privacy-focused Firefox-based browser from Japan)* |
-| **LibreWolf** | [`instalar-librewolf.sh`](./instalar-librewolf.sh) | *(A custom and independent version of Firefox focused on privacy, security and freedom)* |
-| **Links2** | [`instalar-links2.sh`](./instalar-links2.sh) | *(Fast lightweight web browser with native graphical and text mode support)* |
-| **Midori** | [`instalar-midori.sh`](./instalar-midori.sh) | *(Lightweight, fast and secure web browser based on WebKitGTK)* |
-| **Thorium** | [`instalar-thorium.sh`](./instalar-thorium.sh) | *(The fastest browser on Earth - Compiler-optimized Chromium fork for maximum speed)* |
-| **Zen Browser** | [`instalar-zen-browser.sh`](./instalar-zen-browser.sh) | *(Experience tranquility while browsing the web - Fast, private and beautiful)* |
+## Programas Disponibles
+
+| Script de Instalación | Nombre Oficial | Presentación Oficial de los Creadores |
+|---|---|---|
+| `instalar-badwolf.sh` | **BadWolf** | Navegador WebKitGTK+ minimalista y orientado a la privacidad con aislamiento estricto |
+| `instalar-chromium.sh` | **Chromium** | Proyecto de navegador de código abierto para una web más rápida, segura y estable |
+| `instalar-dillo.sh` | **Dillo** | Navegador web gráfico multiplataforma conocido por su velocidad y diminuto consumo de memoria |
+| `instalar-firefox.sh` | **Mozilla Firefox** | El navegador independiente que prioriza a las personas, la privacidad y los estándares abiertos |
+| `instalar-floorp.sh` | **Floorp** | El navegador derivado de Firefox más personalizable y enfocado en privacidad originario de Japón |
+| `instalar-librewolf.sh` | **LibreWolf** | Versión independiente y personalizada de Firefox enfocada en privacidad, seguridad y libertad |
+| `instalar-links2.sh` | **Links2** | Navegador web ultraligero con soporte para modo gráfico y texto |
+| `instalar-midori.sh` | **Midori** | Navegador web ligero, rápido y seguro basado en el motor WebKitGTK |
+| `instalar-thorium.sh` | **Thorium** | El navegador más rápido de la Tierra optimizado por compilador con base Chromium |
+| `instalar-zen-browser.sh` | **Zen Browser** | Experimenta la tranquilidad al navegar por la web: rápido, privado y hermoso |
+
+## Uso
+Para instalar cualquiera de estos programas, ejecuta el script correspondiente o abre el menú principal:
+```bash
+programas
+```

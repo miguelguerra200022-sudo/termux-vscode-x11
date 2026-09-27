@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Dillo
-# Tagline: Multi-platform graphical web browser known for its speed and tiny memory footprint
-# Instalador: Dillo (Multi-platform graphical web browser known for its speed and tiny memory footprint)
+# Tagline: Navegador web gráfico multiplataforma conocido por su velocidad y diminuto consumo de memoria
+# Instalador: Dillo (Navegador web gráfico multiplataforma conocido por su velocidad y diminuto consumo de memoria)
 # Descripción: Navegador gráfico ultra-rápido que consume menos de 20 MB de memoria RAM.
 # URL Oficial: https://dillo-browser.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Dillo${NC}"
-echo -e "${CYAN}  (Multi-platform graphical web browser known for its speed and tiny memory footprint)${NC}"
+echo -e "${CYAN}  (Navegador web gráfico multiplataforma conocido por su velocidad y diminuto consumo de memoria)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete dillo...${NC}"

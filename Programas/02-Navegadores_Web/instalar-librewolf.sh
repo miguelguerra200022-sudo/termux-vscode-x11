@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: LibreWolf
-# Tagline: A custom and independent version of Firefox focused on privacy, security and freedom
-# Instalador: LibreWolf (A custom and independent version of Firefox focused on privacy, security and freedom)
+# Tagline: Versión independiente y personalizada de Firefox enfocada en privacidad, seguridad y libertad
+# Instalador: LibreWolf (Versión independiente y personalizada de Firefox enfocada en privacidad, seguridad y libertad)
 # Descripción: Navegador web enfocado en privacidad sin telemetría ni rastreo.
 # URL Oficial: https://librewolf.net
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando LibreWolf${NC}"
-echo -e "${CYAN}  (A custom and independent version of Firefox focused on privacy, security and freedom)${NC}"
+echo -e "${CYAN}  (Versión independiente y personalizada de Firefox enfocada en privacidad, seguridad y libertad)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

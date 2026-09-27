@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: WebCord
-# Tagline: A Discord and Fosscord client implemented using Electron with privacy hardening
-# Instalador: WebCord (A Discord and Fosscord client implemented using Electron with privacy hardening)
+# Tagline: Cliente basado en Electron para Discord y SpaceBar centrado en la privacidad
+# Instalador: WebCord (Cliente basado en Electron para Discord y SpaceBar centrado en la privacidad)
 # Descripción: Cliente Discord ligero enfocado en privacidad y bajo consumo de RAM.
 # URL Oficial: https://github.com/SpacingBat3/WebCord
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando WebCord${NC}"
-echo -e "${CYAN}  (A Discord and Fosscord client implemented using Electron with privacy hardening)${NC}"
+echo -e "${CYAN}  (Cliente basado en Electron para Discord y SpaceBar centrado en la privacidad)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

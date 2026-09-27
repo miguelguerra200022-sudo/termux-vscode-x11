@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Ettercap
-# Tagline: Comprehensive suite for man-in-the-middle attacks, sniffing and live filtering on LAN
-# Instalador: Ettercap (Comprehensive suite for man-in-the-middle attacks, sniffing and live filtering on LAN)
+# Tagline: Suite integral para ataques de intermediario (MitM) en redes de área local y análisis de tráfico
+# Instalador: Ettercap (Suite integral para ataques de intermediario (MitM) en redes de área local y análisis de tráfico)
 # Descripción: Suite integral para interceptación de tráfico y filtrado de contenido en red.
 # URL Oficial: https://www.ettercap-project.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Ettercap${NC}"
-echo -e "${CYAN}  (Comprehensive suite for man-in-the-middle attacks, sniffing and live filtering on LAN)${NC}"
+echo -e "${CYAN}  (Suite integral para ataques de intermediario (MitM) en redes de área local y análisis de tráfico)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

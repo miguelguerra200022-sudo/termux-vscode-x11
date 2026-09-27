@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: GIMP
-# Tagline: The Free & Open Source Image Editor for photo retouching and graphic artwork
-# Instalador: GIMP (The Free & Open Source Image Editor for photo retouching and graphic artwork)
+# Tagline: El editor de imágenes GNU de código abierto y manipulación fotográfica profesional
+# Instalador: GIMP (El editor de imágenes GNU de código abierto y manipulación fotográfica profesional)
 # Descripción: Editor avanzado de imágenes, retoque fotográfico y pintura digital.
 # URL Oficial: https://www.gimp.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando GIMP${NC}"
-echo -e "${CYAN}  (The Free & Open Source Image Editor for photo retouching and graphic artwork)${NC}"
+echo -e "${CYAN}  (El editor de imágenes GNU de código abierto y manipulación fotográfica profesional)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete gimp...${NC}"

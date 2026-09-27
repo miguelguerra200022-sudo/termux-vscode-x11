@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: DBeaver
-# Tagline: Free multi-platform database tool for developers, database administrators and analysts
-# Instalador: DBeaver (Free multi-platform database tool for developers, database administrators and analysts)
+# Tagline: Herramienta de administración y cliente universal de bases de datos para desarrolladores y administradores
+# Instalador: DBeaver (Herramienta de administración y cliente universal de bases de datos para desarrolladores y administradores)
 # Descripción: Administrador visual universal de bases de datos relacionales y NoSQL.
 # URL Oficial: https://dbeaver.io
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando DBeaver${NC}"
-echo -e "${CYAN}  (Free multi-platform database tool for developers, database administrators and analysts)${NC}"
+echo -e "${CYAN}  (Herramienta de administración y cliente universal de bases de datos para desarrolladores y administradores)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Midori
-# Tagline: Lightweight, fast and secure web browser based on WebKitGTK
-# Instalador: Midori (Lightweight, fast and secure web browser based on WebKitGTK)
+# Tagline: Navegador web ligero, rápido y seguro basado en el motor WebKitGTK
+# Instalador: Midori (Navegador web ligero, rápido y seguro basado en el motor WebKitGTK)
 # Descripción: Navegador ultra-ligero basado en WebKitGTK con mínimo consumo de RAM.
 # URL Oficial: https://astian.org/midori-browser
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Midori${NC}"
-echo -e "${CYAN}  (Lightweight, fast and secure web browser based on WebKitGTK)${NC}"
+echo -e "${CYAN}  (Navegador web ligero, rápido y seguro basado en el motor WebKitGTK)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete midori...${NC}"

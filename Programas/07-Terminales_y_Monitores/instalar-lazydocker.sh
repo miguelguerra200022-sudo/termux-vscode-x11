@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Lazydocker
-# Tagline: The lazier way to manage everything - A simple terminal UI for docker containers
-# Instalador: Lazydocker (The lazier way to manage everything - A simple terminal UI for docker containers)
+# Tagline: La interfaz de usuario en terminal más sencilla para gestionar contenedores Docker
+# Instalador: LazyDocker (La interfaz de usuario en terminal más sencilla para gestionar contenedores Docker)
 # Descripción: Interfaz de consola interactiva para administrar contenedores y volúmenes.
 # URL Oficial: https://github.com/jesseduffield/lazydocker
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Lazydocker${NC}"
-echo -e "${CYAN}  (The lazier way to manage everything - A simple terminal UI for docker containers)${NC}"
+echo -e "${CYAN}  (La interfaz de usuario en terminal más sencilla para gestionar contenedores Docker)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Wireshark
-# Tagline: The world's foremost and widely-used network protocol analyzer
-# Instalador: Wireshark (The world's foremost and widely-used network protocol analyzer)
+# Tagline: El analizador de protocolos de red y captura de paquetes más extendido del mundo
+# Instalador: Wireshark (El analizador de protocolos de red y captura de paquetes más extendido del mundo)
 # Descripción: Analizador de protocolos de red e inspección profunda de paquetes en X11.
 # URL Oficial: https://www.wireshark.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Wireshark${NC}"
-echo -e "${CYAN}  (The world's foremost and widely-used network protocol analyzer)${NC}"
+echo -e "${CYAN}  (El analizador de protocolos de red y captura de paquetes más extendido del mundo)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete wireshark...${NC}"

@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Tmux
-# Tagline: A terminal multiplexer that lets you switch easily between several programs in one terminal
-# Instalador: Tmux (A terminal multiplexer that lets you switch easily between several programs in one terminal)
+# Tagline: Multiplexor de terminales para gestionar múltiples sesiones, ventanas y paneles simultáneos
+# Instalador: Tmux (Multiplexor de terminales para gestionar múltiples sesiones, ventanas y paneles simultáneos)
 # Descripción: Multiplexor de terminales para mantener sesiones persistentes en background.
 # URL Oficial: https://github.com/tmux/tmux
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Tmux${NC}"
-echo -e "${CYAN}  (A terminal multiplexer that lets you switch easily between several programs in one terminal)${NC}"
+echo -e "${CYAN}  (Multiplexor de terminales para gestionar múltiples sesiones, ventanas y paneles simultáneos)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

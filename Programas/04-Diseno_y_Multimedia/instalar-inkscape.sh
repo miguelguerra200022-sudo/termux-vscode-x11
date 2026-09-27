@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Inkscape
-# Tagline: A powerful, free design tool for professional vector graphics SVG
-# Instalador: Inkscape (A powerful, free design tool for professional vector graphics SVG)
+# Tagline: Editor de gráficos vectoriales profesional y de código abierto para ilustración y diseño
+# Instalador: Inkscape (Editor de gráficos vectoriales profesional y de código abierto para ilustración y diseño)
 # Descripción: Editor profesional de gráficos vectoriales SVG y diseño ilustrativo.
 # URL Oficial: https://inkscape.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Inkscape${NC}"
-echo -e "${CYAN}  (A powerful, free design tool for professional vector graphics SVG)${NC}"
+echo -e "${CYAN}  (Editor de gráficos vectoriales profesional y de código abierto para ilustración y diseño)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete inkscape...${NC}"

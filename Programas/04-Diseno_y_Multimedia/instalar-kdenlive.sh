@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Kdenlive
-# Tagline: Non-linear video editor for GNU/Linux based on MLT Framework and KDE
-# Instalador: Kdenlive (Non-linear video editor for GNU/Linux based on MLT Framework and KDE)
+# Tagline: Potente editor de video no lineal libre y de código abierto basado en MLT Framework
+# Instalador: Kdenlive (Potente editor de video no lineal libre y de código abierto basado en MLT Framework)
 # Descripción: Editor de video no lineal profesional de código abierto.
 # URL Oficial: https://kdenlive.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Kdenlive${NC}"
-echo -e "${CYAN}  (Non-linear video editor for GNU/Linux based on MLT Framework and KDE)${NC}"
+echo -e "${CYAN}  (Potente editor de video no lineal libre y de código abierto basado en MLT Framework)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

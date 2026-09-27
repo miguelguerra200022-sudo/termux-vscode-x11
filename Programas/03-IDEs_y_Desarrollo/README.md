@@ -1,16 +1,24 @@
-# Categoría: 03-IDEs y Desarrollo
+# IDEs Completos y Suites de Desarrollo
 
-Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
+Esta categoría contiene instaladores automatizados optimizados para **Termux y Termux:X11**.
 
-| Programa | Instalador | Descripción Oficial (Tagline) |
-| :--- | :--- | :--- |
-| **Android Studio** | [`instalar-android-studio.sh`](./instalar-android-studio.sh) | *(The official IDE for Android app development by Google)* |
-| **Arduino IDE** | [`instalar-arduino-ide.sh`](./instalar-arduino-ide.sh) | *(The open-source software for writing code and flashing microcontrollers)* |
-| **Bluefish** | [`instalar-bluefish.sh`](./instalar-bluefish.sh) | *(Powerful editor targeted towards experienced programmers and web developers)* |
-| **CLion** | [`instalar-clion.sh`](./instalar-clion.sh) | *(A smart cross-platform IDE for C and C++ development by JetBrains)* |
-| **Eclipse IDE** | [`instalar-eclipse.sh`](./instalar-eclipse.sh) | *(The leading open-source development platform for Java and enterprise solutions)* |
-| **Geany** | [`instalar-geany.sh`](./instalar-geany.sh) | *(A fast and lightweight IDE using GTK with basic integrated development features)* |
-| **IntelliJ IDEA** | [`instalar-intellij-idea.sh`](./instalar-intellij-idea.sh) | *(The leading Java and Kotlin IDE for professional enterprise developers by JetBrains)* |
-| **Lazarus** | [`instalar-lazarus.sh`](./instalar-lazarus.sh) | *(The professional Free Pascal RAD IDE with visual drag-and-drop designer)* |
-| **PyCharm** | [`instalar-pycharm.sh`](./instalar-pycharm.sh) | *(The Python IDE for professional developers by JetBrains)* |
-| **WebStorm** | [`instalar-webstorm.sh`](./instalar-webstorm.sh) | *(The smartest JavaScript and TypeScript IDE by JetBrains)* |
+## Programas Disponibles
+
+| Script de Instalación | Nombre Oficial | Presentación Oficial de los Creadores |
+|---|---|---|
+| `instalar-android-studio.sh` | **Android Studio** | El entorno de desarrollo integrado oficial para el desarrollo de apps de Android |
+| `instalar-arduino-ide.sh` | **Arduino IDE** | Software de código abierto para escribir código y subirlo a placas Arduino |
+| `instalar-bluefish.sh` | **Bluefish** | Potente editor para programadores y diseñadores web con múltiples herramientas avanzadas |
+| `instalar-clion.sh` | **CLion** | IDE inteligente para C y C++ desarrollado por JetBrains enfocado en máxima productividad |
+| `instalar-eclipse.sh` | **Eclipse** | Plataforma de desarrollo líder e IDE extensible para Java y múltiples lenguajes |
+| `instalar-geany.sh` | **Geany** | IDE ligero y rápido que utiliza GTK+ con dependencias mínimas |
+| `instalar-intellij-idea.sh` | **IntelliJ IDEA** | El IDE líder en la industria para Java y desarrollo en Kotlin por JetBrains |
+| `instalar-lazarus.sh` | **Lazarus** | IDE profesional para Free Pascal que ofrece un desarrollo rápido de aplicaciones (RAD) |
+| `instalar-pycharm.sh` | **PyCharm** | El IDE de Python para desarrolladores profesionales creado por JetBrains |
+| `instalar-webstorm.sh` | **WebStorm** | El IDE más inteligente para JavaScript y TypeScript desarrollado por JetBrains |
+
+## Uso
+Para instalar cualquiera de estos programas, ejecuta el script correspondiente o abre el menú principal:
+```bash
+programas
+```

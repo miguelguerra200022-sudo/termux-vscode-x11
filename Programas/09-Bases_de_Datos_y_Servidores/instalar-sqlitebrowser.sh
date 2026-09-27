@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: DB Browser for SQLite
-# Tagline: High quality, visual open source tool to create, design, and edit SQLite databases
-# Instalador: DB Browser for SQLite (High quality, visual open source tool to create, design, and edit SQLite databases)
+# Tagline: Herramienta visual de código abierto para diseñar y editar archivos compatibles con SQLite
+# Instalador: DB Browser for SQLite (Herramienta visual de código abierto para diseñar y editar archivos compatibles con SQLite)
 # Descripción: Interfaz gráfica para crear, diseñar y editar bases de datos SQLite en X11.
 # URL Oficial: https://sqlitebrowser.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando DB Browser for SQLite${NC}"
-echo -e "${CYAN}  (High quality, visual open source tool to create, design, and edit SQLite databases)${NC}"
+echo -e "${CYAN}  (Herramienta visual de código abierto para diseñar y editar archivos compatibles con SQLite)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete sqlitebrowser...${NC}"

@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Links2
-# Tagline: Fast lightweight web browser with native graphical and text mode support
-# Instalador: Links2 (Fast lightweight web browser with native graphical and text mode support)
+# Tagline: Navegador web ultraligero con soporte para modo gráfico y texto
+# Instalador: Links2 (Navegador web ultraligero con soporte para modo gráfico y texto)
 # Descripción: Navegador web ligero con soporte gráfico directo en pantalla X11.
 # URL Oficial: http://links.twibright.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Links2${NC}"
-echo -e "${CYAN}  (Fast lightweight web browser with native graphical and text mode support)${NC}"
+echo -e "${CYAN}  (Navegador web ultraligero con soporte para modo gráfico y texto)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete links2...${NC}"

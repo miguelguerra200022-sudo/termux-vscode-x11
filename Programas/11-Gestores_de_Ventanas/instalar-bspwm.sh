@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: bspwm
-# Tagline: A tiling window manager that represents windows as the leaves of a full binary tree
-# Instalador: bspwm (A tiling window manager that represents windows as the leaves of a full binary tree)
+# Tagline: Gestor de ventanas en mosaico que organiza las pantallas mediante árboles binarios particionados
+# Instalador: Bspwm (Gestor de ventanas en mosaico que organiza las pantallas mediante árboles binarios particionados)
 # Descripción: Gestor de ventanas en mosaico que representa ventanas como hojas de árbol binario.
 # URL Oficial: https://github.com/baskerville/bspwm
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando bspwm${NC}"
-echo -e "${CYAN}  (A tiling window manager that represents windows as the leaves of a full binary tree)${NC}"
+echo -e "${CYAN}  (Gestor de ventanas en mosaico que organiza las pantallas mediante árboles binarios particionados)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete bspwm...${NC}"

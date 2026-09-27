@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: i3wm
-# Tagline: Tiling window manager, primarily targeted at advanced users and developers
-# Instalador: i3wm (Tiling window manager, primarily targeted at advanced users and developers)
+# Tagline: Gestor de ventanas en mosaico dinámico, eficiente y altamente configurable para Linux
+# Instalador: i3 Window Manager (Gestor de ventanas en mosaico dinámico, eficiente y altamente configurable para Linux)
 # Descripción: Gestor de ventanas en mosaico automático ideal para programadores por teclado.
 # URL Oficial: https://i3wm.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando i3wm${NC}"
-echo -e "${CYAN}  (Tiling window manager, primarily targeted at advanced users and developers)${NC}"
+echo -e "${CYAN}  (Gestor de ventanas en mosaico dinámico, eficiente y altamente configurable para Linux)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete i3-wm...${NC}"

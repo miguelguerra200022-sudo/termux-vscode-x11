@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Nginx
-# Tagline: High performance web server, reverse proxy, load balancer and HTTP cache
-# Instalador: Nginx (High performance web server, reverse proxy, load balancer and HTTP cache)
+# Tagline: Servidor web HTTP de alto rendimiento, proxy inverso y balanceador de carga
+# Instalador: NGINX (Servidor web HTTP de alto rendimiento, proxy inverso y balanceador de carga)
 # Descripción: Servidor web ligero y proxy inverso de alto rendimiento para proyectos.
 # URL Oficial: https://nginx.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Nginx${NC}"
-echo -e "${CYAN}  (High performance web server, reverse proxy, load balancer and HTTP cache)${NC}"
+echo -e "${CYAN}  (Servidor web HTTP de alto rendimiento, proxy inverso y balanceador de carga)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

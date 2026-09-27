@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Android Studio
-# Tagline: The official IDE for Android app development by Google
-# Instalador: Android Studio (The official IDE for Android app development by Google)
+# Tagline: El entorno de desarrollo integrado oficial para el desarrollo de apps de Android
+# Instalador: Android Studio (El entorno de desarrollo integrado oficial para el desarrollo de apps de Android)
 # Descripción: Entorno de desarrollo oficial para Android en Termux.
 # URL Oficial: https://developer.android.com/studio
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Android Studio${NC}"
-echo -e "${CYAN}  (The official IDE for Android app development by Google)${NC}"
+echo -e "${CYAN}  (El entorno de desarrollo integrado oficial para el desarrollo de apps de Android)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

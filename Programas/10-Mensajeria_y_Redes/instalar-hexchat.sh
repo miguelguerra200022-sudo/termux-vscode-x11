@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: HexChat
-# Tagline: Easy to use, customizable, multi-network graphical IRC chat client
-# Instalador: HexChat (Easy to use, customizable, multi-network graphical IRC chat client)
+# Tagline: Cliente IRC fácil de usar, personalizable y de código abierto para entornos gráficos
+# Instalador: HexChat (Cliente IRC fácil de usar, personalizable y de código abierto para entornos gráficos)
 # Descripción: Cliente IRC gráfico clásico, altamente personalizable y ligero.
 # URL Oficial: https://hexchat.github.io
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando HexChat${NC}"
-echo -e "${CYAN}  (Easy to use, customizable, multi-network graphical IRC chat client)${NC}"
+echo -e "${CYAN}  (Cliente IRC fácil de usar, personalizable y de código abierto para entornos gráficos)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete hexchat...${NC}"

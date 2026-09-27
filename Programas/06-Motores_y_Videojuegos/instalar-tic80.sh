@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: TIC-80
-# Tagline: A tiny computer which you can use to make, play and share tiny games in Lua, JS and Python
-# Instalador: TIC-80 (A tiny computer which you can use to make, play and share tiny games in Lua, JS and Python)
+# Tagline: Consola de fantasía diminuta para crear y compartir juegos en múltiples lenguajes
+# Instalador: TIC-80 (Consola de fantasía diminuta para crear y compartir juegos en múltiples lenguajes)
 # Descripción: Computadora de fantasía open-source con JS, Lua, Python y Ruby.
 # URL Oficial: https://tic80.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando TIC-80${NC}"
-echo -e "${CYAN}  (A tiny computer which you can use to make, play and share tiny games in Lua, JS and Python)${NC}"
+echo -e "${CYAN}  (Consola de fantasía diminuta para crear y compartir juegos en múltiples lenguajes)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete tic80...${NC}"

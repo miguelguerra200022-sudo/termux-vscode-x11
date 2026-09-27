@@ -1,16 +1,24 @@
-# Categoría: 09-Bases de Datos y Servidores
+# Bases de Datos, Servidores y Contenedores
 
-Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
+Esta categoría contiene instaladores automatizados optimizados para **Termux y Termux:X11**.
 
-| Programa | Instalador | Descripción Oficial (Tagline) |
-| :--- | :--- | :--- |
-| **Caddy** | [`instalar-caddy.sh`](./instalar-caddy.sh) | *(The ultimate server - Fast, cross-platform and secure HTTP/2 and HTTP/3 web server)* |
-| **DBeaver** | [`instalar-dbeaver.sh`](./instalar-dbeaver.sh) | *(Free multi-platform database tool for developers, database administrators and analysts)* |
-| **MariaDB** | [`instalar-mariadb.sh`](./instalar-mariadb.sh) | *(One of the most popular open source relational database servers, made by MySQL original founders)* |
-| **MongoDB** | [`instalar-mongodb.sh`](./instalar-mongodb.sh) | *(The leading modern, general purpose document database platform)* |
-| **Nginx** | [`instalar-nginx.sh`](./instalar-nginx.sh) | *(High performance web server, reverse proxy, load balancer and HTTP cache)* |
-| **PostgreSQL** | [`instalar-postgresql.sh`](./instalar-postgresql.sh) | *(The World's Most Advanced Open Source Relational Database)* |
-| **Redis** | [`instalar-redis.sh`](./instalar-redis.sh) | *(The open source, in-memory data store used by millions as database, cache and message broker)* |
-| **SQLite** | [`instalar-sqlite.sh`](./instalar-sqlite.sh) | *(Small, fast, self-contained, high-reliability, full-featured SQL database engine)* |
-| **DB Browser for SQLite** | [`instalar-sqlitebrowser.sh`](./instalar-sqlitebrowser.sh) | *(High quality, visual open source tool to create, design, and edit SQLite databases)* |
-| **Udocker** | [`instalar-udocker.sh`](./instalar-udocker.sh) | *(A basic user tool to execute simple docker containers in user space without root)* |
+## Programas Disponibles
+
+| Script de Instalación | Nombre Oficial | Presentación Oficial de los Creadores |
+|---|---|---|
+| `instalar-caddy.sh` | **Caddy** | Servidor web potente y listo para producción con HTTPS automático por defecto |
+| `instalar-dbeaver.sh` | **DBeaver** | Herramienta de administración y cliente universal de bases de datos para desarrolladores y administradores |
+| `instalar-mariadb.sh` | **MariaDB** | Uno de los servidores de bases de datos relacionales SQL más populares de código abierto |
+| `instalar-mongodb.sh` | **MongoDB** | Plataforma de base de datos de documentos moderna diseñada para desarrolladores |
+| `instalar-nginx.sh` | **NGINX** | Servidor web HTTP de alto rendimiento, proxy inverso y balanceador de carga |
+| `instalar-postgresql.sh` | **PostgreSQL** | El sistema de base de datos relacional de objetos de código abierto más avanzado del mundo |
+| `instalar-redis.sh` | **Redis** | Almacenamiento de estructura de datos en memoria en tiempo real como base de datos y caché |
+| `instalar-sqlite.sh` | **SQLite** | Motor de base de datos SQL autónomo, sin servidor, de alta confiabilidad y embebible |
+| `instalar-sqlitebrowser.sh` | **DB Browser for SQLite** | Herramienta visual de código abierto para diseñar y editar archivos compatibles con SQLite |
+| `instalar-udocker.sh` | **Udocker** | Herramienta básica para ejecutar aplicaciones en contenedores en entornos de usuario sin privilegios root |
+
+## Uso
+Para instalar cualquiera de estos programas, ejecuta el script correspondiente o abre el menú principal:
+```bash
+programas
+```

@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: MarkText
-# Tagline: Simple and elegant open-source Markdown editor focused on speed and usability
-# Instalador: MarkText (Simple and elegant open-source Markdown editor focused on speed and usability)
+# Tagline: Editor Markdown simple, fluido y de código abierto centrado en velocidad y usabilidad
+# Instalador: MarkText (Editor Markdown simple, fluido y de código abierto centrado en velocidad y usabilidad)
 # Descripción: Editor Markdown de diseño minimalista con previsualización en vivo.
 # URL Oficial: https://marktext.app
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando MarkText${NC}"
-echo -e "${CYAN}  (Simple and elegant open-source Markdown editor focused on speed and usability)${NC}"
+echo -e "${CYAN}  (Editor Markdown simple, fluido y de código abierto centrado en velocidad y usabilidad)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

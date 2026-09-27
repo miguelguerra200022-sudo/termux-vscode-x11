@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Raylib
-# Tagline: A simple and easy-to-use library to enjoy videogames programming in C/C++
-# Instalador: Raylib (A simple and easy-to-use library to enjoy videogames programming in C/C++)
+# Tagline: Librería de programación de videojuegos simple, amigable y altamente optimizada en C
+# Instalador: raylib (Librería de programación de videojuegos simple, amigable y altamente optimizada en C)
 # Descripción: Biblioteca para programación de videojuegos en C/C++ y herramientas.
 # URL Oficial: https://www.raylib.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Raylib${NC}"
-echo -e "${CYAN}  (A simple and easy-to-use library to enjoy videogames programming in C/C++)${NC}"
+echo -e "${CYAN}  (Librería de programación de videojuegos simple, amigable y altamente optimizada en C)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

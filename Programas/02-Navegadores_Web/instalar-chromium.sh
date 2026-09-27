@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Chromium
-# Tagline: The open-source browser project building a safer, faster way to experience the web
-# Instalador: Chromium (The open-source browser project building a safer, faster way to experience the web)
+# Tagline: Proyecto de navegador de código abierto para una web más rápida, segura y estable
+# Instalador: Chromium (Proyecto de navegador de código abierto para una web más rápida, segura y estable)
 # Descripción: Navegador web de código abierto con aceleración y motor Blink.
 # URL Oficial: https://www.chromium.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Chromium${NC}"
-echo -e "${CYAN}  (The open-source browser project building a safer, faster way to experience the web)${NC}"
+echo -e "${CYAN}  (Proyecto de navegador de código abierto para una web más rápida, segura y estable)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete chromium...${NC}"

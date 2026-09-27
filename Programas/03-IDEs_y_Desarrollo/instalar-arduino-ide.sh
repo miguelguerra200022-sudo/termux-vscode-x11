@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Arduino IDE
-# Tagline: The open-source software for writing code and flashing microcontrollers
-# Instalador: Arduino IDE (The open-source software for writing code and flashing microcontrollers)
+# Tagline: Software de código abierto para escribir código y subirlo a placas Arduino
+# Instalador: Arduino IDE (Software de código abierto para escribir código y subirlo a placas Arduino)
 # Descripción: Suite para programar, compilar y cargar código en microcontroladores.
 # URL Oficial: https://www.arduino.cc
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Arduino IDE${NC}"
-echo -e "${CYAN}  (The open-source software for writing code and flashing microcontrollers)${NC}"
+echo -e "${CYAN}  (Software de código abierto para escribir código y subirlo a placas Arduino)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

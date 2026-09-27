@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Cursor
-# Tagline: The AI Code Editor - Built to make you extraordinarily productive
-# Instalador: Cursor (The AI Code Editor - Built to make you extraordinarily productive)
+# Tagline: El editor de código con IA diseñado para hacerte extraordinariamente productivo
+# Instalador: Cursor (El editor de código con IA diseñado para hacerte extraordinariamente productivo)
 # Descripción: Editor de código inteligente impulsado por IA para desarrollo asistido.
 # URL Oficial: https://cursor.com
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Cursor${NC}"
-echo -e "${CYAN}  (The AI Code Editor - Built to make you extraordinarily productive)${NC}"
+echo -e "${CYAN}  (El editor de código con IA diseñado para hacerte extraordinariamente productivo)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

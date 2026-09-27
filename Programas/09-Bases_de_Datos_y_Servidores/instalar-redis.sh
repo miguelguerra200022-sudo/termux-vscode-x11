@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Redis
-# Tagline: The open source, in-memory data store used by millions as database, cache and message broker
-# Instalador: Redis (The open source, in-memory data store used by millions as database, cache and message broker)
+# Tagline: Almacenamiento de estructura de datos en memoria en tiempo real como base de datos y caché
+# Instalador: Redis (Almacenamiento de estructura de datos en memoria en tiempo real como base de datos y caché)
 # Descripción: Almacén en memoria de clave-valor de alta velocidad para caché y colas.
 # URL Oficial: https://redis.io
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Redis${NC}"
-echo -e "${CYAN}  (The open source, in-memory data store used by millions as database, cache and message broker)${NC}"
+echo -e "${CYAN}  (Almacenamiento de estructura de datos en memoria en tiempo real como base de datos y caché)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

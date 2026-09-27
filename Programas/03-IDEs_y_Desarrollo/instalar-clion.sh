@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: CLion
-# Tagline: A smart cross-platform IDE for C and C++ development by JetBrains
-# Instalador: CLion (A smart cross-platform IDE for C and C++ development by JetBrains)
+# Tagline: IDE inteligente para C y C++ desarrollado por JetBrains enfocado en máxima productividad
+# Instalador: CLion (IDE inteligente para C y C++ desarrollado por JetBrains enfocado en máxima productividad)
 # Descripción: IDE para desarrollo profesional en C y C++ con CMake y depurador.
 # URL Oficial: https://www.jetbrains.com/clion
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando CLion${NC}"
-echo -e "${CYAN}  (A smart cross-platform IDE for C and C++ development by JetBrains)${NC}"
+echo -e "${CYAN}  (IDE inteligente para C y C++ desarrollado por JetBrains enfocado en máxima productividad)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

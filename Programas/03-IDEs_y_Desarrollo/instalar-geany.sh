@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Geany
-# Tagline: A fast and lightweight IDE using GTK with basic integrated development features
-# Instalador: Geany (A fast and lightweight IDE using GTK with basic integrated development features)
+# Tagline: IDE ligero y rápido que utiliza GTK+ con dependencias mínimas
+# Instalador: Geany (IDE ligero y rápido que utiliza GTK+ con dependencias mínimas)
 # Descripción: IDE ultra-ligero en GTK con arranque instantáneo y mínimo consumo de RAM.
 # URL Oficial: https://www.geany.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Geany${NC}"
-echo -e "${CYAN}  (A fast and lightweight IDE using GTK with basic integrated development features)${NC}"
+echo -e "${CYAN}  (IDE ligero y rápido que utiliza GTK+ con dependencias mínimas)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete geany...${NC}"

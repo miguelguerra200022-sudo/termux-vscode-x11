@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Void
-# Tagline: The open-source AI code editor alternative to Cursor
-# Instalador: Void (The open-source AI code editor alternative to Cursor)
+# Tagline: El editor de código de código abierto con IA alternativo a Cursor
+# Instalador: Void (El editor de código de código abierto con IA alternativo a Cursor)
 # Descripción: Alternativa open-source a Cursor construida sobre VS Code.
 # URL Oficial: https://github.com/voideditor/void
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Void${NC}"
-echo -e "${CYAN}  (The open-source AI code editor alternative to Cursor)${NC}"
+echo -e "${CYAN}  (El editor de código de código abierto con IA alternativo a Cursor)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 pkg install -y void-editor || true

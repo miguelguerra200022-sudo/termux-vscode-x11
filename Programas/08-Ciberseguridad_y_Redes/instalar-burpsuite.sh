@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Burp Suite
-# Tagline: The industry standard web application security testing toolkit by PortSwigger
-# Instalador: Burp Suite (The industry standard web application security testing toolkit by PortSwigger)
+# Tagline: La plataforma líder mundial para pruebas de penetración y seguridad de aplicaciones web
+# Instalador: Burp Suite (La plataforma líder mundial para pruebas de penetración y seguridad de aplicaciones web)
 # Descripción: Plataforma de pruebas de seguridad y análisis de aplicaciones web.
 # URL Oficial: https://portswigger.net/burp
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Burp Suite${NC}"
-echo -e "${CYAN}  (The industry standard web application security testing toolkit by PortSwigger)${NC}"
+echo -e "${CYAN}  (La plataforma líder mundial para pruebas de penetración y seguridad de aplicaciones web)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

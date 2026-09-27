@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: WebStorm
-# Tagline: The smartest JavaScript and TypeScript IDE by JetBrains
-# Instalador: WebStorm (The smartest JavaScript and TypeScript IDE by JetBrains)
+# Tagline: El IDE más inteligente para JavaScript y TypeScript desarrollado por JetBrains
+# Instalador: WebStorm (El IDE más inteligente para JavaScript y TypeScript desarrollado por JetBrains)
 # Descripción: Suite especializada en JavaScript, TypeScript, React y Node.js.
 # URL Oficial: https://www.jetbrains.com/webstorm
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando WebStorm${NC}"
-echo -e "${CYAN}  (The smartest JavaScript and TypeScript IDE by JetBrains)${NC}"
+echo -e "${CYAN}  (El IDE más inteligente para JavaScript y TypeScript desarrollado por JetBrains)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

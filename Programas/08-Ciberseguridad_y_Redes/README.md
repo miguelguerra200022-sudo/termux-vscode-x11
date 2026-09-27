@@ -1,16 +1,24 @@
-# Categoría: 08-Ciberseguridad y Redes
+# Ciberseguridad, Auditoría y Redes
 
-Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
+Esta categoría contiene instaladores automatizados optimizados para **Termux y Termux:X11**.
 
-| Programa | Instalador | Descripción Oficial (Tagline) |
-| :--- | :--- | :--- |
-| **Aircrack-ng** | [`instalar-aircrack-ng.sh`](./instalar-aircrack-ng.sh) | *(Complete suite of tools to assess WiFi network security and packet capture)* |
-| **Bettercap** | [`instalar-bettercap.sh`](./instalar-bettercap.sh) | *(The Swiss Army knife for 802.11, BLE, IPv4 and IPv6 network reconnaissance and MITM)* |
-| **Burp Suite** | [`instalar-burpsuite.sh`](./instalar-burpsuite.sh) | *(The industry standard web application security testing toolkit by PortSwigger)* |
-| **Ettercap** | [`instalar-ettercap.sh`](./instalar-ettercap.sh) | *(Comprehensive suite for man-in-the-middle attacks, sniffing and live filtering on LAN)* |
-| **THC-Hydra** | [`instalar-hydra.sh`](./instalar-hydra.sh) | *(Very fast network logon cracker supporting numerous remote authentication protocols)* |
-| **John the Ripper** | [`instalar-john.sh`](./instalar-john.sh) | *(Fast password cracker and hash security auditing tool)* |
-| **Metasploit** | [`instalar-metasploit.sh`](./instalar-metasploit.sh) | *(The world's most used penetration testing and exploit framework by Rapid7)* |
-| **Nmap** | [`instalar-nmap.sh`](./instalar-nmap.sh) | *(Free and open source utility for network discovery, port scanning and security auditing)* |
-| **SQLmap** | [`instalar-sqlmap.sh`](./instalar-sqlmap.sh) | *(Automatic SQL injection and database takeover penetration testing tool)* |
-| **Wireshark** | [`instalar-wireshark.sh`](./instalar-wireshark.sh) | *(The world's foremost and widely-used network protocol analyzer)* |
+## Programas Disponibles
+
+| Script de Instalación | Nombre Oficial | Presentación Oficial de los Creadores |
+|---|---|---|
+| `instalar-aircrack-ng.sh` | **Aircrack-ng** | Suite completa de herramientas para auditoría y evaluación de seguridad de redes inalámbricas WiFi |
+| `instalar-bettercap.sh` | **Bettercap** | Framework suizo completo, modular y portátil para reconocimiento y ataques Man-in-the-Middle |
+| `instalar-burpsuite.sh` | **Burp Suite** | La plataforma líder mundial para pruebas de penetración y seguridad de aplicaciones web |
+| `instalar-ettercap.sh` | **Ettercap** | Suite integral para ataques de intermediario (MitM) en redes de área local y análisis de tráfico |
+| `instalar-hydra.sh` | **Hydra** | Herramienta de inicio de sesión por fuerza bruta paralela y ultrarrápida para múltiples protocolos |
+| `instalar-john.sh` | **John the Ripper** | Herramienta de auditoría de seguridad de contraseñas y descifrado de hashes ultrarrápida |
+| `instalar-metasploit.sh` | **Metasploit Framework** | La plataforma de pruebas de penetración y explotación de vulnerabilidades más utilizada del mundo |
+| `instalar-nmap.sh` | **Nmap** | El escáner de redes líder mundial para exploración de redes y auditoría de seguridad |
+| `instalar-sqlmap.sh` | **SQLmap** | Herramienta de penetración automática para detección y explotación de inyecciones SQL |
+| `instalar-wireshark.sh` | **Wireshark** | El analizador de protocolos de red y captura de paquetes más extendido del mundo |
+
+## Uso
+Para instalar cualquiera de estos programas, ejecuta el script correspondiente o abre el menú principal:
+```bash
+programas
+```

@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: XFCE4 Terminal
-# Tagline: A modern, lightweight and customizable terminal emulator for X11 desktops
-# Instalador: XFCE4 Terminal (A modern, lightweight and customizable terminal emulator for X11 desktops)
+# Tagline: Emulador de terminal ligero, altamente personalizable y eficiente para entornos X11
+# Instalador: XFCE4 Terminal (Emulador de terminal ligero, altamente personalizable y eficiente para entornos X11)
 # Descripción: Terminal gráfica con pestañas, colores personalizables y menú contextual.
 # URL Oficial: https://docs.xfce.org/apps/terminal/start
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando XFCE4 Terminal${NC}"
-echo -e "${CYAN}  (A modern, lightweight and customizable terminal emulator for X11 desktops)${NC}"
+echo -e "${CYAN}  (Emulador de terminal ligero, altamente personalizable y eficiente para entornos X11)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete xfce4-terminal...${NC}"

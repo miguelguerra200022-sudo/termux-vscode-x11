@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Kitty
-# Tagline: The fast, feature-rich, GPU-based terminal emulator with tabs and graphics protocol
-# Instalador: Kitty (The fast, feature-rich, GPU-based terminal emulator with tabs and graphics protocol)
+# Tagline: Emulador de terminal rápido y rico en funciones acelerado por GPU con soporte para gráficos
+# Instalador: Kitty (Emulador de terminal rápido y rico en funciones acelerado por GPU con soporte para gráficos)
 # Descripción: Terminal moderna con soporte nativo de imágenes, fuentes y pestañas.
 # URL Oficial: https://sw.kovidgoyal.net/kitty/
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Kitty${NC}"
-echo -e "${CYAN}  (The fast, feature-rich, GPU-based terminal emulator with tabs and graphics protocol)${NC}"
+echo -e "${CYAN}  (Emulador de terminal rápido y rico en funciones acelerado por GPU con soporte para gráficos)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando Termux User Repository (TUR)...${NC}"

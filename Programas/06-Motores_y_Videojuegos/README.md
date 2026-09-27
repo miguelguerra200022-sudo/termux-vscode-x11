@@ -1,15 +1,23 @@
-# Categoría: 06-Motores y Videojuegos
+# Motores de Videojuegos y Desarrollo Lúdico
 
-Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
+Esta categoría contiene instaladores automatizados optimizados para **Termux y Termux:X11**.
 
-| Programa | Instalador | Descripción Oficial (Tagline) |
-| :--- | :--- | :--- |
-| **Defold** | [`instalar-defold.sh`](./instalar-defold.sh) | *(The ultimate game engine for truly cross-platform 2D web and mobile games)* |
-| **Godot 3** | [`instalar-godot3.sh`](./instalar-godot3.sh) | *(The multi-platform 2D and 3D game engine offering huge flexibility and fast workflow)* |
-| **Godot 4** | [`instalar-godot4.sh`](./instalar-godot4.sh) | *(The game engine you have been waiting for - Next-gen Vulkan rendering, physics and GDScript)* |
-| **LibreSprite** | [`instalar-libresprite.sh`](./instalar-libresprite.sh) | *(Animated sprite editor and pixel art tool - Free community fork of Aseprite)* |
-| **LÖVE (Love2D)** | [`instalar-love2d.sh`](./instalar-love2d.sh) | *(An awesome framework you can use to make 2D games in Lua)* |
-| **PICO-8** | [`instalar-pico8.sh`](./instalar-pico8.sh) | *(A fantasy console for making, sharing and playing tiny games and chiptune music)* |
-| **Raylib** | [`instalar-raylib.sh`](./instalar-raylib.sh) | *(A simple and easy-to-use library to enjoy videogames programming in C/C++)* |
-| **TIC-80** | [`instalar-tic80.sh`](./instalar-tic80.sh) | *(A tiny computer which you can use to make, play and share tiny games in Lua, JS and Python)* |
-| **Tiled** | [`instalar-tiled.sh`](./instalar-tiled.sh) | *(A flexible and easy-to-use 2D level and tilemap editor)* |
+## Programas Disponibles
+
+| Script de Instalación | Nombre Oficial | Presentación Oficial de los Creadores |
+|---|---|---|
+| `instalar-defold.sh` | **Defold** | El motor de videojuegos definitivo de código abierto para desarrollo multiplataforma 2D y 3D |
+| `instalar-godot3.sh` | **Godot Engine 3** | Motor de videojuegos libre y versátil optimizado para dispositivos de bajos recursos |
+| `instalar-godot4.sh` | **Godot Engine 4** | Motor de videojuegos 2D y 3D de vanguardia, totalmente libre y de código abierto |
+| `instalar-libresprite.sh` | **LibreSprite** | Herramienta de animación y edición de pixel art libre derivada de Aseprite |
+| `instalar-love2d.sh` | **LÖVE** | Impresionante framework 2D para hacer videojuegos en lenguaje Lua |
+| `instalar-pico8.sh` | **PICO-8** | Consola de fantasía para crear, compartir y jugar videojuegos diminutos estilo retro |
+| `instalar-raylib.sh` | **raylib** | Librería de programación de videojuegos simple, amigable y altamente optimizada en C |
+| `instalar-tic80.sh` | **TIC-80** | Consola de fantasía diminuta para crear y compartir juegos en múltiples lenguajes |
+| `instalar-tiled.sh` | **Tiled** | Editor de niveles y mapas basado en cuadrículas y mosaicos flexible y de código abierto |
+
+## Uso
+Para instalar cualquiera de estos programas, ejecuta el script correspondiente o abre el menú principal:
+```bash
+programas
+```

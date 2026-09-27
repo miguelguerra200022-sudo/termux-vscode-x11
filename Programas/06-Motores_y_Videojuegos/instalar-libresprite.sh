@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: LibreSprite
-# Tagline: Animated sprite editor and pixel art tool - Free community fork of Aseprite
-# Instalador: LibreSprite (Animated sprite editor and pixel art tool - Free community fork of Aseprite)
+# Tagline: Herramienta de animación y edición de pixel art libre derivada de Aseprite
+# Instalador: LibreSprite (Herramienta de animación y edición de pixel art libre derivada de Aseprite)
 # Descripción: Editor gráfico de pixel-art y animación cuadro a cuadro para videojuegos.
 # URL Oficial: https://libresprite.github.io
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando LibreSprite${NC}"
-echo -e "${CYAN}  (Animated sprite editor and pixel art tool - Free community fork of Aseprite)${NC}"
+echo -e "${CYAN}  (Herramienta de animación y edición de pixel art libre derivada de Aseprite)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

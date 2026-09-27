@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Audacity
-# Tagline: Free, open source, cross-platform audio software for multi-track recording and editing
-# Instalador: Audacity (Free, open source, cross-platform audio software for multi-track recording and editing)
+# Tagline: El software de audio de código abierto más popular del mundo para grabar y editar
+# Instalador: Audacity (El software de audio de código abierto más popular del mundo para grabar y editar)
 # Descripción: Grabador y editor de audio multi-pista profesional con PulseAudio.
 # URL Oficial: https://www.audacityteam.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Audacity${NC}"
-echo -e "${CYAN}  (Free, open source, cross-platform audio software for multi-track recording and editing)${NC}"
+echo -e "${CYAN}  (El software de audio de código abierto más popular del mundo para grabar y editar)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete audacity...${NC}"

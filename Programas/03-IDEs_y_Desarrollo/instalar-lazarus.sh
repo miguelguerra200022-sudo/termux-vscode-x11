@@ -3,8 +3,8 @@ set -e
 
 # ==============================================================================
 # Nombre: Lazarus
-# Tagline: The professional Free Pascal RAD IDE with visual drag-and-drop designer
-# Instalador: Lazarus (The professional Free Pascal RAD IDE with visual drag-and-drop designer)
+# Tagline: IDE profesional para Free Pascal que ofrece un desarrollo rápido de aplicaciones (RAD)
+# Instalador: Lazarus (IDE profesional para Free Pascal que ofrece un desarrollo rápido de aplicaciones (RAD))
 # Descripción: Entorno de desarrollo visual con diseñador de interfaces gráficas.
 # URL Oficial: https://www.lazarus-ide.org
 # ==============================================================================
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Lazarus${NC}"
-echo -e "${CYAN}  (The professional Free Pascal RAD IDE with visual drag-and-drop designer)${NC}"
+echo -e "${CYAN}  (IDE profesional para Free Pascal que ofrece un desarrollo rápido de aplicaciones (RAD))${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete lazarus...${NC}"
