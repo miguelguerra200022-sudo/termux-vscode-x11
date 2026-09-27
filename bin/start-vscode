@@ -144,15 +144,13 @@ for userapp in "$HOME/.local/share/applications/userapp-Zen-"*.desktop; do
     fi
 done
 
-# 8.2 Iniciar la barra superior flotante tint2 UI/UX (Safe Area Insets)
-if ! pgrep -x "tint2" > /dev/null 2>&1; then
-    echo "[*] Iniciando barra de tareas Ubuntu (tint2)..."
-    tint2 >/dev/null 2>&1 &
-    disown
-    sleep 0.3
-fi
+# 8.2 Preparar perfiles adaptativos de tint2 (Vertical flotante y Horizontal pegado)
+TINT2_DIR="$HOME/.config/tint2"
+mkdir -p "$TINT2_DIR"
+[ -f "$REPO_DIR/config/tint2rc_vertical" ] && cp "$REPO_DIR/config/tint2rc_vertical" "$TINT2_DIR/tint2rc_vertical" 2>/dev/null || true
+[ -f "$REPO_DIR/config/tint2rc_horizontal" ] && cp "$REPO_DIR/config/tint2rc_horizontal" "$TINT2_DIR/tint2rc_horizontal" 2>/dev/null || true
 
-# 8.4 Iniciar el demonio de sincronización en tiempo real en segundo plano
+# 8.4 Iniciar el centinela de integridad en segundo plano
 if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
     if command -v watcher-sync >/dev/null 2>&1; then
         nohup watcher-sync >/dev/null 2>&1 &
@@ -164,7 +162,7 @@ echo "[*] Abriendo app Termux:X11..."
 am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || true
 sleep 0.4
 
-# 8.6 Detección Dinámica de Pantalla y Adaptación UI/UX (Safe Areas y Curvatura)
+# 8.6 Detección de Orientación y Configuración Inicial Adaptativa
 DISP_W=1080
 DISP_H=0
 if command -v xdotool >/dev/null 2>&1; then
@@ -175,44 +173,37 @@ if command -v xdotool >/dev/null 2>&1; then
     fi
 fi
 
-# 8.7 Cargar Fondo de Pantalla Expandido al 100% (Sin cuadros ni repeticiones)
 WALLPAPER_DIR="$HOME/.config/termux-vscode"
-WALLPAPER_IMG=""
-if [ -n "$DISP_H" ] && [ "$DISP_H" -gt "$DISP_W" ]; then
-    # Orientación vertical (Portrait)
-    if [ -f "$WALLPAPER_DIR/wallpaper_vertical.jpg" ]; then
-        WALLPAPER_IMG="$WALLPAPER_DIR/wallpaper_vertical.jpg"
-    elif [ -f "$REPO_DIR/data/wallpaper_vertical.jpg" ]; then
-        WALLPAPER_IMG="$REPO_DIR/data/wallpaper_vertical.jpg"
-    fi
+if [ -n "$DISP_W" ] && [ "$DISP_W" -gt "$DISP_H" ]; then
+    # Arranque en Horizontal: barra pegada al borde superior (100% ancho, 0 margen, esquinas rectas)
+    echo "[*] Pantalla Horizontal detectada: aplicando barra pegada al borde..."
+    [ -f "$TINT2_DIR/tint2rc_horizontal" ] && cp "$TINT2_DIR/tint2rc_horizontal" "$TINT2_DIR/tint2rc" 2>/dev/null || true
+    pkill -x "tint2" 2>/dev/null || true
+    tint2 -c "$TINT2_DIR/tint2rc_horizontal" >/dev/null 2>&1 &
+    disown
+    WP=""
+    [ -f "$WALLPAPER_DIR/wallpaper_horizontal.jpg" ] && WP="$WALLPAPER_DIR/wallpaper_horizontal.jpg"
+    [ -z "$WP" ] && [ -f "$REPO_DIR/data/wallpaper_horizontal.jpg" ] && WP="$REPO_DIR/data/wallpaper_horizontal.jpg"
+    [ -n "$WP" ] && command -v feh >/dev/null 2>&1 && DISPLAY=:0 feh --no-fehbg --bg-scale "$WP" >/dev/null 2>&1 || true
 else
-    # Orientación horizontal (Landscape)
-    if [ -f "$WALLPAPER_DIR/wallpaper_horizontal.jpg" ]; then
-        WALLPAPER_IMG="$WALLPAPER_DIR/wallpaper_horizontal.jpg"
-    elif [ -f "$REPO_DIR/data/wallpaper_horizontal.jpg" ]; then
-        WALLPAPER_IMG="$REPO_DIR/data/wallpaper_horizontal.jpg"
-    fi
+    # Arranque en Vertical: barra flotante con margen para la cámara (94% ancho, 38px margen)
+    echo "[*] Pantalla Vertical detectada: aplicando barra flotante ergonómica..."
+    [ -f "$TINT2_DIR/tint2rc_vertical" ] && cp "$TINT2_DIR/tint2rc_vertical" "$TINT2_DIR/tint2rc" 2>/dev/null || true
+    pkill -x "tint2" 2>/dev/null || true
+    tint2 -c "$TINT2_DIR/tint2rc_vertical" >/dev/null 2>&1 &
+    disown
+    WP=""
+    [ -f "$WALLPAPER_DIR/wallpaper_vertical.jpg" ] && WP="$WALLPAPER_DIR/wallpaper_vertical.jpg"
+    [ -z "$WP" ] && [ -f "$REPO_DIR/data/wallpaper_vertical.jpg" ] && WP="$REPO_DIR/data/wallpaper_vertical.jpg"
+    [ -n "$WP" ] && command -v feh >/dev/null 2>&1 && DISPLAY=:0 feh --no-fehbg --bg-scale "$WP" >/dev/null 2>&1 || true
 fi
 
-# Fallback si no hay específico por orientación
-if [ -z "$WALLPAPER_IMG" ]; then
-    for ext in jpg png jpeg webp; do
-        if [ -f "$WALLPAPER_DIR/wallpaper.$ext" ]; then
-            WALLPAPER_IMG="$WALLPAPER_DIR/wallpaper.$ext"
-            break
-        elif [ -f "$REPO_DIR/data/wallpaper.$ext" ]; then
-            WALLPAPER_IMG="$REPO_DIR/data/wallpaper.$ext"
-            break
-        fi
-    done
-fi
-
-if [ -n "$WALLPAPER_IMG" ] && command -v feh >/dev/null 2>&1; then
-    DISPLAY=:0 feh --no-fehbg --bg-scale "$WALLPAPER_IMG" >/dev/null 2>&1 || true
-    (
-        sleep 1.2
-        DISPLAY=:0 feh --no-fehbg --bg-scale "$WALLPAPER_IMG" >/dev/null 2>&1 || true
-    ) &
+# 8.7 Iniciar Monitor Adaptativo de Orientación y Pantalla (Auto-Rotación y Fondos en Vivo)
+pkill -f "orientation-sentinel" 2>/dev/null || true
+if command -v orientation-sentinel >/dev/null 2>&1; then
+    orientation-sentinel >/dev/null 2>&1 &
+elif [ -f "$REPO_DIR/bin/orientation-sentinel" ]; then
+    "$REPO_DIR/bin/orientation-sentinel" >/dev/null 2>&1 &
 fi
 
 ZOOM_LEVEL=1

@@ -61,7 +61,7 @@ init_golden_vault() {
     chmod 700 "$HOME/.config/termux-vscode" "$GOLDEN_DIR" 2>/dev/null || true
 
     # Respaldar binarios de defensa originales en bóveda dorada protegida
-    for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota" "termux-runner" "vault-logs" "gitops-sync"; do
+    for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "orientation-sentinel" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota" "termux-runner" "vault-logs" "gitops-sync"; do
         if [ -f "$PREFIX/bin/$bin_name" ] && [ ! -f "$GOLDEN_DIR/$bin_name" ]; then
             cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
             chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
@@ -232,6 +232,8 @@ do_sync() {
     [ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
     [ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
     [ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
+    [ -f "$HOME/.config/tint2/tint2rc_vertical" ] && cp "$HOME/.config/tint2/tint2rc_vertical" "$REPO_DIR/config/tint2rc_vertical" 2>/dev/null || true
+    [ -f "$HOME/.config/tint2/tint2rc_horizontal" ] && cp "$HOME/.config/tint2/tint2rc_horizontal" "$REPO_DIR/config/tint2rc_horizontal" 2>/dev/null || true
     [ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
 
     # 6.5 Actualizar firma de integridad antes de registrar en Git

@@ -332,6 +332,7 @@ echo -e "${YELLOW}[*] Instalando utilidades Pro en el sistema...${NC}"
 SCRIPTS=(
     "encender"
     "apagar"
+    "orientation-sentinel"
     "start-vscode"
     "stop-vscode"
     "share-port"
@@ -401,6 +402,8 @@ mkdir -p "$HOME/.config/Code - OSS/User" "$HOME/.vscode-oss" "$HOME/.config/open
 [ -f "$SCRIPT_DIR/config/rc.xml" ] && cp "$SCRIPT_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml"
 [ -f "$SCRIPT_DIR/config/menu.xml" ] && cp "$SCRIPT_DIR/config/menu.xml" "$HOME/.config/openbox/menu.xml"
 [ -f "$SCRIPT_DIR/config/tint2rc" ] && cp "$SCRIPT_DIR/config/tint2rc" "$HOME/.config/tint2/tint2rc"
+[ -f "$SCRIPT_DIR/config/tint2rc_vertical" ] && cp "$SCRIPT_DIR/config/tint2rc_vertical" "$HOME/.config/tint2/tint2rc_vertical" 2>/dev/null || true
+[ -f "$SCRIPT_DIR/config/tint2rc_horizontal" ] && cp "$SCRIPT_DIR/config/tint2rc_horizontal" "$HOME/.config/tint2/tint2rc_horizontal" 2>/dev/null || true
 
 # Fondos de pantalla adaptativos (Horizontal y Vertical)
 mkdir -p "$HOME/.config/termux-vscode"

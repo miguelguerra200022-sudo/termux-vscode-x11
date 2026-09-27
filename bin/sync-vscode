@@ -117,12 +117,15 @@ fi
 [ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
 [ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
 [ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
+[ -f "$HOME/.config/tint2/tint2rc_vertical" ] && cp "$HOME/.config/tint2/tint2rc_vertical" "$REPO_DIR/config/tint2rc_vertical" 2>/dev/null || true
+[ -f "$HOME/.config/tint2/tint2rc_horizontal" ] && cp "$HOME/.config/tint2/tint2rc_horizontal" "$REPO_DIR/config/tint2rc_horizontal" 2>/dev/null || true
 [ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
 
 # 6. Sincronizar scripts
 SCRIPTS=(
     "encender"
     "apagar"
+    "orientation-sentinel"
     "start-vscode"
     "stop-vscode"
     "share-port"

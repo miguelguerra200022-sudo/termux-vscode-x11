@@ -1,0 +1,119 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# orientation-sentinel: Monitor Adaptativo de Orientación, Pantalla y Fondos
+# ==============================================================================
+# - Detecta en vivo giros entre Vertical (Portrait) y Horizontal (Landscape).
+# - Adapta la barra tint2:
+#     * Vertical: Flotante al 94%, radio 12px, margen superior para la cámara.
+#     * Horizontal: 100% pegada al borde, radio 0px, margen 0.
+# - Escala el fondo de pantalla exacto al 100% (cero cuadros ni repeticiones):
+#     * Vertical: wallpaper_vertical.jpg
+#     * Horizontal: wallpaper_horizontal.jpg
+# ==============================================================================
+
+export DISPLAY="${DISPLAY:-:0}"
+TINT2_DIR="$HOME/.config/tint2"
+WALLPAPER_DIR="$HOME/.config/termux-vscode"
+
+# Localizar repositorio
+REPO_DIR=""
+CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
+    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+fi
+
+LAST_W=0
+LAST_H=0
+LAST_ORIENT=""
+
+# Asegurar que existan los archivos en ~/.config/tint2
+mkdir -p "$TINT2_DIR"
+if [ ! -f "$TINT2_DIR/tint2rc_vertical" ] && [ -f "$REPO_DIR/config/tint2rc_vertical" ]; then
+    cp "$REPO_DIR/config/tint2rc_vertical" "$TINT2_DIR/tint2rc_vertical" 2>/dev/null || true
+fi
+if [ ! -f "$TINT2_DIR/tint2rc_horizontal" ] && [ -f "$REPO_DIR/config/tint2rc_horizontal" ]; then
+    cp "$REPO_DIR/config/tint2rc_horizontal" "$TINT2_DIR/tint2rc_horizontal" 2>/dev/null || true
+fi
+
+while true; do
+    # Si X11 no está activo, esperar
+    if ! pgrep -f "termux-x11.*:0" >/dev/null 2>&1; then
+        sleep 1.5
+        continue
+    fi
+
+    # Obtener geometría actual
+    GEO=$(xdotool getdisplaygeometry 2>/dev/null || echo "")
+    if [ -z "$GEO" ]; then
+        sleep 0.8
+        continue
+    fi
+
+    W=$(echo "$GEO" | awk '{print $1}')
+    H=$(echo "$GEO" | awk '{print $2}')
+
+    if [ -n "$W" ] && [ -n "$H" ] && [ "$W" -gt 0 ] && [ "$H" -gt 0 ]; then
+        if [ "$W" != "$LAST_W" ] || [ "$H" != "$LAST_H" ]; then
+            LAST_W="$W"
+            LAST_H="$H"
+
+            if [ "$W" -gt "$H" ]; then
+                CURRENT_ORIENT="horizontal"
+            else
+                CURRENT_ORIENT="vertical"
+            fi
+
+            # Si cambió la orientación o es el primer chequeo
+            if [ "$CURRENT_ORIENT" != "$LAST_ORIENT" ]; then
+                LAST_ORIENT="$CURRENT_ORIENT"
+
+                if [ "$CURRENT_ORIENT" = "horizontal" ]; then
+                    # 1. Fondo Horizontal: expandido 100% sin repetición
+                    WP_H=""
+                    [ -f "$WALLPAPER_DIR/wallpaper_horizontal.jpg" ] && WP_H="$WALLPAPER_DIR/wallpaper_horizontal.jpg"
+                    [ -z "$WP_H" ] && [ -f "$REPO_DIR/data/wallpaper_horizontal.jpg" ] && WP_H="$REPO_DIR/data/wallpaper_horizontal.jpg"
+                    if [ -n "$WP_H" ]; then
+                        feh --no-fehbg --bg-scale "$WP_H" >/dev/null 2>&1 || true
+                    fi
+
+                    # 2. Barra Horizontal: 100% pegada al borde, esquinas rectas
+                    if [ -f "$TINT2_DIR/tint2rc_horizontal" ]; then
+                        cp "$TINT2_DIR/tint2rc_horizontal" "$TINT2_DIR/tint2rc" 2>/dev/null || true
+                        pkill -x "tint2" 2>/dev/null || true
+                        sleep 0.1
+                        tint2 -c "$TINT2_DIR/tint2rc_horizontal" >/dev/null 2>&1 &
+                    fi
+                else
+                    # 1. Fondo Vertical: expandido 100% sin repetición
+                    WP_V=""
+                    [ -f "$WALLPAPER_DIR/wallpaper_vertical.jpg" ] && WP_V="$WALLPAPER_DIR/wallpaper_vertical.jpg"
+                    [ -z "$WP_V" ] && [ -f "$REPO_DIR/data/wallpaper_vertical.jpg" ] && WP_V="$REPO_DIR/data/wallpaper_vertical.jpg"
+                    if [ -n "$WP_V" ]; then
+                        feh --no-fehbg --bg-scale "$WP_V" >/dev/null 2>&1 || true
+                    fi
+
+                    # 2. Barra Vertical: flotante, 94% ancho, margen superior para cámara
+                    if [ -f "$TINT2_DIR/tint2rc_vertical" ]; then
+                        cp "$TINT2_DIR/tint2rc_vertical" "$TINT2_DIR/tint2rc" 2>/dev/null || true
+                        pkill -x "tint2" 2>/dev/null || true
+                        sleep 0.1
+                        tint2 -c "$TINT2_DIR/tint2rc_vertical" >/dev/null 2>&1 &
+                    fi
+                fi
+            else
+                # Misma orientación pero hubo un resize (ej. teclado virtual o ajuste de pantalla)
+                if [ "$CURRENT_ORIENT" = "horizontal" ]; then
+                    WP="$WALLPAPER_DIR/wallpaper_horizontal.jpg"
+                    [ ! -f "$WP" ] && WP="$REPO_DIR/data/wallpaper_horizontal.jpg"
+                else
+                    WP="$WALLPAPER_DIR/wallpaper_vertical.jpg"
+                    [ ! -f "$WP" ] && WP="$REPO_DIR/data/wallpaper_vertical.jpg"
+                fi
+                [ -f "$WP" ] && feh --no-fehbg --bg-scale "$WP" >/dev/null 2>&1 || true
+            fi
+        fi
+    fi
+
+    sleep 0.5
+done
