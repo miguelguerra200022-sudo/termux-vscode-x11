@@ -100,7 +100,7 @@ pull_and_apply() {
 
     # 4. Despliegue de binarios actualizados en $PREFIX/bin
     SCRIPTS=(
-        "encender" "apagar" "orientation-sentinel" "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
+        "encender" "apagar" "orientation-sentinel" "programas" "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
         "sync-vscode" "restore-vscode" "watcher-sync" "integrity-watchdog"
         "integrity-guard" "setup-swap" "set-marketplace" "fix-phantom-killer"
         "new-project" "start-vscode-web" "guia" "vscode" "toggle-touch-mode"

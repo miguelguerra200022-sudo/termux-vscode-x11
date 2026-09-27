@@ -12,6 +12,11 @@
         <command>zen-browser</command>
       </action>
     </item>
+    <item label="📦 Centro de Programas (+100 Apps)">
+      <action name="Execute">
+        <command>programas</command>
+      </action>
+    </item>
     <separator label="Sesión y Sistema" />
     <item label="🔄 Recargar Interfaz Openbox">
       <action name="Restart" />

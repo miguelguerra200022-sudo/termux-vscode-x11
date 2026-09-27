@@ -1,0 +1,11 @@
+#!/data/data/com.termux/files/usr/bin/bash
+REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || echo "$REPO_DIR")
+
+MENU_SCRIPT="$REPO_DIR/Programas/menu-instalador.sh"
+if [ -f "$MENU_SCRIPT" ]; then
+    exec bash "$MENU_SCRIPT" "$@"
+else
+    echo "No se encontró el menú en $MENU_SCRIPT"
+fi

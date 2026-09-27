@@ -333,6 +333,7 @@ SCRIPTS=(
     "encender"
     "apagar"
     "orientation-sentinel"
+    "programas"
     "start-vscode"
     "stop-vscode"
     "share-port"
