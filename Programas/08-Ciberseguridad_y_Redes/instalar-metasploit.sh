@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Metasploit Framework
+# Nombre: Metasploit
+# Tagline: The world's most used penetration testing and exploit framework by Rapid7
+# Instalador: Metasploit (The world's most used penetration testing and exploit framework by Rapid7)
 # Descripción: Plataforma avanzada de pruebas de penetración y explotación ética.
 # URL Oficial: https://www.metasploit.com
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Metasploit Framework${NC}"
-echo -e "${CYAN}  Plataforma avanzada de pruebas de penetración y explotación ética.${NC}"
+echo -e "${GREEN}  📦 Instalando Metasploit${NC}"
+echo -e "${CYAN}  (The world's most used penetration testing and exploit framework by Rapid7)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando Termux User Repository (TUR)...${NC}"

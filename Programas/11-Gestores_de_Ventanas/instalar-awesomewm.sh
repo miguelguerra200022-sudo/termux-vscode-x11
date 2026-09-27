@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: AwesomeWM Window Manager
+# Nombre: AwesomeWM
+# Tagline: A highly configurable, next generation framework window manager for X
+# Instalador: AwesomeWM (A highly configurable, next generation framework window manager for X)
 # Descripción: Gestor de ventanas altamente extensible y programable en lenguaje Lua.
 # URL Oficial: https://awesomewm.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando AwesomeWM Window Manager${NC}"
-echo -e "${CYAN}  Gestor de ventanas altamente extensible y programable en lenguaje Lua.${NC}"
+echo -e "${GREEN}  📦 Instalando AwesomeWM${NC}"
+echo -e "${CYAN}  (A highly configurable, next generation framework window manager for X)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete awesomewm...${NC}"

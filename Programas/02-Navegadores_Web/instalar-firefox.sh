@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Mozilla Firefox ESR
+# Nombre: Mozilla Firefox
+# Tagline: The independent, people-first browser committed to privacy and open web standards
+# Instalador: Mozilla Firefox (The independent, people-first browser committed to privacy and open web standards)
 # Descripción: Navegador web de soporte extendido con renderizado gráfico para X11.
 # URL Oficial: https://www.mozilla.org/firefox
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Mozilla Firefox ESR${NC}"
-echo -e "${CYAN}  Navegador web de soporte extendido con renderizado gráfico para X11.${NC}"
+echo -e "${GREEN}  📦 Instalando Mozilla Firefox${NC}"
+echo -e "${CYAN}  (The independent, people-first browser committed to privacy and open web standards)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete firefox...${NC}"

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Caddy Web Server
+# Nombre: Caddy
+# Tagline: The ultimate server - Fast, cross-platform and secure HTTP/2 and HTTP/3 web server
+# Instalador: Caddy (The ultimate server - Fast, cross-platform and secure HTTP/2 and HTTP/3 web server)
 # Descripción: Servidor web moderno en Go con configuración automática de puertos y rutas.
 # URL Oficial: https://caddyserver.com
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Caddy Web Server${NC}"
-echo -e "${CYAN}  Servidor web moderno en Go con configuración automática de puertos y rutas.${NC}"
+echo -e "${GREEN}  📦 Instalando Caddy${NC}"
+echo -e "${CYAN}  (The ultimate server - Fast, cross-platform and secure HTTP/2 and HTTP/3 web server)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

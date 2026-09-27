@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: AstroNvim
+# Nombre: AstroNvim
+# Tagline: Aesthetic, blazing fast and modular configuration framework for Neovim
+# Instalador: AstroNvim (Aesthetic, blazing fast and modular configuration framework for Neovim)
 # Descripción: Framework estético, ultrarrápido y modular para Neovim.
 # URL Oficial: https://astronvim.com
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando AstroNvim${NC}"
-echo -e "${CYAN}  Framework estético, ultrarrápido y modular para Neovim.${NC}"
+echo -e "${CYAN}  (Aesthetic, blazing fast and modular configuration framework for Neovim)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias base (Neovim, Git, Node, Python, Ripper)...${NC}"

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Zen Browser
+# Nombre: Zen Browser
+# Tagline: Experience tranquility while browsing the web - Fast, private and beautiful
+# Instalador: Zen Browser (Experience tranquility while browsing the web - Fast, private and beautiful)
 # Descripción: Navegador web moderno centrado en privacidad, diseño y pestañas verticales.
 # URL Oficial: https://zen-browser.app
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Zen Browser${NC}"
-echo -e "${CYAN}  Navegador web moderno centrado en privacidad, diseño y pestañas verticales.${NC}"
+echo -e "${CYAN}  (Experience tranquility while browsing the web - Fast, private and beautiful)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Verificando e instalando Zen Browser para Termux:X11...${NC}"

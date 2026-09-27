@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Kakoune
+# Nombre: Kakoune
+# Tagline: Modal editor with multiple selections and interactive visual feedback
+# Instalador: Kakoune (Modal editor with multiple selections and interactive visual feedback)
 # Descripción: Editor modal interactivo con selección primero y acción después.
 # URL Oficial: https://kakoune.org
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Kakoune${NC}"
-echo -e "${CYAN}  Editor modal interactivo con selección primero y acción después.${NC}"
+echo -e "${CYAN}  (Modal editor with multiple selections and interactive visual feedback)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

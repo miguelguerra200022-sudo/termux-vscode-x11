@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Joplin Secure Notes
+# Nombre: Joplin
+# Tagline: Free, open source note taking and to-do application with end-to-end encryption
+# Instalador: Joplin (Free, open source note taking and to-do application with end-to-end encryption)
 # Descripción: Aplicación de notas y listas de tareas cifradas de extremo a extremo.
 # URL Oficial: https://joplinapp.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Joplin Secure Notes${NC}"
-echo -e "${CYAN}  Aplicación de notas y listas de tareas cifradas de extremo a extremo.${NC}"
+echo -e "${GREEN}  📦 Instalando Joplin${NC}"
+echo -e "${CYAN}  (Free, open source note taking and to-do application with end-to-end encryption)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

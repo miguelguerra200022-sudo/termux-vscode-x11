@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Windsurf IDE (Codeium)
+# Nombre: Windsurf
+# Tagline: The first agentic IDE - Keeps developers in the flow state with Cascade AI
+# Instalador: Windsurf (The first agentic IDE - Keeps developers in the flow state with Cascade AI)
 # Descripción: IDE de nueva generación con IA colaborativa en cascada.
 # URL Oficial: https://codeium.com/windsurf
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Windsurf IDE (Codeium)${NC}"
-echo -e "${CYAN}  IDE de nueva generación con IA colaborativa en cascada.${NC}"
+echo -e "${GREEN}  📦 Instalando Windsurf${NC}"
+echo -e "${CYAN}  (The first agentic IDE - Keeps developers in the flow state with Cascade AI)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

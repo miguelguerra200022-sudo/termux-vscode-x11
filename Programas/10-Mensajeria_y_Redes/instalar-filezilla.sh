@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: FileZilla FTP/SFTP Client
+# Nombre: FileZilla
+# Tagline: The free FTP solution - Fast and reliable client supporting FTP, FTPS and SFTP
+# Instalador: FileZilla (The free FTP solution - Fast and reliable client supporting FTP, FTPS and SFTP)
 # Descripción: Cliente gráfico de transferencia de archivos por FTP, FTPS y SFTP.
 # URL Oficial: https://filezilla-project.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando FileZilla FTP/SFTP Client${NC}"
-echo -e "${CYAN}  Cliente gráfico de transferencia de archivos por FTP, FTPS y SFTP.${NC}"
+echo -e "${GREEN}  📦 Instalando FileZilla${NC}"
+echo -e "${CYAN}  (The free FTP solution - Fast and reliable client supporting FTP, FTPS and SFTP)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete filezilla...${NC}"

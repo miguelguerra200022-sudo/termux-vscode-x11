@@ -59,9 +59,17 @@ while true; do
             j=1
             for p in "$sel_path"/instalar-*.sh; do
                 [ -f "$p" ] || continue
-                pname=$(basename "$p" | sed 's/instalar-//; s/.sh//')
+                pname=$(grep -m 1 "^# Nombre:" "$p" | sed 's/^# Nombre:[[:space:]]*//')
+                ptagline=$(grep -m 1 "^# Tagline:" "$p" | sed 's/^# Tagline:[[:space:]]*//')
+                if [ -z "$pname" ]; then
+                    pname=$(basename "$p" | sed 's/instalar-//; s/.sh//')
+                fi
                 PROGRAMS+=("$p")
-                echo -e "  [${YELLOW}$j${NC}] 📦 $pname"
+                if [ -n "$ptagline" ]; then
+                    echo -e "  [${YELLOW}$j${NC}] 📦 ${BOLD}${pname}${NC} ${CYAN}(${ptagline})${NC}"
+                else
+                    echo -e "  [${YELLOW}$j${NC}] 📦 ${BOLD}${pname}${NC}"
+                fi
                 ((j++))
             done
             echo ""
@@ -76,8 +84,10 @@ while true; do
 
             if [ "$opt_prog" -ge 1 ] && [ "$opt_prog" -le "${#PROGRAMS[@]}" ]; then
                 target_script="${PROGRAMS[$((opt_prog-1))]}"
+                target_name=$(grep -m 1 "^# Nombre:" "$target_script" | sed 's/^# Nombre:[[:space:]]*//')
+                [ -z "$target_name" ] && target_name=$(basename "$target_script")
                 echo ""
-                echo -e "${CYAN}⚡ Ejecutando: $(basename "$target_script")...${NC}"
+                echo -e "${CYAN}⚡ Ejecutando: ${target_name}...${NC}"
                 echo ""
                 bash "$target_script"
                 echo ""

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Element Matrix Messenger
+# Nombre: Element
+# Tagline: Secure collaboration and messaging app built on the decentralized Matrix open network
+# Instalador: Element (Secure collaboration and messaging app built on the decentralized Matrix open network)
 # Descripción: Cliente de mensajería cifrada descentralizada sobre el protocolo Matrix.
 # URL Oficial: https://element.io
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Element Matrix Messenger${NC}"
-echo -e "${CYAN}  Cliente de mensajería cifrada descentralizada sobre el protocolo Matrix.${NC}"
+echo -e "${GREEN}  📦 Instalando Element${NC}"
+echo -e "${CYAN}  (Secure collaboration and messaging app built on the decentralized Matrix open network)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

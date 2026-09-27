@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: MarkText Distraction-Free
+# Nombre: MarkText
+# Tagline: Simple and elegant open-source Markdown editor focused on speed and usability
+# Instalador: MarkText (Simple and elegant open-source Markdown editor focused on speed and usability)
 # Descripción: Editor Markdown de diseño minimalista con previsualización en vivo.
 # URL Oficial: https://marktext.app
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando MarkText Distraction-Free${NC}"
-echo -e "${CYAN}  Editor Markdown de diseño minimalista con previsualización en vivo.${NC}"
+echo -e "${GREEN}  📦 Instalando MarkText${NC}"
+echo -e "${CYAN}  (Simple and elegant open-source Markdown editor focused on speed and usability)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Transmission GTK Torrent
+# Nombre: Transmission
+# Tagline: A fast, easy, and free BitTorrent client with GTK desktop interface
+# Instalador: Transmission (A fast, easy, and free BitTorrent client with GTK desktop interface)
 # Descripción: Cliente BitTorrent ligero y rápido para descargas eficientes en segundo plano.
 # URL Oficial: https://transmissionbt.com
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Transmission GTK Torrent${NC}"
-echo -e "${CYAN}  Cliente BitTorrent ligero y rápido para descargas eficientes en segundo plano.${NC}"
+echo -e "${GREEN}  📦 Instalando Transmission${NC}"
+echo -e "${CYAN}  (A fast, easy, and free BitTorrent client with GTK desktop interface)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete transmission...${NC}"

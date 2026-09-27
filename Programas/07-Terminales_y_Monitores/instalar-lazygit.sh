@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Lazygit Git TUI
+# Nombre: Lazygit
+# Tagline: A simple terminal UI for git commands that saves hours of keystrokes
+# Instalador: Lazygit (A simple terminal UI for git commands that saves hours of keystrokes)
 # Descripción: Interfaz gráfica interactiva para terminal para operaciones de Git instantáneas.
 # URL Oficial: https://github.com/jesseduffield/lazygit
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Lazygit Git TUI${NC}"
-echo -e "${CYAN}  Interfaz gráfica interactiva para terminal para operaciones de Git instantáneas.${NC}"
+echo -e "${GREEN}  📦 Instalando Lazygit${NC}"
+echo -e "${CYAN}  (A simple terminal UI for git commands that saves hours of keystrokes)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

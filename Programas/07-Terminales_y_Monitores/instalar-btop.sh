@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Btop Resource Monitor
+# Nombre: Btop
+# Tagline: Resource monitor that shows usage and stats for processor, memory, disks and network
+# Instalador: Btop (Resource monitor that shows usage and stats for processor, memory, disks and network)
 # Descripción: Monitor interactivo de CPU, memoria, discos y procesos con gráficos.
 # URL Oficial: https://github.com/aristocratos/btop
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Btop Resource Monitor${NC}"
-echo -e "${CYAN}  Monitor interactivo de CPU, memoria, discos y procesos con gráficos.${NC}"
+echo -e "${GREEN}  📦 Instalando Btop${NC}"
+echo -e "${CYAN}  (Resource monitor that shows usage and stats for processor, memory, disks and network)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

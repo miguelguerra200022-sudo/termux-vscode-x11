@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Blender 3D
+# Nombre: Blender 3D
+# Tagline: Free and open source 3D creation suite supporting the entirety of the 3D pipeline
+# Instalador: Blender 3D (Free and open source 3D creation suite supporting the entirety of the 3D pipeline)
 # Descripción: Suite completa de modelado, esculpido, animación y renderizado 3D.
 # URL Oficial: https://www.blender.org
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Blender 3D${NC}"
-echo -e "${CYAN}  Suite completa de modelado, esculpido, animación y renderizado 3D.${NC}"
+echo -e "${CYAN}  (Free and open source 3D creation suite supporting the entirety of the 3D pipeline)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

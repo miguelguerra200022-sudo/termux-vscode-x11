@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Obsidian Markdown
+# Nombre: Obsidian
+# Tagline: Sharpen your thinking - The private and flexible writing app that adapts to how you think
+# Instalador: Obsidian (Sharpen your thinking - The private and flexible writing app that adapts to how you think)
 # Descripción: Base de conocimiento personal y red de notas Markdown enlazadas.
 # URL Oficial: https://obsidian.md
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Obsidian Markdown${NC}"
-echo -e "${CYAN}  Base de conocimiento personal y red de notas Markdown enlazadas.${NC}"
+echo -e "${GREEN}  📦 Instalando Obsidian${NC}"
+echo -e "${CYAN}  (Sharpen your thinking - The private and flexible writing app that adapts to how you think)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: PostgreSQL Database Server
+# Nombre: PostgreSQL
+# Tagline: The World's Most Advanced Open Source Relational Database
+# Instalador: PostgreSQL (The World's Most Advanced Open Source Relational Database)
 # Descripción: Sistema de base de datos relacional avanzada de nivel empresarial.
 # URL Oficial: https://www.postgresql.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando PostgreSQL Database Server${NC}"
-echo -e "${CYAN}  Sistema de base de datos relacional avanzada de nivel empresarial.${NC}"
+echo -e "${GREEN}  📦 Instalando PostgreSQL${NC}"
+echo -e "${CYAN}  (The World's Most Advanced Open Source Relational Database)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

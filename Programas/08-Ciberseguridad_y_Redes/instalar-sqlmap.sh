@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: SQLmap Injection Tool
+# Nombre: SQLmap
+# Tagline: Automatic SQL injection and database takeover penetration testing tool
+# Instalador: SQLmap (Automatic SQL injection and database takeover penetration testing tool)
 # Descripción: Herramienta de detección y explotación automática de inyecciones SQL.
 # URL Oficial: https://sqlmap.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando SQLmap Injection Tool${NC}"
-echo -e "${CYAN}  Herramienta de detección y explotación automática de inyecciones SQL.${NC}"
+echo -e "${GREEN}  📦 Instalando SQLmap${NC}"
+echo -e "${CYAN}  (Automatic SQL injection and database takeover penetration testing tool)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

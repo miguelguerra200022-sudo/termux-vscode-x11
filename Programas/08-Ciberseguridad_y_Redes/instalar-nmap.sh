@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Nmap Network Scanner
+# Nombre: Nmap
+# Tagline: Free and open source utility for network discovery, port scanning and security auditing
+# Instalador: Nmap (Free and open source utility for network discovery, port scanning and security auditing)
 # Descripción: Escáner de seguridad para exploración de redes y auditoría de puertos.
 # URL Oficial: https://nmap.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Nmap Network Scanner${NC}"
-echo -e "${CYAN}  Escáner de seguridad para exploración de redes y auditoría de puertos.${NC}"
+echo -e "${GREEN}  📦 Instalando Nmap${NC}"
+echo -e "${CYAN}  (Free and open source utility for network discovery, port scanning and security auditing)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

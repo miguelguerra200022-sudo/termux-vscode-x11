@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Evince Document Viewer
+# Nombre: Evince
+# Tagline: A document viewer for multiple document formats including PDF and PostScript
+# Instalador: Evince (A document viewer for multiple document formats including PDF and PostScript)
 # Descripción: Visor de documentos PDF, PostScript y cómics rápido y ligero.
 # URL Oficial: https://wiki.gnome.org/Apps/Evince
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Evince Document Viewer${NC}"
-echo -e "${CYAN}  Visor de documentos PDF, PostScript y cómics rápido y ligero.${NC}"
+echo -e "${GREEN}  📦 Instalando Evince${NC}"
+echo -e "${CYAN}  (A document viewer for multiple document formats including PDF and PostScript)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete evince...${NC}"

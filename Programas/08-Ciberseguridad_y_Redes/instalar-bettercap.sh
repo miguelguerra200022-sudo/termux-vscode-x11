@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Bettercap Framework
+# Nombre: Bettercap
+# Tagline: The Swiss Army knife for 802.11, BLE, IPv4 and IPv6 network reconnaissance and MITM
+# Instalador: Bettercap (The Swiss Army knife for 802.11, BLE, IPv4 and IPv6 network reconnaissance and MITM)
 # Descripción: Herramienta completa para ataques Man-in-the-Middle y redes inalámbricas.
 # URL Oficial: https://www.bettercap.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Bettercap Framework${NC}"
-echo -e "${CYAN}  Herramienta completa para ataques Man-in-the-Middle y redes inalámbricas.${NC}"
+echo -e "${GREEN}  📦 Instalando Bettercap${NC}"
+echo -e "${CYAN}  (The Swiss Army knife for 802.11, BLE, IPv4 and IPv6 network reconnaissance and MITM)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

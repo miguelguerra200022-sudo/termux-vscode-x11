@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Chromium (Termux:X11)
+# Nombre: Chromium
+# Tagline: The open-source browser project building a safer, faster way to experience the web
+# Instalador: Chromium (The open-source browser project building a safer, faster way to experience the web)
 # Descripción: Navegador web de código abierto con aceleración y motor Blink.
 # URL Oficial: https://www.chromium.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Chromium (Termux:X11)${NC}"
-echo -e "${CYAN}  Navegador web de código abierto con aceleración y motor Blink.${NC}"
+echo -e "${GREEN}  📦 Instalando Chromium${NC}"
+echo -e "${CYAN}  (The open-source browser project building a safer, faster way to experience the web)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete chromium...${NC}"

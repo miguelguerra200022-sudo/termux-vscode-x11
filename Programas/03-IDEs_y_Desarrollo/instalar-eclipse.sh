@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Eclipse IDE
+# Nombre: Eclipse IDE
+# Tagline: The leading open-source development platform for Java and enterprise solutions
+# Instalador: Eclipse IDE (The leading open-source development platform for Java and enterprise solutions)
 # Descripción: Plataforma clásica de desarrollo empresarial en Java y C++.
 # URL Oficial: https://www.eclipse.org
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Eclipse IDE${NC}"
-echo -e "${CYAN}  Plataforma clásica de desarrollo empresarial en Java y C++.${NC}"
+echo -e "${CYAN}  (The leading open-source development platform for Java and enterprise solutions)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

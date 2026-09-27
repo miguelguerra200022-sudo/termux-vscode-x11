@@ -1,14 +1,14 @@
 # Categoría: 10-Mensajeria y Redes
 
-Esta carpeta contiene los instaladores optimizados para Termux y Termux:X11 de esta categoría.
+Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
 
-| Programa | Instalador | Descripción |
+| Programa | Instalador | Descripción Oficial (Tagline) |
 | :--- | :--- | :--- |
-| **Telegram Desktop** | [`instalar-telegram-desktop.sh`](./instalar-telegram-desktop.sh) | Cliente oficial de mensajería con soporte multimedia y bots en X11. |
-| **WebCord Discord Client** | [`instalar-webcord.sh`](./instalar-webcord.sh) | Cliente Discord ligero enfocado en privacidad y bajo consumo de RAM. |
-| **Element Matrix Messenger** | [`instalar-element.sh`](./instalar-element.sh) | Cliente de mensajería cifrada descentralizada sobre el protocolo Matrix. |
-| **Mozilla Thunderbird** | [`instalar-thunderbird.sh`](./instalar-thunderbird.sh) | Cliente completo de correo electrónico, calendarios y gestión de tareas. |
-| **FileZilla FTP/SFTP Client** | [`instalar-filezilla.sh`](./instalar-filezilla.sh) | Cliente gráfico de transferencia de archivos por FTP, FTPS y SFTP. |
-| **Transmission GTK Torrent** | [`instalar-transmission.sh`](./instalar-transmission.sh) | Cliente BitTorrent ligero y rápido para descargas eficientes en segundo plano. |
-| **HexChat IRC Client** | [`instalar-hexchat.sh`](./instalar-hexchat.sh) | Cliente IRC gráfico clásico, altamente personalizable y ligero. |
-| **Joplin Secure Notes** | [`instalar-joplin.sh`](./instalar-joplin.sh) | Aplicación de notas y listas de tareas cifradas de extremo a extremo. |
+| **Element** | [`instalar-element.sh`](./instalar-element.sh) | *(Secure collaboration and messaging app built on the decentralized Matrix open network)* |
+| **FileZilla** | [`instalar-filezilla.sh`](./instalar-filezilla.sh) | *(The free FTP solution - Fast and reliable client supporting FTP, FTPS and SFTP)* |
+| **HexChat** | [`instalar-hexchat.sh`](./instalar-hexchat.sh) | *(Easy to use, customizable, multi-network graphical IRC chat client)* |
+| **Joplin** | [`instalar-joplin.sh`](./instalar-joplin.sh) | *(Free, open source note taking and to-do application with end-to-end encryption)* |
+| **Telegram Desktop** | [`instalar-telegram-desktop.sh`](./instalar-telegram-desktop.sh) | *(Fast and secure desktop messaging app, perfectly synced with your mobile phone)* |
+| **Mozilla Thunderbird** | [`instalar-thunderbird.sh`](./instalar-thunderbird.sh) | *(Free and open-source email, calendar, newsfeeds and contacts client)* |
+| **Transmission** | [`instalar-transmission.sh`](./instalar-transmission.sh) | *(A fast, easy, and free BitTorrent client with GTK desktop interface)* |
+| **WebCord** | [`instalar-webcord.sh`](./instalar-webcord.sh) | *(A Discord and Fosscord client implemented using Electron with privacy hardening)* |

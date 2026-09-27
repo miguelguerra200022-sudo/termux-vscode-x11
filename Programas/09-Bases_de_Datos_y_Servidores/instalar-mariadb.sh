@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: MariaDB (MySQL) Server
+# Nombre: MariaDB
+# Tagline: One of the most popular open source relational database servers, made by MySQL original founders
+# Instalador: MariaDB (One of the most popular open source relational database servers, made by MySQL original founders)
 # Descripción: Servidor de base de datos relacional optimizado para entornos móviles.
 # URL Oficial: https://mariadb.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando MariaDB (MySQL) Server${NC}"
-echo -e "${CYAN}  Servidor de base de datos relacional optimizado para entornos móviles.${NC}"
+echo -e "${GREEN}  📦 Instalando MariaDB${NC}"
+echo -e "${CYAN}  (One of the most popular open source relational database servers, made by MySQL original founders)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

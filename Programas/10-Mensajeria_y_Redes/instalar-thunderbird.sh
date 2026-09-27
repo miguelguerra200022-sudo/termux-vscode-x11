@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Mozilla Thunderbird
+# Nombre: Mozilla Thunderbird
+# Tagline: Free and open-source email, calendar, newsfeeds and contacts client
+# Instalador: Mozilla Thunderbird (Free and open-source email, calendar, newsfeeds and contacts client)
 # Descripción: Cliente completo de correo electrónico, calendarios y gestión de tareas.
 # URL Oficial: https://www.thunderbird.net
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Mozilla Thunderbird${NC}"
-echo -e "${CYAN}  Cliente completo de correo electrónico, calendarios y gestión de tareas.${NC}"
+echo -e "${CYAN}  (Free and open-source email, calendar, newsfeeds and contacts client)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete thunderbird...${NC}"

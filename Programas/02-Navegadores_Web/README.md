@@ -1,16 +1,16 @@
 # Categoría: 02-Navegadores Web
 
-Esta carpeta contiene los instaladores optimizados para Termux y Termux:X11 de esta categoría.
+Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
 
-| Programa | Instalador | Descripción |
+| Programa | Instalador | Descripción Oficial (Tagline) |
 | :--- | :--- | :--- |
-| **Zen Browser** | [`instalar-zen-browser.sh`](./instalar-zen-browser.sh) | Navegador web moderno centrado en privacidad, diseño y pestañas verticales. |
-| **Chromium (Termux:X11)** | [`instalar-chromium.sh`](./instalar-chromium.sh) | Navegador web de código abierto con aceleración y motor Blink. |
-| **Mozilla Firefox ESR** | [`instalar-firefox.sh`](./instalar-firefox.sh) | Navegador web de soporte extendido con renderizado gráfico para X11. |
-| **Thorium Browser** | [`instalar-thorium.sh`](./instalar-thorium.sh) | Navegador hiper-optimizado para máxima velocidad de compilación y carga. |
-| **Floorp Browser** | [`instalar-floorp.sh`](./instalar-floorp.sh) | Navegador japonés basado en Firefox con extrema personalización. |
-| **LibreWolf** | [`instalar-librewolf.sh`](./instalar-librewolf.sh) | Navegador web enfocado en privacidad sin telemetría ni rastreo. |
-| **Midori Web Browser** | [`instalar-midori.sh`](./instalar-midori.sh) | Navegador ultra-ligero basado en WebKitGTK con mínimo consumo de RAM. |
-| **BadWolf Browser** | [`instalar-badwolf.sh`](./instalar-badwolf.sh) | Navegador minimalista enfocado en privacidad y aislamiento estricto. |
-| **Dillo Browser** | [`instalar-dillo.sh`](./instalar-dillo.sh) | Navegador gráfico ultra-rápido que consume menos de 20 MB de memoria RAM. |
-| **Links2 (Modo Gráfico)** | [`instalar-links2.sh`](./instalar-links2.sh) | Navegador web ligero con soporte gráfico directo en pantalla X11. |
+| **BadWolf** | [`instalar-badwolf.sh`](./instalar-badwolf.sh) | *(Minimalist and privacy-oriented WebKitGTK+ browser with strict isolation)* |
+| **Chromium** | [`instalar-chromium.sh`](./instalar-chromium.sh) | *(The open-source browser project building a safer, faster way to experience the web)* |
+| **Dillo** | [`instalar-dillo.sh`](./instalar-dillo.sh) | *(Multi-platform graphical web browser known for its speed and tiny memory footprint)* |
+| **Mozilla Firefox** | [`instalar-firefox.sh`](./instalar-firefox.sh) | *(The independent, people-first browser committed to privacy and open web standards)* |
+| **Floorp** | [`instalar-floorp.sh`](./instalar-floorp.sh) | *(The most customizable and privacy-focused Firefox-based browser from Japan)* |
+| **LibreWolf** | [`instalar-librewolf.sh`](./instalar-librewolf.sh) | *(A custom and independent version of Firefox focused on privacy, security and freedom)* |
+| **Links2** | [`instalar-links2.sh`](./instalar-links2.sh) | *(Fast lightweight web browser with native graphical and text mode support)* |
+| **Midori** | [`instalar-midori.sh`](./instalar-midori.sh) | *(Lightweight, fast and secure web browser based on WebKitGTK)* |
+| **Thorium** | [`instalar-thorium.sh`](./instalar-thorium.sh) | *(The fastest browser on Earth - Compiler-optimized Chromium fork for maximum speed)* |
+| **Zen Browser** | [`instalar-zen-browser.sh`](./instalar-zen-browser.sh) | *(Experience tranquility while browsing the web - Fast, private and beautiful)* |

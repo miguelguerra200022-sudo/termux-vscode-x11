@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: FreeCAD 3D
+# Nombre: FreeCAD
+# Tagline: Your own 3D parametric modeler for CAD, MCAD, CAx, CAE and engineering
+# Instalador: FreeCAD (Your own 3D parametric modeler for CAD, MCAD, CAx, CAE and engineering)
 # Descripción: Modelador 3D paramétrico para diseño mecánico, CAD e ingeniería.
 # URL Oficial: https://www.freecad.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando FreeCAD 3D${NC}"
-echo -e "${CYAN}  Modelador 3D paramétrico para diseño mecánico, CAD e ingeniería.${NC}"
+echo -e "${GREEN}  📦 Instalando FreeCAD${NC}"
+echo -e "${CYAN}  (Your own 3D parametric modeler for CAD, MCAD, CAx, CAE and engineering)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

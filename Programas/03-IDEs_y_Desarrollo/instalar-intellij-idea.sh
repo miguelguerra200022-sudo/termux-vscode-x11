@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: IntelliJ IDEA Community
+# Nombre: IntelliJ IDEA
+# Tagline: The leading Java and Kotlin IDE for professional enterprise developers by JetBrains
+# Instalador: IntelliJ IDEA (The leading Java and Kotlin IDE for professional enterprise developers by JetBrains)
 # Descripción: IDE profesional para desarrollo en Java, Kotlin y backend.
 # URL Oficial: https://www.jetbrains.com/idea
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando IntelliJ IDEA Community${NC}"
-echo -e "${CYAN}  IDE profesional para desarrollo en Java, Kotlin y backend.${NC}"
+echo -e "${GREEN}  📦 Instalando IntelliJ IDEA${NC}"
+echo -e "${CYAN}  (The leading Java and Kotlin IDE for professional enterprise developers by JetBrains)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

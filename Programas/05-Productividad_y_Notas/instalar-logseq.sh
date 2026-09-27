@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Logseq Privacy-first
+# Nombre: Logseq
+# Tagline: A privacy-first, open-source platform for connected knowledge management and notes
+# Instalador: Logseq (A privacy-first, open-source platform for connected knowledge management and notes)
 # Descripción: Plataforma de pensamiento reflexivo basada en grafos locales.
 # URL Oficial: https://logseq.com
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Logseq Privacy-first${NC}"
-echo -e "${CYAN}  Plataforma de pensamiento reflexivo basada en grafos locales.${NC}"
+echo -e "${GREEN}  📦 Instalando Logseq${NC}"
+echo -e "${CYAN}  (A privacy-first, open-source platform for connected knowledge management and notes)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

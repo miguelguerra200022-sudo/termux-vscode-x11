@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Aircrack-ng Suite
+# Nombre: Aircrack-ng
+# Tagline: Complete suite of tools to assess WiFi network security and packet capture
+# Instalador: Aircrack-ng (Complete suite of tools to assess WiFi network security and packet capture)
 # Descripción: Herramientas de evaluación y auditoría de seguridad para redes inalámbricas.
 # URL Oficial: https://www.aircrack-ng.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Aircrack-ng Suite${NC}"
-echo -e "${CYAN}  Herramientas de evaluación y auditoría de seguridad para redes inalámbricas.${NC}"
+echo -e "${GREEN}  📦 Instalando Aircrack-ng${NC}"
+echo -e "${CYAN}  (Complete suite of tools to assess WiFi network security and packet capture)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

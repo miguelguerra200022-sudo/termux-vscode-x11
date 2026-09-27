@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: SQLite Engine
+# Nombre: SQLite
+# Tagline: Small, fast, self-contained, high-reliability, full-featured SQL database engine
+# Instalador: SQLite (Small, fast, self-contained, high-reliability, full-featured SQL database engine)
 # Descripción: Motor de base de datos relacional ligera embebida sin servidor.
 # URL Oficial: https://www.sqlite.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando SQLite Engine${NC}"
-echo -e "${CYAN}  Motor de base de datos relacional ligera embebida sin servidor.${NC}"
+echo -e "${GREEN}  📦 Instalando SQLite${NC}"
+echo -e "${CYAN}  (Small, fast, self-contained, high-reliability, full-featured SQL database engine)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

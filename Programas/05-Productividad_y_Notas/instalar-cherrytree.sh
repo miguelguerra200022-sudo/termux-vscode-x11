@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: CherryTree Hierarchical Notes
+# Nombre: CherryTree
+# Tagline: A hierarchical note taking application featuring rich text and syntax highlighting
+# Instalador: CherryTree (A hierarchical note taking application featuring rich text and syntax highlighting)
 # Descripción: Organizador jerárquico de notas con resaltado de código y cifrado.
 # URL Oficial: https://www.giuspen.net/cherrytree/
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando CherryTree Hierarchical Notes${NC}"
-echo -e "${CYAN}  Organizador jerárquico de notas con resaltado de código y cifrado.${NC}"
+echo -e "${GREEN}  📦 Instalando CherryTree${NC}"
+echo -e "${CYAN}  (A hierarchical note taking application featuring rich text and syntax highlighting)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete cherrytree...${NC}"

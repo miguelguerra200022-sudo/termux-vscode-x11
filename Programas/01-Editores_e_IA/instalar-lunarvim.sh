@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: LunarVim
+# Nombre: LunarVim
+# Tagline: An IDE layer for Neovim with sane defaults, autocompletion and LSP preconfigured
+# Instalador: LunarVim (An IDE layer for Neovim with sane defaults, autocompletion and LSP preconfigured)
 # Descripción: Configuración completa tipo IDE preconfigurada para Neovim.
 # URL Oficial: https://www.lunarvim.org
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando LunarVim${NC}"
-echo -e "${CYAN}  Configuración completa tipo IDE preconfigurada para Neovim.${NC}"
+echo -e "${CYAN}  (An IDE layer for Neovim with sane defaults, autocompletion and LSP preconfigured)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias base (Neovim, Git, Node, Python, Ripper)...${NC}"

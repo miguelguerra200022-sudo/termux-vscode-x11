@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Alacritty GPU Terminal
+# Nombre: Alacritty
+# Tagline: A fast, cross-platform, OpenGL-accelerated terminal emulator
+# Instalador: Alacritty (A fast, cross-platform, OpenGL-accelerated terminal emulator)
 # Descripción: Emulador de terminal ultra-rápido acelerado por GPU escrito en Rust.
 # URL Oficial: https://alacritty.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Alacritty GPU Terminal${NC}"
-echo -e "${CYAN}  Emulador de terminal ultra-rápido acelerado por GPU escrito en Rust.${NC}"
+echo -e "${GREEN}  📦 Instalando Alacritty${NC}"
+echo -e "${CYAN}  (A fast, cross-platform, OpenGL-accelerated terminal emulator)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete alacritty...${NC}"

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Neovim
+# Nombre: Neovim
+# Tagline: Vim-fork focused on extensibility, Lua scripting and native LSP
+# Instalador: Neovim (Vim-fork focused on extensibility, Lua scripting and native LSP)
 # Descripción: Editor de texto moderno basado en Vim con soporte Lua y LSP nativo.
 # URL Oficial: https://neovim.io
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Neovim${NC}"
-echo -e "${CYAN}  Editor de texto moderno basado en Vim con soporte Lua y LSP nativo.${NC}"
+echo -e "${CYAN}  (Vim-fork focused on extensibility, Lua scripting and native LSP)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

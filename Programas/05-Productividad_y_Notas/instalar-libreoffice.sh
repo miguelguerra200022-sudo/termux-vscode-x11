@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: LibreOffice Suite
+# Nombre: LibreOffice
+# Tagline: The free and powerful office suite for word processing, spreadsheets and presentations
+# Instalador: LibreOffice (The free and powerful office suite for word processing, spreadsheets and presentations)
 # Descripción: Suite ofimática completa: Writer (Word), Calc (Excel), Impress.
 # URL Oficial: https://www.libreoffice.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando LibreOffice Suite${NC}"
-echo -e "${CYAN}  Suite ofimática completa: Writer (Word), Calc (Excel), Impress.${NC}"
+echo -e "${GREEN}  📦 Instalando LibreOffice${NC}"
+echo -e "${CYAN}  (The free and powerful office suite for word processing, spreadsheets and presentations)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

@@ -1,16 +1,16 @@
 # Categoría: 08-Ciberseguridad y Redes
 
-Esta carpeta contiene los instaladores optimizados para Termux y Termux:X11 de esta categoría.
+Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
 
-| Programa | Instalador | Descripción |
+| Programa | Instalador | Descripción Oficial (Tagline) |
 | :--- | :--- | :--- |
-| **Wireshark Packet Analyzer** | [`instalar-wireshark.sh`](./instalar-wireshark.sh) | Analizador de protocolos de red e inspección profunda de paquetes en X11. |
-| **Burp Suite Community** | [`instalar-burpsuite.sh`](./instalar-burpsuite.sh) | Plataforma de pruebas de seguridad y análisis de aplicaciones web. |
-| **Nmap Network Scanner** | [`instalar-nmap.sh`](./instalar-nmap.sh) | Escáner de seguridad para exploración de redes y auditoría de puertos. |
-| **Metasploit Framework** | [`instalar-metasploit.sh`](./instalar-metasploit.sh) | Plataforma avanzada de pruebas de penetración y explotación ética. |
-| **Aircrack-ng Suite** | [`instalar-aircrack-ng.sh`](./instalar-aircrack-ng.sh) | Herramientas de evaluación y auditoría de seguridad para redes inalámbricas. |
-| **Bettercap Framework** | [`instalar-bettercap.sh`](./instalar-bettercap.sh) | Herramienta completa para ataques Man-in-the-Middle y redes inalámbricas. |
-| **SQLmap Injection Tool** | [`instalar-sqlmap.sh`](./instalar-sqlmap.sh) | Herramienta de detección y explotación automática de inyecciones SQL. |
-| **John the Ripper** | [`instalar-john.sh`](./instalar-john.sh) | Auditor de seguridad y descifrado de contraseñas mediante hashes. |
-| **THC-Hydra Network Logon Cracker** | [`instalar-hydra.sh`](./instalar-hydra.sh) | Herramienta rápida de prueba de fuerza bruta para protocolos de red. |
-| **Ettercap Network Interception** | [`instalar-ettercap.sh`](./instalar-ettercap.sh) | Suite integral para interceptación de tráfico y filtrado de contenido en red. |
+| **Aircrack-ng** | [`instalar-aircrack-ng.sh`](./instalar-aircrack-ng.sh) | *(Complete suite of tools to assess WiFi network security and packet capture)* |
+| **Bettercap** | [`instalar-bettercap.sh`](./instalar-bettercap.sh) | *(The Swiss Army knife for 802.11, BLE, IPv4 and IPv6 network reconnaissance and MITM)* |
+| **Burp Suite** | [`instalar-burpsuite.sh`](./instalar-burpsuite.sh) | *(The industry standard web application security testing toolkit by PortSwigger)* |
+| **Ettercap** | [`instalar-ettercap.sh`](./instalar-ettercap.sh) | *(Comprehensive suite for man-in-the-middle attacks, sniffing and live filtering on LAN)* |
+| **THC-Hydra** | [`instalar-hydra.sh`](./instalar-hydra.sh) | *(Very fast network logon cracker supporting numerous remote authentication protocols)* |
+| **John the Ripper** | [`instalar-john.sh`](./instalar-john.sh) | *(Fast password cracker and hash security auditing tool)* |
+| **Metasploit** | [`instalar-metasploit.sh`](./instalar-metasploit.sh) | *(The world's most used penetration testing and exploit framework by Rapid7)* |
+| **Nmap** | [`instalar-nmap.sh`](./instalar-nmap.sh) | *(Free and open source utility for network discovery, port scanning and security auditing)* |
+| **SQLmap** | [`instalar-sqlmap.sh`](./instalar-sqlmap.sh) | *(Automatic SQL injection and database takeover penetration testing tool)* |
+| **Wireshark** | [`instalar-wireshark.sh`](./instalar-wireshark.sh) | *(The world's foremost and widely-used network protocol analyzer)* |

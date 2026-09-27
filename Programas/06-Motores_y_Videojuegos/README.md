@@ -1,15 +1,15 @@
 # Categoría: 06-Motores y Videojuegos
 
-Esta carpeta contiene los instaladores optimizados para Termux y Termux:X11 de esta categoría.
+Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
 
-| Programa | Instalador | Descripción |
+| Programa | Instalador | Descripción Oficial (Tagline) |
 | :--- | :--- | :--- |
-| **Godot Engine 3.x** | [`instalar-godot3.sh`](./instalar-godot3.sh) | Motor de videojuegos 2D y 3D ligero optimizado para dispositivos móviles. |
-| **Godot Engine 4.x** | [`instalar-godot4.sh`](./instalar-godot4.sh) | Motor de nueva generación con renderizado moderno y GDScript 2.0. |
-| **LÖVE (Love2D)** | [`instalar-love2d.sh`](./instalar-love2d.sh) | Framework para desarrollo rápido de videojuegos 2D con lenguaje Lua. |
-| **PICO-8 Fantasy Console** | [`instalar-pico8.sh`](./instalar-pico8.sh) | Fantasía de consola para diseño, música y programación de juegos pixel-art. |
-| **TIC-80 Tiny Computer** | [`instalar-tic80.sh`](./instalar-tic80.sh) | Computadora de fantasía open-source con JS, Lua, Python y Ruby. |
-| **Raylib Game Library** | [`instalar-raylib.sh`](./instalar-raylib.sh) | Biblioteca para programación de videojuegos en C/C++ y herramientas. |
-| **Tiled Map Editor** | [`instalar-tiled.sh`](./instalar-tiled.sh) | Editor profesional de mapas y niveles basados en mosaicos/tiles. |
-| **LibreSprite Pixel Art** | [`instalar-libresprite.sh`](./instalar-libresprite.sh) | Editor gráfico de pixel-art y animación cuadro a cuadro para videojuegos. |
-| **Defold Game Engine** | [`instalar-defold.sh`](./instalar-defold.sh) | Motor de juegos 2D ultra-ligero enfocado en rendimiento y portabilidad. |
+| **Defold** | [`instalar-defold.sh`](./instalar-defold.sh) | *(The ultimate game engine for truly cross-platform 2D web and mobile games)* |
+| **Godot 3** | [`instalar-godot3.sh`](./instalar-godot3.sh) | *(The multi-platform 2D and 3D game engine offering huge flexibility and fast workflow)* |
+| **Godot 4** | [`instalar-godot4.sh`](./instalar-godot4.sh) | *(The game engine you have been waiting for - Next-gen Vulkan rendering, physics and GDScript)* |
+| **LibreSprite** | [`instalar-libresprite.sh`](./instalar-libresprite.sh) | *(Animated sprite editor and pixel art tool - Free community fork of Aseprite)* |
+| **LÖVE (Love2D)** | [`instalar-love2d.sh`](./instalar-love2d.sh) | *(An awesome framework you can use to make 2D games in Lua)* |
+| **PICO-8** | [`instalar-pico8.sh`](./instalar-pico8.sh) | *(A fantasy console for making, sharing and playing tiny games and chiptune music)* |
+| **Raylib** | [`instalar-raylib.sh`](./instalar-raylib.sh) | *(A simple and easy-to-use library to enjoy videogames programming in C/C++)* |
+| **TIC-80** | [`instalar-tic80.sh`](./instalar-tic80.sh) | *(A tiny computer which you can use to make, play and share tiny games in Lua, JS and Python)* |
+| **Tiled** | [`instalar-tiled.sh`](./instalar-tiled.sh) | *(A flexible and easy-to-use 2D level and tilemap editor)* |

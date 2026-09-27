@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Ettercap Network Interception
+# Nombre: Ettercap
+# Tagline: Comprehensive suite for man-in-the-middle attacks, sniffing and live filtering on LAN
+# Instalador: Ettercap (Comprehensive suite for man-in-the-middle attacks, sniffing and live filtering on LAN)
 # Descripción: Suite integral para interceptación de tráfico y filtrado de contenido en red.
 # URL Oficial: https://www.ettercap-project.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Ettercap Network Interception${NC}"
-echo -e "${CYAN}  Suite integral para interceptación de tráfico y filtrado de contenido en red.${NC}"
+echo -e "${GREEN}  📦 Instalando Ettercap${NC}"
+echo -e "${CYAN}  (Comprehensive suite for man-in-the-middle attacks, sniffing and live filtering on LAN)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

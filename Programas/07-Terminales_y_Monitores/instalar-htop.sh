@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Htop Process Viewer
+# Nombre: Htop
+# Tagline: An interactive process viewer and system monitor for Unix systems
+# Instalador: Htop (An interactive process viewer and system monitor for Unix systems)
 # Descripción: Visor interactivo clásico de procesos y árbol de tareas del sistema.
 # URL Oficial: https://htop.dev
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Htop Process Viewer${NC}"
-echo -e "${CYAN}  Visor interactivo clásico de procesos y árbol de tareas del sistema.${NC}"
+echo -e "${GREEN}  📦 Instalando Htop${NC}"
+echo -e "${CYAN}  (An interactive process viewer and system monitor for Unix systems)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: DBeaver Universal Database Manager
+# Nombre: DBeaver
+# Tagline: Free multi-platform database tool for developers, database administrators and analysts
+# Instalador: DBeaver (Free multi-platform database tool for developers, database administrators and analysts)
 # Descripción: Administrador visual universal de bases de datos relacionales y NoSQL.
 # URL Oficial: https://dbeaver.io
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando DBeaver Universal Database Manager${NC}"
-echo -e "${CYAN}  Administrador visual universal de bases de datos relacionales y NoSQL.${NC}"
+echo -e "${GREEN}  📦 Instalando DBeaver${NC}"
+echo -e "${CYAN}  (Free multi-platform database tool for developers, database administrators and analysts)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

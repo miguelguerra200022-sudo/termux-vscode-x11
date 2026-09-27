@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Micro Text Editor
+# Nombre: Micro
+# Tagline: A modern and intuitive terminal-based text editor with full mouse support
+# Instalador: Micro (A modern and intuitive terminal-based text editor with full mouse support)
 # Descripción: Editor de terminal intuitivo con soporte táctil de ratón y atajos estándar.
 # URL Oficial: https://micro-editor.github.io
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Micro Text Editor${NC}"
-echo -e "${CYAN}  Editor de terminal intuitivo con soporte táctil de ratón y atajos estándar.${NC}"
+echo -e "${GREEN}  📦 Instalando Micro${NC}"
+echo -e "${CYAN}  (A modern and intuitive terminal-based text editor with full mouse support)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

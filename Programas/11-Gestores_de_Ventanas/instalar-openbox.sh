@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Openbox Window Manager
+# Nombre: Openbox
+# Tagline: Highly configurable, next generation window manager with extensive standards support
+# Instalador: Openbox (Highly configurable, next generation window manager with extensive standards support)
 # Descripción: El gestor de ventanas ultra-ligero que usa el sistema por defecto (3MB RAM).
 # URL Oficial: http://openbox.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Openbox Window Manager${NC}"
-echo -e "${CYAN}  El gestor de ventanas ultra-ligero que usa el sistema por defecto (3MB RAM).${NC}"
+echo -e "${GREEN}  📦 Instalando Openbox${NC}"
+echo -e "${CYAN}  (Highly configurable, next generation window manager with extensive standards support)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete openbox obconf...${NC}"

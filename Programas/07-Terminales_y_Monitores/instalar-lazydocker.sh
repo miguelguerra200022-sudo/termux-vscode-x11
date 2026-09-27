@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Lazydocker Container TUI
+# Nombre: Lazydocker
+# Tagline: The lazier way to manage everything - A simple terminal UI for docker containers
+# Instalador: Lazydocker (The lazier way to manage everything - A simple terminal UI for docker containers)
 # Descripción: Interfaz de consola interactiva para administrar contenedores y volúmenes.
 # URL Oficial: https://github.com/jesseduffield/lazydocker
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Lazydocker Container TUI${NC}"
-echo -e "${CYAN}  Interfaz de consola interactiva para administrar contenedores y volúmenes.${NC}"
+echo -e "${GREEN}  📦 Instalando Lazydocker${NC}"
+echo -e "${CYAN}  (The lazier way to manage everything - A simple terminal UI for docker containers)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

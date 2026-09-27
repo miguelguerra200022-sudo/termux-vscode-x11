@@ -1,16 +1,16 @@
 # Categoría: 05-Productividad y Notas
 
-Esta carpeta contiene los instaladores optimizados para Termux y Termux:X11 de esta categoría.
+Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
 
-| Programa | Instalador | Descripción |
+| Programa | Instalador | Descripción Oficial (Tagline) |
 | :--- | :--- | :--- |
-| **Obsidian Markdown** | [`instalar-obsidian.sh`](./instalar-obsidian.sh) | Base de conocimiento personal y red de notas Markdown enlazadas. |
-| **Logseq Privacy-first** | [`instalar-logseq.sh`](./instalar-logseq.sh) | Plataforma de pensamiento reflexivo basada en grafos locales. |
-| **LibreOffice Suite** | [`instalar-libreoffice.sh`](./instalar-libreoffice.sh) | Suite ofimática completa: Writer (Word), Calc (Excel), Impress. |
-| **Zettlr Academic Editor** | [`instalar-zettlr.sh`](./instalar-zettlr.sh) | Editor Markdown académico con gestión bibliográfica Zotero y LaTeX. |
-| **CherryTree Hierarchical Notes** | [`instalar-cherrytree.sh`](./instalar-cherrytree.sh) | Organizador jerárquico de notas con resaltado de código y cifrado. |
-| **Foliate E-Book Reader** | [`instalar-foliate.sh`](./instalar-foliate.sh) | Lector moderno de libros digitales (EPUB, PDF, MOBI, CBR) para X11. |
-| **Evince Document Viewer** | [`instalar-evince.sh`](./instalar-evince.sh) | Visor de documentos PDF, PostScript y cómics rápido y ligero. |
-| **Xournal++ Note Taking** | [`instalar-xournalpp.sh`](./instalar-xournalpp.sh) | Cuaderno digital para toma de notas manuscritas y anotación en PDFs. |
-| **MarkText Distraction-Free** | [`instalar-marktext.sh`](./instalar-marktext.sh) | Editor Markdown de diseño minimalista con previsualización en vivo. |
-| **Draw.io Desktop** | [`instalar-drawio.sh`](./instalar-drawio.sh) | Herramienta de diagramas de arquitectura, flujos de datos y mapas. |
+| **CherryTree** | [`instalar-cherrytree.sh`](./instalar-cherrytree.sh) | *(A hierarchical note taking application featuring rich text and syntax highlighting)* |
+| **Draw.io** | [`instalar-drawio.sh`](./instalar-drawio.sh) | *(Security-first diagramming for teams - Flowcharts, network diagrams, and system architecture)* |
+| **Evince** | [`instalar-evince.sh`](./instalar-evince.sh) | *(A document viewer for multiple document formats including PDF and PostScript)* |
+| **Foliate** | [`instalar-foliate.sh`](./instalar-foliate.sh) | *(A simple and modern eBook viewer for Linux desktops with clean typography)* |
+| **LibreOffice** | [`instalar-libreoffice.sh`](./instalar-libreoffice.sh) | *(The free and powerful office suite for word processing, spreadsheets and presentations)* |
+| **Logseq** | [`instalar-logseq.sh`](./instalar-logseq.sh) | *(A privacy-first, open-source platform for connected knowledge management and notes)* |
+| **MarkText** | [`instalar-marktext.sh`](./instalar-marktext.sh) | *(Simple and elegant open-source Markdown editor focused on speed and usability)* |
+| **Obsidian** | [`instalar-obsidian.sh`](./instalar-obsidian.sh) | *(Sharpen your thinking - The private and flexible writing app that adapts to how you think)* |
+| **Xournal++** | [`instalar-xournalpp.sh`](./instalar-xournalpp.sh) | *(Handwriting notetaking and PDF annotation software with stylus and touchscreen support)* |
+| **Zettlr** | [`instalar-zettlr.sh`](./instalar-zettlr.sh) | *(A supercharged markdown editor for academic research and note-taking)* |

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: MongoDB NoSQL Engine
+# Nombre: MongoDB
+# Tagline: The leading modern, general purpose document database platform
+# Instalador: MongoDB (The leading modern, general purpose document database platform)
 # Descripción: Base de datos basada en documentos para aplicaciones modernas.
 # URL Oficial: https://www.mongodb.com
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando MongoDB NoSQL Engine${NC}"
-echo -e "${CYAN}  Base de datos basada en documentos para aplicaciones modernas.${NC}"
+echo -e "${GREEN}  📦 Instalando MongoDB${NC}"
+echo -e "${CYAN}  (The leading modern, general purpose document database platform)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Configurando motor proot-distro para aplicaciones de escritorio pesadas...${NC}"

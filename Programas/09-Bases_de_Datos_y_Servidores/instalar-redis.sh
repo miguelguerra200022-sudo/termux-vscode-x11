@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Redis In-Memory Store
+# Nombre: Redis
+# Tagline: The open source, in-memory data store used by millions as database, cache and message broker
+# Instalador: Redis (The open source, in-memory data store used by millions as database, cache and message broker)
 # Descripción: Almacén en memoria de clave-valor de alta velocidad para caché y colas.
 # URL Oficial: https://redis.io
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Redis In-Memory Store${NC}"
-echo -e "${CYAN}  Almacén en memoria de clave-valor de alta velocidad para caché y colas.${NC}"
+echo -e "${GREEN}  📦 Instalando Redis${NC}"
+echo -e "${CYAN}  (The open source, in-memory data store used by millions as database, cache and message broker)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

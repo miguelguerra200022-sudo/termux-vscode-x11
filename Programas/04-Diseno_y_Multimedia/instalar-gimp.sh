@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: GIMP (GNU Image Manipulation Program)
+# Nombre: GIMP
+# Tagline: The Free & Open Source Image Editor for photo retouching and graphic artwork
+# Instalador: GIMP (The Free & Open Source Image Editor for photo retouching and graphic artwork)
 # Descripción: Editor avanzado de imágenes, retoque fotográfico y pintura digital.
 # URL Oficial: https://www.gimp.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando GIMP (GNU Image Manipulation Program)${NC}"
-echo -e "${CYAN}  Editor avanzado de imágenes, retoque fotográfico y pintura digital.${NC}"
+echo -e "${GREEN}  📦 Instalando GIMP${NC}"
+echo -e "${CYAN}  (The Free & Open Source Image Editor for photo retouching and graphic artwork)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete gimp...${NC}"

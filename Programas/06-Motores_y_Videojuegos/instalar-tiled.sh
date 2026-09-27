@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Tiled Map Editor
+# Nombre: Tiled
+# Tagline: A flexible and easy-to-use 2D level and tilemap editor
+# Instalador: Tiled (A flexible and easy-to-use 2D level and tilemap editor)
 # Descripción: Editor profesional de mapas y niveles basados en mosaicos/tiles.
 # URL Oficial: https://www.mapeditor.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Tiled Map Editor${NC}"
-echo -e "${CYAN}  Editor profesional de mapas y niveles basados en mosaicos/tiles.${NC}"
+echo -e "${GREEN}  📦 Instalando Tiled${NC}"
+echo -e "${CYAN}  (A flexible and easy-to-use 2D level and tilemap editor)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete tiled...${NC}"

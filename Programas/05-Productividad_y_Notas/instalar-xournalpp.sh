@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Xournal++ Note Taking
+# Nombre: Xournal++
+# Tagline: Handwriting notetaking and PDF annotation software with stylus and touchscreen support
+# Instalador: Xournal++ (Handwriting notetaking and PDF annotation software with stylus and touchscreen support)
 # Descripción: Cuaderno digital para toma de notas manuscritas y anotación en PDFs.
 # URL Oficial: https://xournalpp.github.io
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Xournal++ Note Taking${NC}"
-echo -e "${CYAN}  Cuaderno digital para toma de notas manuscritas y anotación en PDFs.${NC}"
+echo -e "${GREEN}  📦 Instalando Xournal++${NC}"
+echo -e "${CYAN}  (Handwriting notetaking and PDF annotation software with stylus and touchscreen support)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete xournalpp...${NC}"

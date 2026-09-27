@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: BadWolf Browser
+# Nombre: BadWolf
+# Tagline: Minimalist and privacy-oriented WebKitGTK+ browser with strict isolation
+# Instalador: BadWolf (Minimalist and privacy-oriented WebKitGTK+ browser with strict isolation)
 # Descripción: Navegador minimalista enfocado en privacidad y aislamiento estricto.
 # URL Oficial: https://hacktivis.me/projects/badwolf
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando BadWolf Browser${NC}"
-echo -e "${CYAN}  Navegador minimalista enfocado en privacidad y aislamiento estricto.${NC}"
+echo -e "${GREEN}  📦 Instalando BadWolf${NC}"
+echo -e "${CYAN}  (Minimalist and privacy-oriented WebKitGTK+ browser with strict isolation)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete badwolf...${NC}"

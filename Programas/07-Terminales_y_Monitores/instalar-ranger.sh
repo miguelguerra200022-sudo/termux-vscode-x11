@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Ranger File Manager
+# Nombre: Ranger
+# Tagline: A VIM-inspired console file manager with multi-column Miller columns view
+# Instalador: Ranger (A VIM-inspired console file manager with multi-column Miller columns view)
 # Descripción: Administrador de archivos de consola con atajos Vim y previsualización.
 # URL Oficial: https://ranger.github.io
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Ranger File Manager${NC}"
-echo -e "${CYAN}  Administrador de archivos de consola con atajos Vim y previsualización.${NC}"
+echo -e "${GREEN}  📦 Instalando Ranger${NC}"
+echo -e "${CYAN}  (A VIM-inspired console file manager with multi-column Miller columns view)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

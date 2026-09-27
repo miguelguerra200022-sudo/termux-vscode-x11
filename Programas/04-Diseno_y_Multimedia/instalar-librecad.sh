@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: LibreCAD 2D
+# Nombre: LibreCAD
+# Tagline: Open Source 2D Computer-Aided Design application for technical drafting and blueprints
+# Instalador: LibreCAD (Open Source 2D Computer-Aided Design application for technical drafting and blueprints)
 # Descripción: Sistema CAD 2D ligero para diseño técnico y planos arquitectónicos.
 # URL Oficial: https://librecad.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando LibreCAD 2D${NC}"
-echo -e "${CYAN}  Sistema CAD 2D ligero para diseño técnico y planos arquitectónicos.${NC}"
+echo -e "${GREEN}  📦 Instalando LibreCAD${NC}"
+echo -e "${CYAN}  (Open Source 2D Computer-Aided Design application for technical drafting and blueprints)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete librecad...${NC}"

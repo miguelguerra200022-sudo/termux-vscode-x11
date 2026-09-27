@@ -1,16 +1,16 @@
 # Categoría: 03-IDEs y Desarrollo
 
-Esta carpeta contiene los instaladores optimizados para Termux y Termux:X11 de esta categoría.
+Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
 
-| Programa | Instalador | Descripción |
+| Programa | Instalador | Descripción Oficial (Tagline) |
 | :--- | :--- | :--- |
-| **Android Studio (Mobile)** | [`instalar-android-studio.sh`](./instalar-android-studio.sh) | Entorno de desarrollo oficial para Android en Termux. |
-| **IntelliJ IDEA Community** | [`instalar-intellij-idea.sh`](./instalar-intellij-idea.sh) | IDE profesional para desarrollo en Java, Kotlin y backend. |
-| **PyCharm Community** | [`instalar-pycharm.sh`](./instalar-pycharm.sh) | IDE completo para Python con soporte para virtualenvs y depuración. |
-| **WebStorm (Projector)** | [`instalar-webstorm.sh`](./instalar-webstorm.sh) | Suite especializada en JavaScript, TypeScript, React y Node.js. |
-| **CLion / CodeBlocks** | [`instalar-clion.sh`](./instalar-clion.sh) | IDE para desarrollo profesional en C y C++ con CMake y depurador. |
-| **Eclipse IDE** | [`instalar-eclipse.sh`](./instalar-eclipse.sh) | Plataforma clásica de desarrollo empresarial en Java y C++. |
-| **Geany Fast IDE** | [`instalar-geany.sh`](./instalar-geany.sh) | IDE ultra-ligero en GTK con arranque instantáneo y mínimo consumo de RAM. |
-| **Lazarus IDE (Free Pascal)** | [`instalar-lazarus.sh`](./instalar-lazarus.sh) | Entorno de desarrollo visual con diseñador de interfaces gráficas. |
-| **Bluefish Editor** | [`instalar-bluefish.sh`](./instalar-bluefish.sh) | Editor y entorno de desarrollo orientado a programadores y diseñadores web. |
-| **Arduino IDE** | [`instalar-arduino-ide.sh`](./instalar-arduino-ide.sh) | Suite para programar, compilar y cargar código en microcontroladores. |
+| **Android Studio** | [`instalar-android-studio.sh`](./instalar-android-studio.sh) | *(The official IDE for Android app development by Google)* |
+| **Arduino IDE** | [`instalar-arduino-ide.sh`](./instalar-arduino-ide.sh) | *(The open-source software for writing code and flashing microcontrollers)* |
+| **Bluefish** | [`instalar-bluefish.sh`](./instalar-bluefish.sh) | *(Powerful editor targeted towards experienced programmers and web developers)* |
+| **CLion** | [`instalar-clion.sh`](./instalar-clion.sh) | *(A smart cross-platform IDE for C and C++ development by JetBrains)* |
+| **Eclipse IDE** | [`instalar-eclipse.sh`](./instalar-eclipse.sh) | *(The leading open-source development platform for Java and enterprise solutions)* |
+| **Geany** | [`instalar-geany.sh`](./instalar-geany.sh) | *(A fast and lightweight IDE using GTK with basic integrated development features)* |
+| **IntelliJ IDEA** | [`instalar-intellij-idea.sh`](./instalar-intellij-idea.sh) | *(The leading Java and Kotlin IDE for professional enterprise developers by JetBrains)* |
+| **Lazarus** | [`instalar-lazarus.sh`](./instalar-lazarus.sh) | *(The professional Free Pascal RAD IDE with visual drag-and-drop designer)* |
+| **PyCharm** | [`instalar-pycharm.sh`](./instalar-pycharm.sh) | *(The Python IDE for professional developers by JetBrains)* |
+| **WebStorm** | [`instalar-webstorm.sh`](./instalar-webstorm.sh) | *(The smartest JavaScript and TypeScript IDE by JetBrains)* |

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: LÖVE (Love2D)
+# Nombre: LÖVE (Love2D)
+# Tagline: An awesome framework you can use to make 2D games in Lua
+# Instalador: LÖVE (Love2D) (An awesome framework you can use to make 2D games in Lua)
 # Descripción: Framework para desarrollo rápido de videojuegos 2D con lenguaje Lua.
 # URL Oficial: https://love2d.org
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando LÖVE (Love2D)${NC}"
-echo -e "${CYAN}  Framework para desarrollo rápido de videojuegos 2D con lenguaje Lua.${NC}"
+echo -e "${CYAN}  (An awesome framework you can use to make 2D games in Lua)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete love2d...${NC}"

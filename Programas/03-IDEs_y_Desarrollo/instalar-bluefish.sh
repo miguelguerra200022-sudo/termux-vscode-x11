@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Bluefish Editor
+# Nombre: Bluefish
+# Tagline: Powerful editor targeted towards experienced programmers and web developers
+# Instalador: Bluefish (Powerful editor targeted towards experienced programmers and web developers)
 # Descripción: Editor y entorno de desarrollo orientado a programadores y diseñadores web.
 # URL Oficial: http://bluefish.openoffice.nl
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Bluefish Editor${NC}"
-echo -e "${CYAN}  Editor y entorno de desarrollo orientado a programadores y diseñadores web.${NC}"
+echo -e "${GREEN}  📦 Instalando Bluefish${NC}"
+echo -e "${CYAN}  (Powerful editor targeted towards experienced programmers and web developers)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete bluefish...${NC}"

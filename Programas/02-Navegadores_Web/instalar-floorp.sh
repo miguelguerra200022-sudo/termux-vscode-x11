@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Floorp Browser
+# Nombre: Floorp
+# Tagline: The most customizable and privacy-focused Firefox-based browser from Japan
+# Instalador: Floorp (The most customizable and privacy-focused Firefox-based browser from Japan)
 # Descripción: Navegador japonés basado en Firefox con extrema personalización.
 # URL Oficial: https://floorp.app
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Floorp Browser${NC}"
-echo -e "${CYAN}  Navegador japonés basado en Firefox con extrema personalización.${NC}"
+echo -e "${GREEN}  📦 Instalando Floorp${NC}"
+echo -e "${CYAN}  (The most customizable and privacy-focused Firefox-based browser from Japan)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

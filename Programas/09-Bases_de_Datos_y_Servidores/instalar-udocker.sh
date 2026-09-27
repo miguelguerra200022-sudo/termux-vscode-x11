@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Udocker Container Engine
+# Nombre: Udocker
+# Tagline: A basic user tool to execute simple docker containers in user space without root
+# Instalador: Udocker (A basic user tool to execute simple docker containers in user space without root)
 # Descripción: Ejecución de contenedores tipo Docker en Android sin permisos de root.
 # URL Oficial: https://indigo-dc.github.io/udocker/
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Udocker Container Engine${NC}"
-echo -e "${CYAN}  Ejecución de contenedores tipo Docker en Android sin permisos de root.${NC}"
+echo -e "${GREEN}  📦 Instalando Udocker${NC}"
+echo -e "${CYAN}  (A basic user tool to execute simple docker containers in user space without root)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

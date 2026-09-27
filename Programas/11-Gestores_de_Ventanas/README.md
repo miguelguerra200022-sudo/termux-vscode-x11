@@ -1,12 +1,12 @@
 # Categoría: 11-Gestores de Ventanas
 
-Esta carpeta contiene los instaladores optimizados para Termux y Termux:X11 de esta categoría.
+Instaladores optimizados para Termux y Termux:X11 con nombres reales y descripciones oficiales:
 
-| Programa | Instalador | Descripción |
+| Programa | Instalador | Descripción Oficial (Tagline) |
 | :--- | :--- | :--- |
-| **Openbox Window Manager** | [`instalar-openbox.sh`](./instalar-openbox.sh) | El gestor de ventanas ultra-ligero que usa el sistema por defecto (3MB RAM). |
-| **XFCE4 Desktop Environment** | [`instalar-xfce4.sh`](./instalar-xfce4.sh) | Entorno de escritorio tradicional completo con panel y selector de temas. |
-| **i3 Tiling Window Manager** | [`instalar-i3-wm.sh`](./instalar-i3-wm.sh) | Gestor de ventanas en mosaico automático ideal para programadores por teclado. |
-| **bspwm Tiling Window Manager** | [`instalar-bspwm.sh`](./instalar-bspwm.sh) | Gestor de ventanas en mosaico que representa ventanas como hojas de árbol binario. |
-| **AwesomeWM Window Manager** | [`instalar-awesomewm.sh`](./instalar-awesomewm.sh) | Gestor de ventanas altamente extensible y programable en lenguaje Lua. |
-| **Fluxbox Window Manager** | [`instalar-fluxbox.sh`](./instalar-fluxbox.sh) | Gestor minimalista con agrupación de ventanas en pestañas integradas. |
+| **AwesomeWM** | [`instalar-awesomewm.sh`](./instalar-awesomewm.sh) | *(A highly configurable, next generation framework window manager for X)* |
+| **bspwm** | [`instalar-bspwm.sh`](./instalar-bspwm.sh) | *(A tiling window manager that represents windows as the leaves of a full binary tree)* |
+| **Fluxbox** | [`instalar-fluxbox.sh`](./instalar-fluxbox.sh) | *(Lightweight and highly configurable window manager with built-in tabbed windows)* |
+| **i3wm** | [`instalar-i3-wm.sh`](./instalar-i3-wm.sh) | *(Tiling window manager, primarily targeted at advanced users and developers)* |
+| **Openbox** | [`instalar-openbox.sh`](./instalar-openbox.sh) | *(Highly configurable, next generation window manager with extensive standards support)* |
+| **XFCE4** | [`instalar-xfce4.sh`](./instalar-xfce4.sh) | *(A lightweight desktop environment that aims to be fast and low on system resources)* |

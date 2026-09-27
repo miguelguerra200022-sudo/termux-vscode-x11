@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Yazi Async File Manager
+# Nombre: Yazi
+# Tagline: Blazing fast terminal file manager written in Rust, based on async I/O
+# Instalador: Yazi (Blazing fast terminal file manager written in Rust, based on async I/O)
 # Descripción: Administrador de archivos en terminal escrito en Rust, asíncrono y visual.
 # URL Oficial: https://yazi-rs.github.io
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Yazi Async File Manager${NC}"
-echo -e "${CYAN}  Administrador de archivos en terminal escrito en Rust, asíncrono y visual.${NC}"
+echo -e "${GREEN}  📦 Instalando Yazi${NC}"
+echo -e "${CYAN}  (Blazing fast terminal file manager written in Rust, based on async I/O)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando herramientas Rust y paquete yazi...${NC}"

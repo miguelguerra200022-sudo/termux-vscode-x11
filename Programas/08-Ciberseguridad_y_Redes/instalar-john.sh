@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: John the Ripper
+# Nombre: John the Ripper
+# Tagline: Fast password cracker and hash security auditing tool
+# Instalador: John the Ripper (Fast password cracker and hash security auditing tool)
 # Descripción: Auditor de seguridad y descifrado de contraseñas mediante hashes.
 # URL Oficial: https://www.openwall.com/john/
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando John the Ripper${NC}"
-echo -e "${CYAN}  Auditor de seguridad y descifrado de contraseñas mediante hashes.${NC}"
+echo -e "${CYAN}  (Fast password cracker and hash security auditing tool)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

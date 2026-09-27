@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: THC-Hydra Network Logon Cracker
+# Nombre: THC-Hydra
+# Tagline: Very fast network logon cracker supporting numerous remote authentication protocols
+# Instalador: THC-Hydra (Very fast network logon cracker supporting numerous remote authentication protocols)
 # Descripción: Herramienta rápida de prueba de fuerza bruta para protocolos de red.
 # URL Oficial: https://github.com/vanhauser-thc/thc-hydra
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando THC-Hydra Network Logon Cracker${NC}"
-echo -e "${CYAN}  Herramienta rápida de prueba de fuerza bruta para protocolos de red.${NC}"
+echo -e "${GREEN}  📦 Instalando THC-Hydra${NC}"
+echo -e "${CYAN}  (Very fast network logon cracker supporting numerous remote authentication protocols)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando paquetes requeridos vía pkg...${NC}"

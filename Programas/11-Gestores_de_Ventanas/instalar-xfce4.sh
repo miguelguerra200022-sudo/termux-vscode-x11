@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: XFCE4 Desktop Environment
+# Nombre: XFCE4
+# Tagline: A lightweight desktop environment that aims to be fast and low on system resources
+# Instalador: XFCE4 (A lightweight desktop environment that aims to be fast and low on system resources)
 # Descripción: Entorno de escritorio tradicional completo con panel y selector de temas.
 # URL Oficial: https://www.xfce.org
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando XFCE4 Desktop Environment${NC}"
-echo -e "${CYAN}  Entorno de escritorio tradicional completo con panel y selector de temas.${NC}"
+echo -e "${GREEN}  📦 Instalando XFCE4${NC}"
+echo -e "${CYAN}  (A lightweight desktop environment that aims to be fast and low on system resources)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete xfce4 xfce4-goodies...${NC}"

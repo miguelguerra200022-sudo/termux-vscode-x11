@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Zed Editor
+# Nombre: Zed
+# Tagline: A high-performance, multiplayer code editor from the creators of Atom and Tree-sitter
+# Instalador: Zed (A high-performance, multiplayer code editor from the creators of Atom and Tree-sitter)
 # Descripción: Editor de código ultra-rápido en Rust con colaboración en tiempo real.
 # URL Oficial: https://zed.dev
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Zed Editor${NC}"
-echo -e "${CYAN}  Editor de código ultra-rápido en Rust con colaboración en tiempo real.${NC}"
+echo -e "${GREEN}  📦 Instalando Zed${NC}"
+echo -e "${CYAN}  (A high-performance, multiplayer code editor from the creators of Atom and Tree-sitter)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando herramientas Rust y paquete zed...${NC}"

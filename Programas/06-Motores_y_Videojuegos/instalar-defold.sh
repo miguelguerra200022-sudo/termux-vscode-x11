@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Defold Game Engine
+# Nombre: Defold
+# Tagline: The ultimate game engine for truly cross-platform 2D web and mobile games
+# Instalador: Defold (The ultimate game engine for truly cross-platform 2D web and mobile games)
 # Descripción: Motor de juegos 2D ultra-ligero enfocado en rendimiento y portabilidad.
 # URL Oficial: https://defold.com
 # ==============================================================================
@@ -15,8 +17,8 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  📦 Instalando Defold Game Engine${NC}"
-echo -e "${CYAN}  Motor de juegos 2D ultra-ligero enfocado en rendimiento y portabilidad.${NC}"
+echo -e "${GREEN}  📦 Instalando Defold${NC}"
+echo -e "${CYAN}  (The ultimate game engine for truly cross-platform 2D web and mobile games)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de runtime gráfico y glibc...${NC}"

@@ -2,7 +2,9 @@
 set -e
 
 # ==============================================================================
-# Instalador: Telegram Desktop
+# Nombre: Telegram Desktop
+# Tagline: Fast and secure desktop messaging app, perfectly synced with your mobile phone
+# Instalador: Telegram Desktop (Fast and secure desktop messaging app, perfectly synced with your mobile phone)
 # Descripción: Cliente oficial de mensajería con soporte multimedia y bots en X11.
 # URL Oficial: https://desktop.telegram.org
 # ==============================================================================
@@ -16,7 +18,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${GREEN}  📦 Instalando Telegram Desktop${NC}"
-echo -e "${CYAN}  Cliente oficial de mensajería con soporte multimedia y bots en X11.${NC}"
+echo -e "${CYAN}  (Fast and secure desktop messaging app, perfectly synced with your mobile phone)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete telegram-desktop...${NC}"
