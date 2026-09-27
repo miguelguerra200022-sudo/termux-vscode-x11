@@ -151,6 +151,8 @@ def get_subdirs(path):
 
 def get_key():
     """Lee una tecla o secuencia de escape directamente desde el descriptor del SO sin buffer de Python."""
+    if not sys.stdin.isatty():
+        return sys.stdin.read(1)
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     try:
@@ -375,17 +377,17 @@ def main():
         except Exception:
             pass
 
-    # Cargar fotogramas para el banner interactivo (Opción A2)
-    banner_frames = []
+    # Módulo de animación y banners dinámicos (Opción A2)
+    banner_helper = None
     banner_frame_idx = 0
     try:
-        asset_file = os.path.join(os.environ.get("PREFIX", "/data/data/com.termux/files/usr"), "share/code-stack-sh/assets/ascii/banner_66x10.ans.z")
-        if not os.path.isfile(asset_file):
-            asset_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../assets/ascii/banner_66x10.ans.z")
-        if os.path.isfile(asset_file):
-            import zlib
-            with open(asset_file, "rb") as bf:
-                banner_frames = zlib.decompress(bf.read()).split(b"\x00")
+        import importlib.util
+        cand = shutil.which("code-stack-ascii") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "code-stack-ascii")
+        if cand and os.path.isfile(cand):
+            spec = importlib.util.spec_from_file_location("code_stack_ascii", cand)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            banner_helper = mod
     except Exception:
         pass
 
@@ -479,13 +481,12 @@ def main():
         # Dibujar pantalla limpia
         sys.stdout.write("\033[H\033[J")
         term_size = shutil.get_terminal_size((80, 24))
-        # Banner animado (Opción A2) si hay espacio vertical suficiente (al menos 28 líneas)
-        if banner_frames and term_size.lines >= 28 and cols >= 66:
-            b_raw = banner_frames[banner_frame_idx % len(banner_frames)].decode("utf-8", errors="replace")
+        # Banner animado dinámico (Opción A2) si hay espacio vertical suficiente (al menos 26 líneas)
+        if banner_helper and term_size.lines >= 26 and cols >= 48:
+            b_lines = banner_helper.get_formatted_banner_lines(banner_frame_idx, max_cols=cols, max_rows=term_size.lines)
             banner_frame_idx += 1
-            pad = " " * max(0, (cols - 66) // 2)
-            for bl in b_raw.split("\n"):
-                sys.stdout.write(pad + bl + "\n")
+            for bl in b_lines:
+                sys.stdout.write(bl + "\n")
 
         print(f"{BLUE}╔" + "═" * (cols - 2) + f"╗{NC}")
         active_file = os.path.expanduser("~/.config/termux-vscode/active_identity")

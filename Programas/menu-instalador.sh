@@ -807,8 +807,18 @@ run_main_menu() {
         done
 
         clear
+        # Mostrar banner Matrix ASCII si la terminal tiene al menos 26 líneas de alto
+        local t_lines=$(tput lines 2>/dev/null || echo 24)
+        if [ "$t_lines" -ge 26 ]; then
+            if command -v code-stack-ascii >/dev/null 2>&1; then
+                code-stack-ascii banner 0 2>/dev/null || true
+            elif [ -f "$REPO_DIR/bin/code-stack-ascii" ]; then
+                python3 "$REPO_DIR/bin/code-stack-ascii" banner 0 2>/dev/null || true
+            fi
+        fi
         echo -e "${BLUE}======================================================${NC}"
-        echo -e "${GREEN}  📦 CENTRO DE SOFTWARE Y APLICACIONES (TERMUX / X11)${NC}"
+        echo -e "${GREEN}  📦 CODE STACK SH • CENTRO DE SOFTWARE OFICIAL${NC}"
+        echo -e "${CYAN}     «La libertad de programar sin necesidad de una PC»${NC}"
         echo -e "${BLUE}======================================================${NC}"
         echo ""
         echo -e "Explorar categorías para instalar:"
