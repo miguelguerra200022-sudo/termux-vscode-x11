@@ -23,10 +23,15 @@ mkdir -p "$(dirname "$INSTALLED_REGISTRY")" "$HOME/Desktop"
 run_installer_script() {
     local target_script="$1"
     local target_name="$2"
+    local ascii_runner=""
     if command -v code-stack-ascii >/dev/null 2>&1; then
-        code-stack-ascii run --title "$target_name" -- bash "$target_script"
+        ascii_runner="$(command -v code-stack-ascii)"
     elif [ -f "$REPO_DIR/bin/code-stack-ascii" ]; then
-        python3 "$REPO_DIR/bin/code-stack-ascii" run --title "$target_name" -- bash "$target_script"
+        ascii_runner="$REPO_DIR/bin/code-stack-ascii"
+    fi
+
+    if [ -n "$ascii_runner" ]; then
+        python3 "$ascii_runner" run --title "$target_name" -- bash "$target_script"
     else
         bash "$target_script"
     fi
@@ -812,11 +817,11 @@ run_main_menu() {
         local t_lines=$(tput lines 2>/dev/null || echo 24)
         if [ "$t_lines" -ge 20 ]; then
             if command -v code-stack-ascii >/dev/null 2>&1; then
-                code-stack-ascii banner "$banner_frame" 2>/dev/null || true
+                python3 "$(command -v code-stack-ascii)" banner "$banner_frame" 2>/dev/null || true
             elif [ -f "$REPO_DIR/bin/code-stack-ascii" ]; then
                 python3 "$REPO_DIR/bin/code-stack-ascii" banner "$banner_frame" 2>/dev/null || true
             fi
-            ((banner_frame=(banner_frame+5)%120))
+            ((banner_frame=(banner_frame+4)%120))
         fi
         echo -e "${BLUE}======================================================${NC}"
         echo -e "${GREEN}  📦 CODE STACK SH • CENTRO DE SOFTWARE OFICIAL${NC}"

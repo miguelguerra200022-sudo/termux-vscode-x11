@@ -223,7 +223,7 @@ fi
 
 # 7. Actualizar repositorios e instalar paquetes
 echo -e "${YELLOW}[*] Buscando y actualizando paquetes a su última versión disponible...${NC}"
-PKG_INSTALL_CMD="pkg update -y && pkg upgrade -y && pkg install -y x11-repo && pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 pcmanfm zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff feh"
+PKG_INSTALL_CMD="pkg update -y && pkg upgrade -y && pkg install -y x11-repo && pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 pcmanfm zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff feh mpv"
 
 if [ -f "$SCRIPT_DIR/bin/code-stack-ascii" ]; then
     python3 "$SCRIPT_DIR/bin/code-stack-ascii" run --title "SISTEMA BASE // X11 + OPENBOX + UTILIDADES" -- "$PKG_INSTALL_CMD"

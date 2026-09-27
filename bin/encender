@@ -373,7 +373,7 @@ def main():
                 if os.path.isfile(cand):
                     ascii_bin = cand
             if ascii_bin:
-                subprocess.run([ascii_bin, "intro"], check=False)
+                subprocess.run([sys.executable, ascii_bin, "intro"], check=False)
         except Exception:
             pass
 
@@ -481,7 +481,7 @@ def main():
         # Banner animado dinámico (Opción A2) si hay espacio vertical suficiente (al menos 20 líneas)
         if banner_helper and term_size.lines >= 20 and cols >= 44:
             b_lines = banner_helper.get_formatted_banner_lines(banner_frame_idx, max_cols=cols, max_rows=term_size.lines)
-            banner_frame_idx += 1
+            banner_frame_idx = (banner_frame_idx + 4) % 120
             for bl in b_lines:
                 sys.stdout.write(bl + "\n")
 
