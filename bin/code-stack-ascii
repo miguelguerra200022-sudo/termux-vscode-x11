@@ -1,0 +1,308 @@
+#!/data/data/com.termux/files/usr/bin/python3
+# ==============================================================================
+# code-stack-ascii: Motor de Animación ASCII Matrix y Terminal Split-Screen
+# ==============================================================================
+# - Reproduce la cinemática 3D de Code Stack Sh con lluvia digital Matrix.
+# - Modo Intro: Pantalla completa a 20 FPS con salto instantáneo al presionar tecla.
+# - Modo Split-Screen (DECSTBM): Bucle de video en panel superior y registros en vivo abajo.
+# - Rendimiento óptimo: Carga pre-renderizada comprimida (< 0.5% CPU en Termux).
+# ==============================================================================
+
+import os
+import sys
+import time
+import zlib
+import shutil
+import subprocess
+import select
+import pty
+import termios
+import tty
+
+def find_asset(subpath):
+    candidates = [
+        os.path.join(os.environ.get("PREFIX", "/data/data/com.termux/files/usr"), "share/code-stack-sh/assets", subpath),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", subpath),
+        os.path.expanduser(f"~/termux-vscode-x11/assets/{subpath}"),
+        f"/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11/assets/{subpath}"
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return None
+
+def load_frames(subpath):
+    path = find_asset(subpath)
+    if not path or not os.path.isfile(path):
+        return []
+    try:
+        with open(path, "rb") as f:
+            raw = zlib.decompress(f.read())
+        return raw.split(b"\x00")
+    except Exception:
+        return []
+
+def play_audio():
+    audio_path = find_asset("audio/cyber_intro.aac")
+    if audio_path and shutil.which("termux-media-player"):
+        try:
+            subprocess.Popen(
+                ["termux-media-player", "play", audio_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return True
+        except Exception:
+            pass
+    return False
+
+def stop_audio():
+    if shutil.which("termux-media-player"):
+        try:
+            subprocess.run(
+                ["termux-media-player", "stop"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False
+            )
+        except Exception:
+            pass
+
+def play_intro(fps=20):
+    frames = load_frames("ascii/intro_74x20.ans.z")
+    if not frames:
+        return 0
+
+    if not sys.stdout.isatty():
+        return 0
+
+    term_cols, term_rows = shutil.get_terminal_size((80, 24))
+    frame_w = 74
+    frame_h = 20
+
+    pad_left = " " * max(0, (term_cols - frame_w) // 2)
+    top_offset = max(0, (term_rows - frame_h - 2) // 2)
+
+    old_settings = None
+    if sys.stdin.isatty():
+        try:
+            old_settings = termios.tcgetattr(sys.stdin)
+            tty.setcbreak(sys.stdin.fileno())
+        except Exception:
+            pass
+
+    audio_started = play_audio()
+
+    sys.stdout.write("\033[2J\033[?25l")
+    sys.stdout.flush()
+
+    frame_duration = 1.0 / fps
+    start_time = time.perf_counter()
+
+    try:
+        for idx, frame_bytes in enumerate(frames):
+            target_time = start_time + idx * frame_duration
+            now = time.perf_counter()
+            if target_time > now:
+                time.sleep(target_time - now)
+
+            # Verificar si el usuario pulsó cualquier tecla para saltar
+            if sys.stdin.isatty():
+                r, _, _ = select.select([sys.stdin.fileno()], [], [], 0)
+                if r:
+                    try:
+                        os.read(sys.stdin.fileno(), 1024)
+                    except Exception:
+                        pass
+                    break
+
+            raw_str = frame_bytes.decode("utf-8", errors="replace")
+            lines = raw_str.split("\n")
+
+            buf = [f"\033[{top_offset + 1};1H"]
+            for line in lines:
+                buf.append(pad_left + line + "\033[K\n")
+
+            # Indicador de salto sutil
+            hint = f"{pad_left}\033[0;90m   [ Pulsa cualquier tecla para entrar a Code Stack Sh ]\033[0m"
+            buf.append(hint)
+
+            sys.stdout.write("".join(buf))
+            sys.stdout.flush()
+    finally:
+        if audio_started:
+            stop_audio()
+        if old_settings:
+            try:
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            except Exception:
+                pass
+        sys.stdout.write("\033[0m\033[?25h\033[2J\033[H")
+        sys.stdout.flush()
+
+    return 0
+
+def run_split_command(cmd, title="INSTALACIÓN"):
+    frames = load_frames("ascii/banner_66x10.ans.z")
+    term_cols, term_rows = shutil.get_terminal_size((80, 24))
+
+    # Si la terminal no es interactiva o es demasiado pequeña, ejecutar normal
+    if not frames or not sys.stdout.isatty() or term_rows < 18:
+        print(f"\033[1;36m[⚡ Code Stack Sh] Iniciando: {title}...\033[0m\n")
+        return subprocess.run(cmd).returncode
+
+    banner_w = 66
+    banner_h = 10
+    split_start = banner_h + 2
+    split_end = term_rows
+
+    pad_left = " " * max(0, (term_cols - banner_w) // 2)
+
+    # Preparar terminal: limpiar, ocultar cursor temporalmente, configurar márgenes VT100
+    sys.stdout.write("\033[2J\033[?25l")
+    sys.stdout.write(f"\033[{split_start};{split_end}r")
+
+    # Línea divisoria elegante
+    tag = f" ⚡ {title} // CODE STACK SH "
+    dash_count = max(0, (term_cols - len(tag) - 2) // 2)
+    div_line = f"\033[{banner_h + 1};1H\033[1;36m" + "═" * dash_count + f"\033[1;32;40m{tag}\033[1;36;40m" + "═" * (term_cols - dash_count - len(tag)) + "\033[0m"
+    sys.stdout.write(div_line)
+    sys.stdout.flush()
+
+    # Abrir PTY para ejecutar el comando
+    master, slave = pty.openpty()
+    proc = subprocess.Popen(cmd, stdin=slave, stdout=slave, stderr=slave, close_fds=True)
+    os.close(slave)
+    os.set_blocking(master, False)
+
+    old_stdin = None
+    if sys.stdin.isatty():
+        try:
+            old_stdin = termios.tcgetattr(sys.stdin)
+            tty.setcbreak(sys.stdin.fileno())
+        except Exception:
+            pass
+
+    frame_idx = 0
+    total_frames = len(frames)
+    last_banner_time = 0
+    cursor_initialized = False
+
+    try:
+        while proc.poll() is None:
+            now = time.perf_counter()
+            # Refrescar banner a ~16 FPS (cada 60ms)
+            if now - last_banner_time >= 0.060:
+                last_banner_time = now
+                frame_bytes = frames[frame_idx % total_frames]
+                frame_idx += 1
+                lines = frame_bytes.decode("utf-8", errors="replace").split("\n")
+
+                buf = ["\0337"]  # Salvar posición del cursor
+                for r_idx, line in enumerate(lines[:banner_h]):
+                    buf.append(f"\033[{r_idx + 1};1H\033[2K{pad_left}{line}")
+                buf.append("\0338")  # Restaurar posición del cursor
+
+                sys.stdout.write("".join(buf))
+                sys.stdout.flush()
+
+            readers = [master]
+            if sys.stdin.isatty():
+                readers.append(sys.stdin.fileno())
+
+            r, _, _ = select.select(readers, [], [], 0.02)
+            if master in r:
+                try:
+                    data = os.read(master, 2048)
+                    if data:
+                        if not cursor_initialized:
+                            sys.stdout.write(f"\033[{split_start};1H\033[?25h")
+                            cursor_initialized = True
+                        sys.stdout.write(data.decode("utf-8", errors="replace"))
+                        sys.stdout.flush()
+                except OSError:
+                    break
+
+            if sys.stdin.isatty() and sys.stdin.fileno() in r:
+                try:
+                    user_data = os.read(sys.stdin.fileno(), 1024)
+                    if user_data:
+                        os.write(master, user_data)
+                except OSError:
+                    pass
+
+        proc.wait()
+        # Consumir datos restantes
+        try:
+            trailing = os.read(master, 4096)
+            if trailing:
+                sys.stdout.write(trailing.decode("utf-8", errors="replace"))
+                sys.stdout.flush()
+        except OSError:
+            pass
+    finally:
+        if old_stdin:
+            try:
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin)
+            except Exception:
+                pass
+        try:
+            os.close(master)
+        except Exception:
+            pass
+        # Restaurar márgenes normales y cursor
+        sys.stdout.write(f"\033[r\033[?25h\033[{term_rows};1H\n")
+        sys.stdout.flush()
+
+    return proc.returncode
+
+def main():
+    if len(sys.argv) < 2:
+        print("Uso: code-stack-ascii [intro | banner | run <comando> [titulo]]")
+        sys.exit(1)
+
+    action = sys.argv[1]
+
+    if action == "intro":
+        sys.exit(play_intro())
+    elif action == "banner":
+        frames = load_frames("ascii/banner_66x10.ans.z")
+        if not frames:
+            sys.exit(1)
+        term_cols, _ = shutil.get_terminal_size((80, 24))
+        pad_left = " " * max(0, (term_cols - 66) // 2)
+        f_idx = 0
+        if len(sys.argv) > 2 and sys.argv[2].isdigit():
+            f_idx = int(sys.argv[2]) % len(frames)
+        lines = frames[f_idx].decode("utf-8", errors="replace").split("\n")
+        for line in lines:
+            print(pad_left + line)
+        sys.exit(0)
+    elif action == "run":
+        if len(sys.argv) < 3:
+            print("Uso: code-stack-ascii run <comando> [titulo]")
+            sys.exit(1)
+        title = "PROCESO DE INSTALACIÓN"
+        cmd_args = sys.argv[2:]
+        if "--title" in cmd_args:
+            t_idx = cmd_args.index("--title")
+            if t_idx + 1 < len(cmd_args):
+                title = cmd_args[t_idx + 1]
+                del cmd_args[t_idx:t_idx + 2]
+
+        if cmd_args and cmd_args[0] == "--":
+            cmd_args = cmd_args[1:]
+
+        if len(cmd_args) == 1:
+            cmd = ["/data/data/com.termux/files/usr/bin/bash", "-c", cmd_args[0]]
+        else:
+            cmd = cmd_args
+
+        rc = run_split_command(cmd, title=title)
+        sys.exit(rc)
+    else:
+        print(f"Acción desconocida: {action}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

@@ -16,21 +16,28 @@ RED='\033[0;31m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-echo -e "${BLUE}======================================================${NC}"
-echo -e "${GREEN}  🚀 Instalador de VS Code Nativo + Termux:X11 Pro${NC}"
-echo -e "${CYAN}     (Entorno de Desarrollo Móvil Profesional)${NC}"
-echo -e "${BLUE}======================================================${NC}"
-echo ""
-
 # 1. Verificar entorno Termux
 if [ ! -d "/data/data/com.termux" ]; then
     echo -e "${RED}[!] Error: Este instalador debe ejecutarse dentro de Termux.${NC}"
     exit 1
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # 2. Paso 1 Obligatorio: Instalar utilidades iniciales (curl, openssl, git, python)
 echo -e "${YELLOW}[*] Verificando e instalando utilidades de red y cifrado (curl, git, openssl, python)...${NC}"
 pkg install -y curl openssl git python >/dev/null 2>&1 || true
+
+# 2.1 Lanzar animación cinemática 3D de Code Stack Sh (saltable con cualquier tecla)
+if [ -f "$SCRIPT_DIR/bin/code-stack-ascii" ]; then
+    python3 "$SCRIPT_DIR/bin/code-stack-ascii" intro 2>/dev/null || true
+fi
+
+echo -e "${BLUE}======================================================${NC}"
+echo -e "${GREEN}  🚀 CODE STACK SH • Instalador Oficial del Sistema${NC}"
+echo -e "${CYAN}     «La libertad de programar sin necesidad de una PC»${NC}"
+echo -e "${BLUE}======================================================${NC}"
+echo ""
 
 # 3. Detectar Hardware Seal Inmutable de este celular
 get_hardware_seal() {
@@ -216,14 +223,13 @@ fi
 
 # 7. Actualizar repositorios e instalar paquetes
 echo -e "${YELLOW}[*] Buscando y actualizando paquetes a su última versión disponible...${NC}"
-pkg update -y
-pkg upgrade -y
+PKG_INSTALL_CMD="pkg update -y && pkg upgrade -y && pkg install -y x11-repo && pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 pcmanfm zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff feh"
 
-echo -e "${YELLOW}[*] Habilitando repositorio X11...${NC}"
-pkg install -y x11-repo
-
-echo -e "${YELLOW}[*] Instalando VS Code, Zen Browser, X11, Openbox, Tint2 y utilidades...${NC}"
-pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff feh
+if [ -f "$SCRIPT_DIR/bin/code-stack-ascii" ]; then
+    python3 "$SCRIPT_DIR/bin/code-stack-ascii" run --title "SISTEMA BASE // X11 + OPENBOX + UTILIDADES" -- "$PKG_INSTALL_CMD"
+else
+    eval "$PKG_INSTALL_CMD"
+fi
 
 # 8. Detección Inteligente e Instalación de APKs (X11 y Widget)
 echo -e "${YELLOW}[*] Comprobando complementos gráficos de Android (Termux:X11 y Termux:Widget)...${NC}"
@@ -360,6 +366,8 @@ SCRIPTS=(
     "gitops-sync"
     "desinstalar-vscode"
     "desinstalar"
+    "fetch-app-icon"
+    "code-stack-ascii"
 )
 
 for s in "${SCRIPTS[@]}"; do
@@ -370,6 +378,12 @@ for s in "${SCRIPTS[@]}"; do
     chmod +x "$PREFIX/bin/$s" 2>/dev/null || true
 done
 chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" 2>/dev/null || true
+
+# Copiar activos multimedia y de animación ASCII
+if [ -d "$SCRIPT_DIR/assets" ]; then
+    mkdir -p "$PREFIX/share/code-stack-sh/assets"
+    cp -r "$SCRIPT_DIR/assets/"* "$PREFIX/share/code-stack-sh/assets/" 2>/dev/null || true
+fi
 
 # Enlaces simbólicos de compatibilidad y accesos directos
 ln -sf "$PREFIX/bin/encender" "$PREFIX/bin/vscode" 2>/dev/null || true

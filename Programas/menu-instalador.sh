@@ -18,6 +18,21 @@ INSTALLED_REGISTRY="$HOME/.config/termux-software-center/installed.list"
 mkdir -p "$(dirname "$INSTALLED_REGISTRY")" "$HOME/Desktop"
 
 # ------------------------------------------------------------------------------
+# Ejecutor de instaladores con Split-Screen y animación ASCII Matrix en tiempo real
+# ------------------------------------------------------------------------------
+run_installer_script() {
+    local target_script="$1"
+    local target_name="$2"
+    if command -v code-stack-ascii >/dev/null 2>&1; then
+        code-stack-ascii run --title "$target_name" -- bash "$target_script"
+    elif [ -f "$REPO_DIR/bin/code-stack-ascii" ]; then
+        python3 "$REPO_DIR/bin/code-stack-ascii" run --title "$target_name" -- bash "$target_script"
+    else
+        bash "$target_script"
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # Lector de entrada con soporte nativo para la tecla BORRAR (Backspace) como ATRÁS
 # Envía los mensajes visuales a stderr para que command substitution $(...) capture
 # únicamente la opción seleccionada.
@@ -647,7 +662,7 @@ menu_buscar() {
                         echo ""
                         echo -e "${CYAN}⚡ Reinstalando: ${target_name}...${NC}"
                         echo ""
-                        bash "$target_script"
+                        run_installer_script "$target_script" "$target_name"
                         sync_desktop_launcher "$slug"
                         echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
                         pause_menu "Presiona ENTER o borrar para continuar..."
@@ -658,7 +673,7 @@ menu_buscar() {
                     echo ""
                     echo -e "${CYAN}⚡ Instalando: ${target_name}...${NC}"
                     echo ""
-                    bash "$target_script"
+                    run_installer_script "$target_script" "$target_name"
                     sync_desktop_launcher "$slug"
                     echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
                     echo ""
@@ -754,7 +769,7 @@ menu_categoria() {
                     echo ""
                     echo -e "${CYAN}⚡ Reinstalando: ${target_name}...${NC}"
                     echo ""
-                    bash "$target_script"
+                    run_installer_script "$target_script" "$target_name"
                     sync_desktop_launcher "$slug"
                     echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
                     pause_menu "Presiona ENTER o borrar para continuar..."
@@ -765,7 +780,7 @@ menu_categoria() {
                 echo ""
                 echo -e "${CYAN}⚡ Instalando: ${target_name}...${NC}"
                 echo ""
-                bash "$target_script"
+                run_installer_script "$target_script" "$target_name"
                 sync_desktop_launcher "$slug"
                 echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
                 echo ""
