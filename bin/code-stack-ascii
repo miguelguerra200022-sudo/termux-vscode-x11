@@ -69,27 +69,27 @@ def ansi_truncate(s, max_visible):
 def get_intro_profile(term_cols, term_rows):
     """Selecciona el perfil óptimo de pantalla completa según las dimensiones reales."""
     candidates = [
-        ("ascii/intro_xlarge.ans.z", 96, 27),
-        ("ascii/intro_large.ans.z", 78, 22),
-        ("ascii/intro_medium.ans.z", 62, 17),
-        ("ascii/intro_small.ans.z", 46, 13),
+        ("ascii/intro_xlarge.ans.z", 96, 24),
+        ("ascii/intro_large.ans.z", 82, 20),
+        ("ascii/intro_medium.ans.z", 68, 16),
+        ("ascii/intro_small.ans.z", 52, 13),
     ]
     for name, w, h in candidates:
         if term_cols >= w + 2 and term_rows >= h + 3:
             return name, w, h
-    return "ascii/intro_small.ans.z", 46, 13
+    return "ascii/intro_small.ans.z", 52, 13
 
 def get_banner_profile(term_cols, term_rows):
     """Selecciona el banner panorámico óptimo para pantalla dividida o encabezados."""
     candidates = [
-        ("ascii/banner_large.ans.z", 76, 8),
-        ("ascii/banner_medium.ans.z", 62, 6),
-        ("ascii/banner_small.ans.z", 46, 5),
+        ("ascii/banner_large.ans.z", 80, 10),
+        ("ascii/banner_medium.ans.z", 68, 9),
+        ("ascii/banner_small.ans.z", 54, 7),
     ]
     for name, w, h in candidates:
-        if term_cols >= w + 2 and term_rows >= (h + 10):
+        if term_cols >= w + 2 and term_rows >= (h + 3):
             return name, w, h
-    return "ascii/banner_small.ans.z", 46, 5
+    return "ascii/banner_small.ans.z", 54, 7
 
 def play_audio():
     audio_path = find_asset("audio/cyber_intro.aac")
@@ -132,10 +132,11 @@ def play_intro(fps=15):
     hint_row = min(term_rows, top_offset + frame_h + 2)
 
     old_settings = None
-    if sys.stdin.isatty():
+    fd = sys.stdin.fileno() if sys.stdin.isatty() else None
+    if fd is not None:
         try:
-            old_settings = termios.tcgetattr(sys.stdin)
-            tty.setcbreak(sys.stdin.fileno())
+            old_settings = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
         except Exception:
             pass
 
@@ -145,36 +146,23 @@ def play_intro(fps=15):
     sys.stdout.flush()
 
     frame_duration = 1.0 / fps
-    start_time = time.perf_counter()
+    frame_idx = 0
+    total_frames = len(frames)
 
     try:
-        for idx, frame_bytes in enumerate(frames):
-            # Salto instantáneo en cualquier pulsación
-            if sys.stdin.isatty():
-                r, _, _ = select.select([sys.stdin.fileno()], [], [], 0)
+        while True:
+            # Salto instantáneo si ya hay tecla pulsada en buffer
+            if fd is not None:
+                r, _, _ = select.select([fd], [], [], 0)
                 if r:
                     try:
-                        termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
+                        os.read(fd, 1024)
+                        termios.tcflush(fd, termios.TCIFLUSH)
                     except Exception:
                         pass
                     break
 
-            target_time = start_time + idx * frame_duration
-            now = time.perf_counter()
-            if target_time > now:
-                time.sleep(target_time - now)
-
-            # Re-verificar tecla tras sleep
-            if sys.stdin.isatty():
-                r, _, _ = select.select([sys.stdin.fileno()], [], [], 0)
-                if r:
-                    try:
-                        termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
-                    except Exception:
-                        pass
-                    break
-
-            raw_str = frame_bytes.decode("utf-8", errors="replace")
+            raw_str = frames[frame_idx % total_frames].decode("utf-8", errors="replace")
             lines = raw_str.split("\n")
 
             buf = []
@@ -186,18 +174,37 @@ def play_intro(fps=15):
                     buf.append(f"\033[{r_pos};1H\033[2K{pad_left}{clipped_line}")
 
             if hint_row <= term_rows:
-                hint = f"{pad_left}\033[0;90m   [ Pulsa cualquier tecla para entrar a Code Stack Sh ]\033[0m"
+                hint = f"{pad_left}\033[1;36m   [ Pulsa cualquier tecla para entrar a Code Stack Sh ]\033[0m"
                 buf.append(f"\033[{hint_row};1H\033[2K{hint}")
 
             sys.stdout.write("".join(buf))
             sys.stdout.flush()
+
+            # Espera activa: si el usuario pulsa tecla despierta en < 1ms
+            if fd is not None:
+                r, _, _ = select.select([fd], [], [], frame_duration)
+                if r:
+                    try:
+                        os.read(fd, 1024)
+                        termios.tcflush(fd, termios.TCIFLUSH)
+                    except Exception:
+                        pass
+                    break
+            else:
+                time.sleep(frame_duration)
+
+            frame_idx += 1
     finally:
         if audio_started:
             stop_audio()
-        if old_settings:
+        if old_settings and fd is not None:
             try:
-                termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+                os.read(fd, 1024)
+            except Exception:
+                pass
+            try:
+                termios.tcflush(fd, termios.TCIFLUSH)
+                termios.tcsetattr(fd, termios.TCSANOW, old_settings)
             except Exception:
                 pass
         sys.stdout.write("\033[0m\033[?25h\033[2J\033[H")
@@ -340,6 +347,15 @@ def get_formatted_banner_lines(frame_index=0, max_cols=None, max_rows=None):
     if max_rows is not None:
         term_rows = min(term_rows, max_rows)
 
+    if term_cols < 54:
+        compact = [
+            "\033[1;36m █▀▀ █▀█ █▀▄ █▀▀   █▀▀ ▀█▀ █▀█ █▀▀ █ █   █▀▀ █ █ \033[0m",
+            "\033[1;32m █   █ █ █ █ ██▄   ███  █  █▀█ █▄▄ ██▄   ███ █▀█ \033[0m",
+            "\033[1;34m ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀▀  ▀  ▀ ▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀ ▀ \033[0m",
+        ]
+        pad_left = " " * max(0, (term_cols - 49) // 2)
+        return [pad_left + ansi_truncate(l, term_cols) for l in compact]
+
     subpath, banner_w, banner_h = get_banner_profile(term_cols, term_rows)
     frames = load_frames(subpath)
     if not frames:
@@ -355,6 +371,96 @@ def get_formatted_banner_lines(frame_index=0, max_cols=None, max_rows=None):
         formatted.append(pad_left + ansi_truncate(line, max_w))
     return formatted
 
+def play_banner_interactive(fps=15):
+    """Reproduce el banner flotante animado de Code Stack Sh hasta pulsar cualquier tecla."""
+    if not sys.stdout.isatty():
+        return 0
+
+    term_cols, term_rows = shutil.get_terminal_size((80, 24))
+    subpath, banner_w, banner_h = get_banner_profile(term_cols, term_rows)
+    frames = load_frames(subpath)
+    if not frames:
+        return 0
+
+    old_settings = None
+    fd = sys.stdin.fileno() if sys.stdin.isatty() else None
+    if fd is not None:
+        try:
+            old_settings = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except Exception:
+            pass
+
+    sys.stdout.write("\033[2J\033[?25l")
+    sys.stdout.flush()
+
+    pad_left = " " * max(0, (term_cols - banner_w) // 2)
+    top_offset = max(0, (term_rows - banner_h - 2) // 2)
+    hint_row = min(term_rows, top_offset + banner_h + 2)
+
+    frame_duration = 1.0 / fps
+    frame_idx = 0
+    total_frames = len(frames)
+
+    try:
+        while True:
+            if fd is not None:
+                r, _, _ = select.select([fd], [], [], 0)
+                if r:
+                    try:
+                        os.read(fd, 1024)
+                        termios.tcflush(fd, termios.TCIFLUSH)
+                    except Exception:
+                        pass
+                    break
+
+            raw_str = frames[frame_idx % total_frames].decode("utf-8", errors="replace")
+            lines = raw_str.split("\n")
+
+            buf = []
+            max_line_w = max(0, term_cols - len(pad_left))
+            for r_idx, line in enumerate(lines[:banner_h]):
+                r_pos = top_offset + r_idx + 1
+                if r_pos <= term_rows:
+                    clipped_line = ansi_truncate(line, max_line_w)
+                    buf.append(f"\033[{r_pos};1H\033[2K{pad_left}{clipped_line}")
+
+            if hint_row <= term_rows:
+                hint = f"{pad_left}\033[1;36m   [ Banner Code Stack Sh • Pulsa cualquier tecla para salir ]\033[0m"
+                buf.append(f"\033[{hint_row};1H\033[2K{hint}")
+
+            sys.stdout.write("".join(buf))
+            sys.stdout.flush()
+
+            if fd is not None:
+                r, _, _ = select.select([fd], [], [], frame_duration)
+                if r:
+                    try:
+                        os.read(fd, 1024)
+                        termios.tcflush(fd, termios.TCIFLUSH)
+                    except Exception:
+                        pass
+                    break
+            else:
+                time.sleep(frame_duration)
+
+            frame_idx += 1
+    finally:
+        if old_settings and fd is not None:
+            try:
+                os.read(fd, 1024)
+            except Exception:
+                pass
+            try:
+                termios.tcflush(fd, termios.TCIFLUSH)
+                termios.tcsetattr(fd, termios.TCSANOW, old_settings)
+            except Exception:
+                pass
+        sys.stdout.write("\033[0m\033[?25h\033[2J\033[H")
+        sys.stdout.flush()
+
+    return 0
+
 def main():
     if len(sys.argv) < 2:
         print("Uso: code-stack-ascii [intro | banner | run <comando> [titulo]]")
@@ -365,13 +471,23 @@ def main():
     if action == "intro":
         sys.exit(play_intro())
     elif action == "banner":
-        f_idx = 0
-        if len(sys.argv) > 2 and sys.argv[2].isdigit():
-            f_idx = int(sys.argv[2])
-        lines = get_formatted_banner_lines(f_idx)
-        for line in lines:
-            print(line)
-        sys.exit(0)
+        single_frame = None
+        for arg in sys.argv[2:]:
+            if arg.isdigit():
+                single_frame = int(arg)
+                break
+        if "--frame" in sys.argv:
+            idx = sys.argv.index("--frame")
+            if idx + 1 < len(sys.argv) and sys.argv[idx + 1].isdigit():
+                single_frame = int(sys.argv[idx + 1])
+
+        if single_frame is not None or not sys.stdout.isatty():
+            lines = get_formatted_banner_lines(single_frame or 0)
+            for line in lines:
+                print(line)
+            sys.exit(0)
+        else:
+            sys.exit(play_banner_interactive())
     elif action == "run":
         if len(sys.argv) < 3:
             print("Uso: code-stack-ascii run <comando> [titulo]")

@@ -381,13 +381,10 @@ def main():
     banner_helper = None
     banner_frame_idx = 0
     try:
-        import importlib.util
+        from importlib.machinery import SourceFileLoader
         cand = shutil.which("code-stack-ascii") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "code-stack-ascii")
         if cand and os.path.isfile(cand):
-            spec = importlib.util.spec_from_file_location("code_stack_ascii", cand)
-            mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod)
-            banner_helper = mod
+            banner_helper = SourceFileLoader("code_stack_ascii", cand).load_module()
     except Exception:
         pass
 
@@ -481,8 +478,8 @@ def main():
         # Dibujar pantalla limpia
         sys.stdout.write("\033[H\033[J")
         term_size = shutil.get_terminal_size((80, 24))
-        # Banner animado dinámico (Opción A2) si hay espacio vertical suficiente (al menos 26 líneas)
-        if banner_helper and term_size.lines >= 26 and cols >= 48:
+        # Banner animado dinámico (Opción A2) si hay espacio vertical suficiente (al menos 20 líneas)
+        if banner_helper and term_size.lines >= 20 and cols >= 44:
             b_lines = banner_helper.get_formatted_banner_lines(banner_frame_idx, max_cols=cols, max_rows=term_size.lines)
             banner_frame_idx += 1
             for bl in b_lines:
