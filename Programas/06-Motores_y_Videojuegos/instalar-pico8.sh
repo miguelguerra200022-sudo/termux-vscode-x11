@@ -27,19 +27,22 @@ pkg install -y pico8 || true
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "pico8" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/pico8.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=PICO-8 Fantasy Console
 Comment=Fantasía de consola para diseño, música y programación de juegos pixel-art.
 Exec=pico8
-Icon=pico8
+Icon=/data/data/com.termux/files/usr/share/pixmaps/pico8.png
 Terminal=false
 Type=Application
 Categories=Development;GameDevelopment;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

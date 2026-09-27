@@ -33,19 +33,22 @@ exec_cmd="agy"
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "google-antigravity" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/google-antigravity.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Google Antigravity IDE & agy CLI
 Comment=Entorno agéntico avanzado de Google DeepMind para pair-programming autónomo.
 Exec=agy
-Icon=google-antigravity
+Icon=/data/data/com.termux/files/usr/share/pixmaps/google-antigravity.png
 Terminal=false
 Type=Application
 Categories=Development;IDE;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

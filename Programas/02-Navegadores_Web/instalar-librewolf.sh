@@ -42,19 +42,22 @@ chmod +x "$LAUNCHER_SCRIPT"
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "librewolf" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/librewolf.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=LibreWolf
 Comment=Navegador web enfocado en privacidad sin telemetría ni rastreo.
 Exec=librewolf
-Icon=librewolf
+Icon=/data/data/com.termux/files/usr/share/pixmaps/librewolf.png
 Terminal=false
 Type=Application
 Categories=Network;WebBrowser;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

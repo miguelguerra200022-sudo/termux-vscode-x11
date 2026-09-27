@@ -30,19 +30,22 @@ mkdir -p "$HOME/.config/lunarvim"
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "lunarvim" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/lunarvim.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=LunarVim
 Comment=Configuración completa tipo IDE preconfigurada para Neovim.
 Exec=nvim
-Icon=lunarvim
+Icon=/data/data/com.termux/files/usr/share/pixmaps/lunarvim.png
 Terminal=false
 Type=Application
 Categories=Development;TextEditor;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

@@ -43,19 +43,22 @@ chmod +x "$LAUNCHER_SCRIPT"
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "arduino-ide" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/arduino-ide.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Arduino IDE
 Comment=Suite para programar, compilar y cargar código en microcontroladores.
 Exec=arduino-ide
-Icon=arduino-ide
+Icon=/data/data/com.termux/files/usr/share/pixmaps/arduino-ide.png
 Terminal=false
 Type=Application
 Categories=Development;IDE;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

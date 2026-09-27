@@ -1,0 +1,214 @@
+#!/data/data/com.termux/files/usr/bin/python3
+# ==============================================================================
+# fetch-app-icon: Gestor On-Demand de Iconos Oficiales para Code Stack Sh
+# Descarga e instala el icono oficial solo cuando el usuario instala un programa.
+# Lo elimina de disco cuando el usuario desinstala el programa. Cero desperdicio de espacio.
+# ==============================================================================
+
+import sys
+import os
+import urllib.request
+import subprocess
+
+PIXMAPS_DIR = "/data/data/com.termux/files/usr/share/pixmaps"
+TMP_DIR = os.environ.get("TMPDIR", "/data/data/com.termux/files/usr/tmp")
+
+PAPIRUS_BASE = "https://raw.githubusercontent.com/PapirusDevelopmentTeam/papirus-icon-theme/master/Papirus/64x64/apps"
+SIMPLE_BASE = "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons"
+
+ICON_SOURCES = {
+    # 01-Editores_e_IA
+    "astronvim": f"{PAPIRUS_BASE}/nvim.svg",
+    "cursor": f"{PAPIRUS_BASE}/cursor.svg",
+    "emacs": f"{PAPIRUS_BASE}/emacs.svg",
+    "google-antigravity": f"{PAPIRUS_BASE}/google-chrome.svg",
+    "helix": f"{PAPIRUS_BASE}/helix.svg",
+    "kakoune": f"{PAPIRUS_BASE}/kakoune.svg",
+    "lazyvim": f"{PAPIRUS_BASE}/nvim.svg",
+    "lunarvim": f"{PAPIRUS_BASE}/nvim.svg",
+    "micro": f"{PAPIRUS_BASE}/micro.svg",
+    "neovim": f"{PAPIRUS_BASE}/nvim.svg",
+    "trae": f"{PAPIRUS_BASE}/vscode.svg",
+    "void-editor": f"{PAPIRUS_BASE}/cursor.svg",
+    "vscode": f"{PAPIRUS_BASE}/vscode.svg",
+    "windsurf": f"{PAPIRUS_BASE}/code.svg",
+    "zed": "https://raw.githubusercontent.com/zed-industries/zed/main/crates/gpui/examples/image/app-icon.png",
+
+    # 02-Navegadores_Web
+    "badwolf": f"{PAPIRUS_BASE}/web-browser.svg",
+    "chromium": f"{PAPIRUS_BASE}/chromium-browser.svg",
+    "dillo": f"{PAPIRUS_BASE}/dillo.svg",
+    "firefox": f"{PAPIRUS_BASE}/firefox.svg",
+    "floorp": f"{PAPIRUS_BASE}/web-browser.svg",
+    "librewolf": f"{PAPIRUS_BASE}/librewolf.svg",
+    "links2": f"{PAPIRUS_BASE}/links.svg",
+    "midori": f"{PAPIRUS_BASE}/midori.svg",
+    "thorium": f"{PAPIRUS_BASE}/thorium-browser.svg",
+    "zen-browser": f"{PAPIRUS_BASE}/firefox.svg",
+
+    # 03-IDEs_y_Desarrollo
+    "android-studio": f"{PAPIRUS_BASE}/android-studio.svg",
+    "arduino-ide": f"{PAPIRUS_BASE}/arduino.svg",
+    "bluefish": f"{PAPIRUS_BASE}/bluefish.svg",
+    "clion": f"{PAPIRUS_BASE}/clion.svg",
+    "eclipse": f"{PAPIRUS_BASE}/eclipse.svg",
+    "geany": f"{PAPIRUS_BASE}/geany.svg",
+    "intellij-idea": f"{PAPIRUS_BASE}/intellij-idea.svg",
+    "lazarus": f"{PAPIRUS_BASE}/lazarus.svg",
+    "pycharm": f"{PAPIRUS_BASE}/pycharm.svg",
+    "webstorm": f"{PAPIRUS_BASE}/webstorm.svg",
+
+    # 04-Diseno_y_Multimedia
+    "audacity": f"{PAPIRUS_BASE}/audacity.svg",
+    "blender": f"{PAPIRUS_BASE}/blender.svg",
+    "freecad": f"{PAPIRUS_BASE}/freecad.svg",
+    "gimp": f"{PAPIRUS_BASE}/gimp.svg",
+    "inkscape": f"{PAPIRUS_BASE}/inkscape.svg",
+    "kdenlive": f"{PAPIRUS_BASE}/kdenlive.svg",
+    "krita": f"{PAPIRUS_BASE}/krita.svg",
+    "librecad": f"{PAPIRUS_BASE}/librecad.svg",
+    "mpv": f"{PAPIRUS_BASE}/mpv.svg",
+    "vlc": f"{PAPIRUS_BASE}/vlc.svg",
+
+    # 05-Productividad_y_Notas
+    "cherrytree": f"{PAPIRUS_BASE}/cherrytree.svg",
+    "drawio": f"{PAPIRUS_BASE}/drawio.svg",
+    "evince": f"{PAPIRUS_BASE}/evince.svg",
+    "foliate": f"{PAPIRUS_BASE}/com.github.johnfactotum.Foliate.svg",
+    "libreoffice": f"{PAPIRUS_BASE}/libreoffice-main.svg",
+    "logseq": f"{PAPIRUS_BASE}/logseq.svg",
+    "marktext": f"{PAPIRUS_BASE}/marktext.svg",
+    "obsidian": f"{PAPIRUS_BASE}/obsidian.svg",
+    "xournalpp": f"{PAPIRUS_BASE}/xournalpp.svg",
+    "zettlr": f"{PAPIRUS_BASE}/zettlr.svg",
+
+    # 06-Motores_y_Videojuegos
+    "defold": f"{PAPIRUS_BASE}/preferences-desktop-gaming.svg",
+    "godot3": f"{PAPIRUS_BASE}/godot.svg",
+    "godot4": f"{PAPIRUS_BASE}/godot.svg",
+    "libresprite": f"{PAPIRUS_BASE}/aseprite.svg",
+    "love2d": f"{PAPIRUS_BASE}/love.svg",
+    "pico8": f"{PAPIRUS_BASE}/pico8.svg",
+    "raylib": f"{SIMPLE_BASE}/raylib.svg",
+    "tic80": f"{PAPIRUS_BASE}/preferences-desktop-gaming.svg",
+    "tiled": f"{PAPIRUS_BASE}/tiled.svg",
+
+    # 07-Terminales_y_Monitores
+    "alacritty": f"{PAPIRUS_BASE}/Alacritty.svg",
+    "btop": f"{PAPIRUS_BASE}/btop.svg",
+    "fastfetch": f"{PAPIRUS_BASE}/utilities-terminal.svg",
+    "htop": f"{PAPIRUS_BASE}/htop.svg",
+    "kitty": f"{PAPIRUS_BASE}/kitty.svg",
+    "lazydocker": f"{SIMPLE_BASE}/docker.svg",
+    "lazygit": f"{PAPIRUS_BASE}/git.svg",
+    "ranger": f"{PAPIRUS_BASE}/system-file-manager.svg",
+    "tmux": f"{SIMPLE_BASE}/tmux.svg",
+    "xfce4-terminal": f"{PAPIRUS_BASE}/org.xfce.terminal.svg",
+    "yazi": f"{PAPIRUS_BASE}/system-file-manager.svg",
+    "zellij": f"{PAPIRUS_BASE}/utilities-terminal.svg",
+
+    # 08-Ciberseguridad_y_Redes
+    "aircrack-ng": f"{PAPIRUS_BASE}/aircrack-ng.svg",
+    "bettercap": f"{PAPIRUS_BASE}/utilities-terminal.svg",
+    "burpsuite": f"{SIMPLE_BASE}/burpsuite.svg",
+    "ettercap": f"{PAPIRUS_BASE}/ettercap.svg",
+    "hydra": f"{PAPIRUS_BASE}/utilities-terminal.svg",
+    "john": f"{PAPIRUS_BASE}/john.svg",
+    "metasploit": f"{PAPIRUS_BASE}/metasploit.svg",
+    "nmap": f"{PAPIRUS_BASE}/nmap.svg",
+    "sqlmap": f"{PAPIRUS_BASE}/utilities-terminal.svg",
+    "wireshark": f"{PAPIRUS_BASE}/wireshark.svg",
+
+    # 09-Bases_de_Datos_y_Servidores
+    "caddy": f"{SIMPLE_BASE}/caddy.svg",
+    "dbeaver": f"{PAPIRUS_BASE}/dbeaver.svg",
+    "mariadb": f"{SIMPLE_BASE}/mariadb.svg",
+    "mongodb": f"{SIMPLE_BASE}/mongodb.svg",
+    "nginx": f"{SIMPLE_BASE}/nginx.svg",
+    "postgresql": f"{SIMPLE_BASE}/postgresql.svg",
+    "redis": f"{SIMPLE_BASE}/redis.svg",
+    "sqlite": f"{SIMPLE_BASE}/sqlite.svg",
+    "sqlitebrowser": f"{PAPIRUS_BASE}/sqlitebrowser.svg",
+    "udocker": f"{SIMPLE_BASE}/docker.svg",
+
+    # 10-Mensajeria_y_Redes
+    "element": f"{PAPIRUS_BASE}/element-desktop.svg",
+    "filezilla": f"{PAPIRUS_BASE}/filezilla.svg",
+    "hexchat": f"{PAPIRUS_BASE}/hexchat.svg",
+    "joplin": f"{PAPIRUS_BASE}/joplin.svg",
+    "telegram-desktop": f"{PAPIRUS_BASE}/telegram.svg",
+    "thunderbird": f"{PAPIRUS_BASE}/thunderbird.svg",
+    "transmission": f"{PAPIRUS_BASE}/transmission.svg",
+    "webcord": f"{PAPIRUS_BASE}/discord.svg",
+
+    # 11-Gestores_de_Ventanas
+    "awesomewm": f"{PAPIRUS_BASE}/preferences-desktop-theme.svg",
+    "bspwm": f"{PAPIRUS_BASE}/preferences-desktop-display.svg",
+    "fluxbox": f"{PAPIRUS_BASE}/preferences-desktop-wallpaper.svg",
+    "i3-wm": f"{PAPIRUS_BASE}/preferences-desktop-theme.svg",
+    "openbox": f"{PAPIRUS_BASE}/openbox.svg",
+    "xfce4": f"{PAPIRUS_BASE}/xfce4-logo.svg",
+}
+
+def clean_icon(slug):
+    """Elimina el icono del sistema al desinstalar la aplicación para liberar espacio."""
+    target_png = os.path.join(PIXMAPS_DIR, f"{slug}.png")
+    if os.path.exists(target_png):
+        try:
+            os.remove(target_png)
+            print(f"[✓] Icono liberado: {target_png}")
+        except Exception:
+            pass
+
+def fetch_icon(slug):
+    """Descarga e instala el icono oficial en /usr/share/pixmaps/<slug>.png bajo demanda."""
+    os.makedirs(PIXMAPS_DIR, exist_ok=True)
+    target_png = os.path.join(PIXMAPS_DIR, f"{slug}.png")
+
+    if os.path.exists(target_png) and os.path.getsize(target_png) > 100:
+        return target_png
+
+    url = ICON_SOURCES.get(slug)
+    if not url:
+        url = f"{PAPIRUS_BASE}/application-x-executable.svg"
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = r.read()
+
+        if url.endswith(".png"):
+            with open(target_png, "wb") as f:
+                f.write(data)
+        else:
+            temp_svg = os.path.join(TMP_DIR, f"temp_{slug}.svg")
+            with open(temp_svg, "wb") as f:
+                f.write(data)
+            
+            # Convertir SVG a PNG de 128x128 píxeles
+            res = subprocess.run(["rsvg-convert", "-w", "128", "-h", "128", "-o", target_png, temp_svg], capture_output=True)
+            if res.returncode != 0 or not os.path.exists(target_png):
+                target_svg = os.path.join(PIXMAPS_DIR, f"{slug}.svg")
+                with open(target_svg, "wb") as f:
+                    f.write(data)
+                target_png = target_svg
+            
+            if os.path.exists(temp_svg):
+                os.remove(temp_svg)
+
+        print(f"[✓] Icono oficial instalado: {target_png}")
+        return target_png
+    except Exception as e:
+        print(f"[!] No se pudo descargar el icono para {slug}: {e}")
+        return None
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Uso: fetch-app-icon [--clean] <slug>")
+        sys.exit(1)
+
+    if sys.argv[1] == "--clean":
+        if len(sys.argv) > 2:
+            clean_icon(sys.argv[2])
+    else:
+        fetch_icon(sys.argv[1])

@@ -29,19 +29,22 @@ pkg install -y bettercap
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "bettercap" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/bettercap.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Bettercap Framework
 Comment=Herramienta completa para ataques Man-in-the-Middle y redes inalámbricas.
 Exec=bettercap
-Icon=bettercap
+Icon=/data/data/com.termux/files/usr/share/pixmaps/bettercap.png
 Terminal=false
 Type=Application
 Categories=Network;Security;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

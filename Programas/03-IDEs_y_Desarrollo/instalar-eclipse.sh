@@ -43,19 +43,22 @@ chmod +x "$LAUNCHER_SCRIPT"
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "eclipse" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/eclipse.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Eclipse IDE
 Comment=Plataforma clásica de desarrollo empresarial en Java y C++.
 Exec=eclipse
-Icon=eclipse
+Icon=/data/data/com.termux/files/usr/share/pixmaps/eclipse.png
 Terminal=false
 Type=Application
 Categories=Development;IDE;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

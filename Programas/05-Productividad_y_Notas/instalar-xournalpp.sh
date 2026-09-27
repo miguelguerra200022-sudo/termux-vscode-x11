@@ -29,19 +29,22 @@ pkg install -y xournalpp
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "xournalpp" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/xournalpp.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Xournal++ Note Taking
 Comment=Cuaderno digital para toma de notas manuscritas y anotación en PDFs.
 Exec=xournalpp
-Icon=xournalpp
+Icon=/data/data/com.termux/files/usr/share/pixmaps/xournalpp.png
 Terminal=false
 Type=Application
 Categories=Office;Notes;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

@@ -29,19 +29,22 @@ pkg install -y raylib
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "raylib" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/raylib.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Raylib Game Library
 Comment=Biblioteca para programación de videojuegos en C/C++ y herramientas.
 Exec=raylib
-Icon=raylib
+Icon=/data/data/com.termux/files/usr/share/pixmaps/raylib.png
 Terminal=false
 Type=Application
 Categories=Development;Libraries;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

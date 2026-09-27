@@ -29,19 +29,22 @@ pkg install -y transmission
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "transmission" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/transmission.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Transmission GTK Torrent
 Comment=Cliente BitTorrent ligero y rápido para descargas eficientes en segundo plano.
 Exec=transmission
-Icon=transmission
+Icon=/data/data/com.termux/files/usr/share/pixmaps/transmission.png
 Terminal=false
 Type=Application
 Categories=Network;FileTransfer;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

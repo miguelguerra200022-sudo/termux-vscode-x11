@@ -29,19 +29,22 @@ pkg install -y links2
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "links2" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/links2.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Links2 (Modo Gráfico)
 Comment=Navegador web ligero con soporte gráfico directo en pantalla X11.
 Exec=links2 -g
-Icon=links2
+Icon=/data/data/com.termux/files/usr/share/pixmaps/links2.png
 Terminal=false
 Type=Application
 Categories=Network;WebBrowser;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

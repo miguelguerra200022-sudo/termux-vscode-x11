@@ -29,19 +29,22 @@ pkg install -y metasploit || pkg install -y metasploit || true
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "metasploit" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/metasploit.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Metasploit Framework
 Comment=Plataforma avanzada de pruebas de penetración y explotación ética.
 Exec=msfconsole
-Icon=metasploit
+Icon=/data/data/com.termux/files/usr/share/pixmaps/metasploit.png
 Terminal=false
 Type=Application
 Categories=Network;Security;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

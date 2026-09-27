@@ -29,19 +29,22 @@ pkg install -y xfce4-terminal
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "xfce4-terminal" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/xfce4-terminal.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=XFCE4 Terminal
 Comment=Terminal gráfica con pestañas, colores personalizables y menú contextual.
 Exec=xfce4-terminal
-Icon=xfce4-terminal
+Icon=/data/data/com.termux/files/usr/share/pixmaps/xfce4-terminal.png
 Terminal=false
 Type=Application
 Categories=System;TerminalEmulator;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"

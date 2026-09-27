@@ -29,19 +29,22 @@ pkg install -y kitty || pkg install -y kitty || true
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
 
+command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "kitty" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/kitty.desktop"
 cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Kitty Terminal
 Comment=Terminal moderna con soporte nativo de imágenes, fuentes y pestañas.
 Exec=kitty
-Icon=kitty
+Icon=/data/data/com.termux/files/usr/share/pixmaps/kitty.png
 Terminal=false
 Type=Application
 Categories=System;TerminalEmulator;
 DESK_EOF
 
 cp -f "$DESKTOP_FILE" "$HOME/.local/share/applications/" 2>/dev/null || true
+cp -f "$DESKTOP_FILE" "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}======================================================${NC}"
