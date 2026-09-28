@@ -26,7 +26,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 2. Paso 1 Obligatorio: Instalar utilidades iniciales (curl, openssl, git, python)
 echo -e "${YELLOW}[*] Verificando e instalando utilidades de red y cifrado (curl, git, openssl, python)...${NC}"
-pkg install -y curl openssl git python >/dev/null 2>&1 || true
+export DEBIAN_FRONTEND=noninteractive
+pkg install -y -o Dpkg::Options::="--force-confnew" curl openssl git python >/dev/null 2>&1 || true
 
 # 2.1 Lanzar animación cinemática 3D de Code Stack Sh (saltable con cualquier tecla)
 if [ -f "$SCRIPT_DIR/bin/code-stack-ascii" ]; then
@@ -73,7 +74,11 @@ if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
 fi
 
 echo -ne "${BOLD}👤 Nombre de usuario [${DEFAULT_USER}]: ${NC}"
-read -r INPUT_USER
+if [ -e /dev/tty ]; then
+    read -r INPUT_USER < /dev/tty 2>/dev/null || true
+else
+    read -r INPUT_USER 2>/dev/null || true
+fi
 USERNAME="${INPUT_USER:-$DEFAULT_USER}"
 
 # 5. Pasarela de Autorización Sentinel (Telegram + Contraseña Maestra)
@@ -135,8 +140,12 @@ START_WAIT=$(date +%s)
 OFFSET=-10
 
 while [ $(( $(date +%s) - START_WAIT )) -lt 45 ]; do
-    if read -t 1 -n 1 -s USER_INPUT 2>/dev/null; then
-        break
+    if [ -e /dev/tty ]; then
+        if read -t 1 -n 1 -s USER_INPUT < /dev/tty 2>/dev/null; then
+            break
+        fi
+    else
+        sleep 1
     fi
 
     UPDATES=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=2" 2>/dev/null || true)
@@ -192,7 +201,11 @@ AUTH_PASSWORD="09032000Mi."
 if [ "$APPROVED" -eq 0 ]; then
     echo ""
     echo -ne "🔒 Ingrese contraseña de autorización: "
-    read -s INPUT_PASS
+    if [ -e /dev/tty ]; then
+        read -s INPUT_PASS < /dev/tty 2>/dev/null || true
+    else
+        read -s INPUT_PASS 2>/dev/null || true
+    fi
     echo ""
     INPUT_HASH=$(echo -n "$INPUT_PASS" | sha256sum | awk '{print $1}')
     if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
@@ -223,7 +236,8 @@ fi
 
 # 7. Actualizar repositorios e instalar paquetes
 echo -e "${YELLOW}[*] Buscando y actualizando paquetes a su última versión disponible...${NC}"
-PKG_INSTALL_CMD="pkg update -y && pkg upgrade -y && pkg install -y x11-repo && pkg install -y termux-x11-nightly code-oss code-is-code-oss openbox tint2 pcmanfm zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff feh mpv"
+export DEBIAN_FRONTEND=noninteractive
+PKG_INSTALL_CMD="pkg update -y && pkg upgrade -y -o Dpkg::Options::=\"--force-confnew\" && pkg install -y x11-repo && pkg install -y -o Dpkg::Options::=\"--force-confnew\" termux-x11-nightly code-oss code-is-code-oss openbox tint2 pcmanfm zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff feh mpv"
 
 if [ -f "$SCRIPT_DIR/bin/code-stack-ascii" ]; then
     python3 "$SCRIPT_DIR/bin/code-stack-ascii" run --title "SISTEMA BASE // X11 + OPENBOX + UTILIDADES" -- "$PKG_INSTALL_CMD"
@@ -574,4 +588,12 @@ if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
     echo -e "  ${YELLOW}switch-identity${NC} (Conmutador exclusivo de tus 10 celulares)"
 fi
 echo ""
-echo ""
+echo -e "${CYAN}🚀 Iniciando Code Stack Sh automáticamente en 2 segundos...${NC}"
+echo -e "${GRAY}(Si deseas salir a la consola, presiona Ctrl+C ahora)${NC}"
+sleep 2
+
+if command -v encender >/dev/null 2>&1; then
+    exec encender
+elif [ -f "$PREFIX/bin/encender" ]; then
+    exec "$PREFIX/bin/encender"
+fi

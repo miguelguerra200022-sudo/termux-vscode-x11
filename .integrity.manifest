@@ -628,5 +628,5 @@ abd9e49638060c228777916f8be20de7f79e389419fae6e4275293935ed26b08  ./data/zen/qql
 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a  ./data/zen/qqlfient.Default (release)/zen-themes.json
 a39ca57624ff36ea946acb2aaf721eafbaf1e2b3cefa55dd7d6ab67733a0f23f  ./docs/GUIA_RAPIDA.md
 1d1f9aac3fd3f48abebb73a17d26668c829db43bab7fa6f692a50e3679424e87  ./instalar
-df9d747459ff40d39bd04d9f9e66c6a2a7dbd3bd8242d8a3b1ab2cca949a6d7c  ./install.sh
+7229a15de06f313894c5aac2698a7c304dbcaba7a4030cb9d9cc6e936a0bf568  ./install.sh
 a18dea5410b968f9d54202db54ba502e1cf16457b28aa89cb7ca1d50985f3cd6  ./uninstall.sh
