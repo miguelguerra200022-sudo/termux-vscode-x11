@@ -69,33 +69,39 @@ echo -e "${GREEN}[✓] Sello de Hardware físico detectado:${NC} ${BOLD}${SELLO_
 # 4. Solicitar Nombre de Usuario
 DEFAULT_USER="Usuario"
 if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
-    DEFAULT_USER="Miguel (Líder)"
-    echo -e "${YELLOW}⭐ Dispositivo Líder identificado.${NC}"
-fi
-
-echo -ne "${BOLD}👤 Nombre de usuario [${DEFAULT_USER}]: ${NC}"
-if [ -e /dev/tty ]; then
-    read -r INPUT_USER < /dev/tty 2>/dev/null || true
+    USERNAME="Miguel (Líder)"
+    echo -e "${YELLOW}⭐ Dispositivo Líder identificado: ${BOLD}${USERNAME}${NC}"
 else
-    read -r INPUT_USER 2>/dev/null || true
+    echo -ne "${BOLD}👤 Nombre de usuario [${DEFAULT_USER}]: ${NC}"
+    INPUT_USER=""
+    if [ -e /dev/tty ]; then
+        read -t 5 -r INPUT_USER < /dev/tty 2>/dev/null || true
+    fi
+    USERNAME="${INPUT_USER:-$DEFAULT_USER}"
+    echo -e "${GREEN}[✓] Usuario registrado:${NC} ${USERNAME}"
 fi
-USERNAME="${INPUT_USER:-$DEFAULT_USER}"
 
 # 5. Pasarela de Autorización Sentinel (Telegram + Contraseña Maestra)
-HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
-ENC_TG="U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
-TG_CREDS=$(echo "$ENC_TG" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"09032000Mi." 2>/dev/null || echo "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls|1514766577")
-BOT_TOKEN=$(echo "$TG_CREDS" | cut -d'|' -f1)
-CHAT_ID=$(echo "$TG_CREDS" | cut -d'|' -f2)
+AUTH_PASSWORD="09032000Mi."
+if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
+    APPROVED=1
+    echo -e "${GREEN}[✓] Dispositivo Líder verificado por Sello de Hardware.${NC}"
+    echo -e "${GREEN}[✓] Acceso Maestro concedido automáticamente sin esperas.${NC}"
+else
+    HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
+    ENC_TG="U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
+    TG_CREDS=$(echo "$ENC_TG" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"09032000Mi." 2>/dev/null || echo "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls|1514766577")
+    BOT_TOKEN=$(echo "$TG_CREDS" | cut -d'|' -f1)
+    CHAT_ID=$(echo "$TG_CREDS" | cut -d'|' -f2)
 
-REQ_ID="${SELLO_HARDWARE}_$(date +%s)"
-EXT_IP=$(curl -s --connect-timeout 3 https://api.ipify.org 2>/dev/null || echo "127.0.0.1")
-MODEL_NAME="$(getprop ro.product.manufacturer 2>/dev/null) $(getprop ro.product.model 2>/dev/null)"
+    REQ_ID="${SELLO_HARDWARE}_$(date +%s)"
+    EXT_IP=$(curl -s --connect-timeout 3 https://api.ipify.org 2>/dev/null || echo "127.0.0.1")
+    MODEL_NAME="$(getprop ro.product.manufacturer 2>/dev/null) $(getprop ro.product.model 2>/dev/null)"
 
-echo ""
-echo -e "${CYAN}[*] Solicitando autorización de seguridad al bot de Telegram...${NC}"
+    echo ""
+    echo -e "${CYAN}[*] Solicitando autorización de seguridad al bot de Telegram...${NC}"
 
-TG_MSG=$(cat << EOF_MSG
+    TG_MSG=$(cat << EOF_MSG
 🛡️ *SOLICITUD DE AUTORIZACIÓN DE DISPOSITIVO*
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 👤 *Usuario:* \`${USERNAME}\`
@@ -108,7 +114,7 @@ TG_MSG=$(cat << EOF_MSG
 EOF_MSG
 )
 
-TG_PAYLOAD=$(python3 -c "
+    TG_PAYLOAD=$(python3 -c "
 import json
 print(json.dumps({
     'chat_id': '$CHAT_ID',
@@ -125,32 +131,32 @@ print(json.dumps({
 }))
 " 2>/dev/null || true)
 
-SENT_RES=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-    -H "Content-Type: application/json" \
-    -d "$TG_PAYLOAD" 2>/dev/null || true)
+    SENT_RES=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+        -H "Content-Type: application/json" \
+        -d "$TG_PAYLOAD" 2>/dev/null || true)
 
-MSG_ID=$(python3 -c "import json; print(json.loads('''$SENT_RES''').get('result', {}).get('message_id', ''))" 2>/dev/null || true)
+    MSG_ID=$(python3 -c "import json; print(json.loads('''$SENT_RES''').get('result', {}).get('message_id', ''))" 2>/dev/null || true)
 
-echo -e "${YELLOW}⏳ Esperando aprobación en Telegram (@CloudNodeSync_bot)...${NC}"
-echo -e "${GRAY}   👉 Pulsa [APROBAR ACCESO] en el chat de Telegram.${NC}"
-echo -e "${GRAY}   (O presiona ENTER para autorizar mediante contraseña manual)${NC}"
+    echo -e "${YELLOW}⏳ Esperando aprobación en Telegram (@CloudNodeSync_bot)...${NC}"
+    echo -e "${GRAY}   👉 Pulsa [APROBAR ACCESO] en el chat de Telegram.${NC}"
+    echo -e "${GRAY}   (O presiona ENTER para autorizar mediante contraseña manual)${NC}"
 
-APPROVED=0
-START_WAIT=$(date +%s)
-OFFSET=-10
+    APPROVED=0
+    START_WAIT=$(date +%s)
+    OFFSET=-10
 
-while [ $(( $(date +%s) - START_WAIT )) -lt 45 ]; do
-    if [ -e /dev/tty ]; then
-        if read -t 1 -n 1 -s USER_INPUT < /dev/tty 2>/dev/null; then
-            break
+    while [ $(( $(date +%s) - START_WAIT )) -lt 45 ]; do
+        if [ -e /dev/tty ]; then
+            if read -t 1 -n 1 -s USER_INPUT < /dev/tty 2>/dev/null; then
+                break
+            fi
+        else
+            sleep 1
         fi
-    else
-        sleep 1
-    fi
 
-    UPDATES=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=2" 2>/dev/null || true)
-    
-    POLL_RESULT=$(python3 -c "
+        UPDATES=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=2" 2>/dev/null || true)
+        
+        POLL_RESULT=$(python3 -c "
 import json, sys
 try:
     data = json.loads('''$UPDATES''')
@@ -168,10 +174,10 @@ except Exception:
     pass
 " 2>/dev/null || true)
 
-    if [[ "$POLL_RESULT" == APPROVE* ]]; then
-        CB_ID=$(echo "$POLL_RESULT" | cut -d'|' -f2)
-        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Aprobado" >/dev/null 2>&1 || true
-        REVOKE_PAYLOAD=$(python3 -c "
+        if [[ "$POLL_RESULT" == APPROVE* ]]; then
+            CB_ID=$(echo "$POLL_RESULT" | cut -d'|' -f2)
+            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Aprobado" >/dev/null 2>&1 || true
+            REVOKE_PAYLOAD=$(python3 -c "
 import json
 print(json.dumps({
     'chat_id': '$CHAT_ID',
@@ -185,39 +191,39 @@ print(json.dumps({
     }
 }))
 " 2>/dev/null || true)
-        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/editMessageText" -H "Content-Type: application/json" -d "$REVOKE_PAYLOAD" >/dev/null 2>&1 || true
-        APPROVED=1
-        echo -e "${GREEN}[✓] ¡Acceso aprobado con éxito vía Telegram!${NC}"
-        break
-    elif [[ "$POLL_RESULT" == REJECT* ]]; then
-        CB_ID=$(echo "$POLL_RESULT" | cut -d'|' -f2)
-        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Denegado" >/dev/null 2>&1 || true
-        echo -e "${RED}[!] Solicitud rechazada por el administrador en Telegram.${NC}"
-        exit 1
-    fi
-done
+            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/editMessageText" -H "Content-Type: application/json" -d "$REVOKE_PAYLOAD" >/dev/null 2>&1 || true
+            APPROVED=1
+            echo -e "${GREEN}[✓] ¡Acceso aprobado con éxito vía Telegram!${NC}"
+            break
+        elif [[ "$POLL_RESULT" == REJECT* ]]; then
+            CB_ID=$(echo "$POLL_RESULT" | cut -d'|' -f2)
+            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Denegado" >/dev/null 2>&1 || true
+            echo -e "${RED}[!] Solicitud rechazada por el administrador en Telegram.${NC}"
+            exit 1
+        fi
+    done
 
-AUTH_PASSWORD="09032000Mi."
-if [ "$APPROVED" -eq 0 ]; then
-    echo ""
-    echo -ne "🔒 Ingrese contraseña de autorización: "
-    if [ -e /dev/tty ]; then
-        read -s INPUT_PASS < /dev/tty 2>/dev/null || true
-    else
-        read -s INPUT_PASS 2>/dev/null || true
+    if [ "$APPROVED" -eq 0 ]; then
+        echo ""
+        echo -ne "🔒 Ingrese contraseña de autorización: "
+        if [ -e /dev/tty ]; then
+            read -s INPUT_PASS < /dev/tty 2>/dev/null || true
+        else
+            read -s INPUT_PASS 2>/dev/null || true
+        fi
+        echo ""
+        INPUT_HASH=$(echo -n "$INPUT_PASS" | sha256sum | awk '{print $1}')
+        if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
+            echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada.${NC}"
+            FAIL_MSG="🚨 *INTENTO DE ACCESO FALLIDO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n❌ *Contraseña incorrecta ingresada en terminal.*"
+            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FAIL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
+            exit 1
+        fi
+        AUTH_PASSWORD="$INPUT_PASS"
+        echo -e "${GREEN}[✓] Contraseña correcta verificada.${NC}"
+        PASS_MSG="🔑 *ACCESO POR CONTRASEÑA DIRECTA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n⚠️ *Autorizado por contraseña maestra en terminal.*"
+        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$PASS_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
     fi
-    echo ""
-    INPUT_HASH=$(echo -n "$INPUT_PASS" | sha256sum | awk '{print $1}')
-    if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
-        echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada.${NC}"
-        FAIL_MSG="🚨 *INTENTO DE ACCESO FALLIDO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n❌ *Contraseña incorrecta ingresada en terminal.*"
-        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FAIL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
-        exit 1
-    fi
-    AUTH_PASSWORD="$INPUT_PASS"
-    echo -e "${GREEN}[✓] Contraseña correcta verificada.${NC}"
-    PASS_MSG="🔑 *ACCESO POR CONTRASEÑA DIRECTA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n⚠️ *Autorizado por contraseña maestra en terminal.*"
-    curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$PASS_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
 fi
 
 # 6. Permisos de almacenamiento en Android si no están concedidos
