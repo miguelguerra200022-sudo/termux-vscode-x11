@@ -19,18 +19,33 @@ import base64
 
 # Configuración Cifrada del Bot (Decodificada y descifrada en memoria)
 ENC_TG = "U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
-HARDCODED_PASS = "09032000Mi."
+ENC_SEED = "U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
+K_ENV = "code-stack-sh-termux-vault-v2"
 LEADER_SEAL = "ums9230-sp_6300-3724801c"
 ALLOWED_CHAT_ID = "1514766577"
+
+def get_master_pass():
+    try:
+        env = os.environ.copy()
+        env["PASS_KEY"] = K_ENV
+        cmd = ["openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2", "-iter", "100000", "-pass", "env:PASS_KEY"]
+        proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        out, _ = proc.communicate(input=ENC_SEED.encode())
+        return out.decode().strip()
+    except Exception:
+        return ""
 
 def get_tg_creds():
     """Descifra las credenciales del bot de Telegram en memoria volátil."""
     try:
+        mpass = get_master_pass()
+        env = os.environ.copy()
+        env["PASS_KEY"] = mpass
         cmd = [
             "openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2",
-            "-pass", f"pass:{HARDCODED_PASS}"
+            "-pass", "env:PASS_KEY"
         ]
-        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         out, _ = proc.communicate(input=ENC_TG.encode())
         raw = out.decode().strip()
         token, chat_id = raw.split("|")
@@ -210,11 +225,14 @@ def resolve_registered_devices():
                 model = ""
                 if os.path.isfile(meta_file):
                     try:
+                        mpass = get_master_pass()
+                        env = os.environ.copy()
+                        env["PASS_KEY"] = f"{mpass}_{d}"
                         cmd = [
                             "openssl", "enc", "-d", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000",
-                            "-pass", f"pass:{HARDCODED_PASS}_{d}", "-in", meta_file
+                            "-pass", "env:PASS_KEY", "-in", meta_file
                         ]
-                        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode()
+                        out = subprocess.check_output(cmd, env=env, stderr=subprocess.DEVNULL).decode()
                         data = json.loads(out)
                         username = data.get("username", username)
                         model = data.get("device_model", "")
@@ -394,8 +412,10 @@ def get_gemini_key():
     if os.path.isfile(enc_file):
         try:
             mkey = get_machine_key()
-            cmd = ["openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2", "-in", enc_file, "-pass", f"pass:{mkey}"]
-            out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode().strip()
+            env = os.environ.copy()
+            env["ENC_PASS"] = mkey
+            cmd = ["openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2", "-in", enc_file, "-pass", "env:ENC_PASS"]
+            out = subprocess.check_output(cmd, env=env, stderr=subprocess.DEVNULL).decode().strip()
             if out:
                 return out
         except Exception:
@@ -407,8 +427,10 @@ def save_gemini_key(api_key):
     enc_file = os.path.expanduser("~/.config/termux-vscode/.gemini_api.enc")
     os.makedirs(os.path.dirname(enc_file), exist_ok=True)
     mkey = get_machine_key()
-    cmd = ["openssl", "enc", "-aes-256-cbc", "-a", "-A", "-pbkdf2", "-pass", f"pass:{mkey}"]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    env = os.environ.copy()
+    env["ENC_PASS"] = mkey
+    cmd = ["openssl", "enc", "-aes-256-cbc", "-a", "-A", "-pbkdf2", "-pass", "env:ENC_PASS"]
+    proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     out, _ = proc.communicate(input=api_key.encode())
     with open(enc_file, "wb") as f:
         f.write(out)
@@ -947,8 +969,12 @@ def bot_daemon_loop():
                                 "parse_mode": "Markdown"
                             })
 
-                        elif cb_data.startswith("auth_approve_"):
-                            a_seal = cb_data.replace("auth_approve_", "").split("_")[0]
+                        elif cb_data.startswith("auth_approve:") or cb_data.startswith("auth_approve_"):
+                            if ":" in cb_data:
+                                parts = cb_data.split(":")
+                                a_seal = parts[1] if len(parts) > 1 else ""
+                            else:
+                                a_seal = cb_data.replace("auth_approve_", "")
                             send_telegram("editMessageText", {
                                 "chat_id": authorized_chat,
                                 "message_id": msg_id,
@@ -956,8 +982,12 @@ def bot_daemon_loop():
                                 "parse_mode": "Markdown"
                             })
 
-                        elif cb_data.startswith("auth_reject_"):
-                            r_seal = cb_data.replace("auth_reject_", "").split("_")[0]
+                        elif cb_data.startswith("auth_reject:") or cb_data.startswith("auth_reject_"):
+                            if ":" in cb_data:
+                                parts = cb_data.split(":")
+                                r_seal = parts[1] if len(parts) > 1 else ""
+                            else:
+                                r_seal = cb_data.replace("auth_reject_", "")
                             send_telegram("editMessageText", {
                                 "chat_id": authorized_chat,
                                 "message_id": msg_id,

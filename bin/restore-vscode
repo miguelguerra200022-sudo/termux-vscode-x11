@@ -15,7 +15,9 @@ HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
 AUTH_ENC="$HOME/.config/termux-vscode/.auth_token.enc"
 
 # 1. Autenticación si no está autenticado previamente
-USER_PASS="09032000Mi."
+ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
+K_ENV="code-stack-sh-termux-vault-v2"
+USER_PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
 if [ ! -f "$AUTH_ENC" ]; then
     if [ -t 0 ]; then
         echo -ne "🔒 Contraseña de autorización: "
@@ -25,7 +27,7 @@ if [ ! -f "$AUTH_ENC" ]; then
         read -r INPUT_PASS || true
     fi
 
-    INPUT_HASH=$(echo -n "$INPUT_PASS" | sha256sum | awk '{print $1}')
+    INPUT_HASH=$(printf "%s" "$INPUT_PASS" | sha256sum | awk '{print $1}')
     if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
         echo -e "${RED}[!] Contraseña incorrecta.${NC}"
         if command -v cloud-sentinel >/dev/null 2>&1; then
@@ -78,12 +80,8 @@ else
 fi
 
 if [ -z "$ACTIVE_ID" ] || [ ! -f "$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc" ]; then
-    if [ -f "$REPO_DIR/credenciales/$LEADER_SEAL/vault.enc" ]; then
-        ACTIVE_ID="$LEADER_SEAL"
-    else
-        echo -e "${RED}[!] Error: No se encontró la bóveda cifrada 'vault.enc' para el dispositivo (${LOCAL_SEAL}).${NC}"
-        exit 1
-    fi
+    echo -e "${RED}[!] Error: No se encontró la bóveda cifrada 'vault.enc' para el dispositivo (${LOCAL_SEAL}).${NC}"
+    exit 1
 fi
 
 TARGET_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
@@ -91,9 +89,9 @@ TARGET_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
 
 echo -e "${CYAN}[*] Descifrando bóveda en RAM para: ${ACTIVE_ID}...${NC}"
 
-# 5. Descifrar directamente en RAM a destino
+# 5. Descifrar directamente en RAM a destino sin exponer clave en ps aux
 mkdir -p "$HOME/.config"
-openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${USER_PASS}_${TARGET_SEAL}" \
+PASS_KEY="${USER_PASS}_${TARGET_SEAL}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY \
     -in "$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc" 2>/dev/null | \
     tar -xzf - -C "$HOME/.config" 2>/dev/null || true
 

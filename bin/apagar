@@ -58,7 +58,7 @@ rm -rf "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.X11-unix/X*" /data/data/
     fi
     if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
         cd "$REPO_DIR"
-        tar -czf - data config 2>/dev/null | openssl enc -aes-256-cbc -salt -pbkdf2 -pass pass:"$MACHINE_KEY" -out "$VAULT_FILE" 2>/dev/null || true
+        tar -czf - data config 2>/dev/null | PASS_KEY="$MACHINE_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -pass env:PASS_KEY -out "$VAULT_FILE" 2>/dev/null || true
         chmod 600 "$VAULT_FILE" 2>/dev/null || true
     fi
     history -c 2>/dev/null || true

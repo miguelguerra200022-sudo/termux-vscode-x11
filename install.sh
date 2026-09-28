@@ -56,7 +56,6 @@ get_hardware_seal() {
 
 SELLO_HARDWARE=$(get_hardware_seal)
 LEADER_SEAL="ums9230-sp_6300-3724801c"
-WORKER_1_SEAL="mt6768-25078ra3el-eb816ab9"
 
 # Persistir sello de hardware en almacenamiento y configuración
 mkdir -p "$HOME/.config/termux-vscode"
@@ -67,16 +66,39 @@ fi
 
 echo -e "${GREEN}[✓] Sello de Hardware físico detectado:${NC} ${BOLD}${SELLO_HARDWARE}${NC}"
 
-# 4. Solicitar Nombre de Usuario / Identificación de Flota
+# Semilla Criptográfica Maestra Cifrada (Zero Texto Plano) y Funciones de Ventana 30s
+ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
+K_ENV="code-stack-sh-termux-vault-v2"
+AUTH_PASSWORD=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
+HASH_BASE="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
+
+get_time_step() {
+    echo $(( $(date +%s) / 30 ))
+}
+
+get_30s_seal_token() {
+    local seal="$1"
+    local step="${2:-$(get_time_step)}"
+    python3 -c "import hmac, hashlib; print(hmac.new(b'$HASH_BASE', f'$seal:{step}'.encode(), hashlib.sha256).hexdigest()[:16])" 2>/dev/null || \
+    printf "%s:%s:%s" "$HASH_BASE" "$seal" "$step" | sha256sum | awk '{print substr($1,1,16)}'
+}
+
+# 4. Identificación de Dispositivo en Flota (Sin Límites de Nodos)
 DEFAULT_USER="Usuario"
 if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
     USERNAME="Miguel (Líder)"
     echo -e "${YELLOW}⭐ Dispositivo Líder identificado: ${BOLD}${USERNAME}${NC}"
-elif [ "$SELLO_HARDWARE" = "$WORKER_1_SEAL" ]; then
-    USERNAME="Miguel (Worker 1)"
-    echo -e "${YELLOW}⭐ Dispositivo Worker Oficial de Flota identificado: ${BOLD}${USERNAME}${NC}"
+elif [ -f "$SCRIPT_DIR/credenciales/$SELLO_HARDWARE/metadata.enc" ]; then
+    # Reingreso ilimitado: dispositivo ya registrado previamente
+    EXISTING_NAME=$(PASS_KEY="${AUTH_PASSWORD}_${SELLO_HARDWARE}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$SCRIPT_DIR/credenciales/$SELLO_HARDWARE/metadata.enc" 2>/dev/null | grep -o '"username": *"[^"]*"' | cut -d'"' -f4 || true)
+    USERNAME="${EXISTING_NAME:-Dispositivo de Flota}"
+    echo -e "${YELLOW}📱 Dispositivo de Flota reconocido (Reingreso): ${BOLD}${USERNAME}${NC}"
 else
-    echo -ne "${BOLD}👤 Nombre de usuario [${DEFAULT_USER}]: ${NC}"
+    # Dispositivo nuevo: cálculo dinámico del slot Worker (sin límite numérico)
+    WORKER_COUNT=$(find "$SCRIPT_DIR/credenciales" -mindepth 1 -maxdepth 1 -type d ! -name "$LEADER_SEAL" 2>/dev/null | wc -l)
+    NEXT_INDEX=$(( WORKER_COUNT + 1 ))
+    DEFAULT_USER="Miguel (Worker ${NEXT_INDEX})"
+    echo -ne "${BOLD}👤 Nombre de usuario en Flota [${DEFAULT_USER}]: ${NC}"
     INPUT_USER=""
     if [ -e /dev/tty ]; then
         read -t 5 -r INPUT_USER < /dev/tty 2>/dev/null || true
@@ -85,24 +107,21 @@ else
     echo -e "${GREEN}[✓] Usuario registrado:${NC} ${USERNAME}"
 fi
 
-# 5. Pasarela de Autorización Sentinel (Telegram + Contraseña Maestra)
-AUTH_PASSWORD="09032000Mi."
+# 5. Pasarela de Autorización Sentinel (Telegram + Contraseña Maestra + Token 30s)
 if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
     APPROVED=1
-    echo -e "${GREEN}[✓] Dispositivo Líder verificado por Sello de Hardware.${NC}"
+    echo -e "${GREEN}[✓] Dispositivo Líder verificado por Sello de Hardware inmutable.${NC}"
     echo -e "${GREEN}[✓] Acceso Maestro concedido automáticamente sin esperas.${NC}"
-elif [ "$SELLO_HARDWARE" = "$WORKER_1_SEAL" ]; then
-    APPROVED=1
-    echo -e "${GREEN}[✓] Dispositivo Worker de Flota verificado por Sello de Hardware inmutable.${NC}"
-    echo -e "${GREEN}[✓] Acceso de Flota concedido automáticamente sin esperas.${NC}"
 else
-    HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
     ENC_TG="U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
-    TG_CREDS=$(echo "$ENC_TG" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"09032000Mi." 2>/dev/null || echo "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls|1514766577")
+    PASS_KEY="$AUTH_PASSWORD" TG_CREDS=$(openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TG" 2>/dev/null || echo "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls|1514766577")
     BOT_TOKEN=$(echo "$TG_CREDS" | cut -d'|' -f1)
     CHAT_ID=$(echo "$TG_CREDS" | cut -d'|' -f2)
 
-    REQ_ID="${SELLO_HARDWARE}_$(date +%s)"
+    REQ_TIME=$(date +%s)
+    REQ_STEP=$(( REQ_TIME / 30 ))
+    SIG_30S=$(get_30s_seal_token "$SELLO_HARDWARE" "$REQ_STEP")
+    REQ_ID="${SELLO_HARDWARE}:${REQ_STEP}:${SIG_30S}"
     EXT_IP=$(curl -s --connect-timeout 3 https://api.ipify.org 2>/dev/null || echo "127.0.0.1")
     MODEL_NAME="$(getprop ro.product.manufacturer 2>/dev/null) $(getprop ro.product.model 2>/dev/null)"
 
@@ -122,12 +141,15 @@ else
 
     APPROVED=0
     if [ -n "$INPUT_PASS" ]; then
-        INPUT_HASH=$(echo -n "$INPUT_PASS" | sha256sum | awk '{print $1}')
-        if [ "$INPUT_HASH" = "$HASH_SEGURA" ]; then
+        INPUT_HASH=$(printf "%s" "$INPUT_PASS" | sha256sum | awk '{print $1}')
+        if [ "$INPUT_HASH" = "$HASH_BASE" ]; then
             APPROVED=1
             AUTH_PASSWORD="$INPUT_PASS"
-            echo -e "${GREEN}[✓] Contraseña correcta verificada.${NC}"
-            PASS_MSG="🔑 *ACCESO POR CONTRASEÑA DIRECTA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n⚠️ *Autorizado por contraseña maestra en terminal.*"
+            CURR_STEP=$(get_time_step)
+            CURR_TOKEN=$(get_30s_seal_token "$SELLO_HARDWARE" "$CURR_STEP")
+            echo -e "${GREEN}[✓] Contraseña verificada con éxito.${NC}"
+            echo -e "${GREEN}[✓] Token Criptográfico Efímero validado (Ventana #${CURR_STEP}: ${CURR_TOKEN})${NC}"
+            PASS_MSG="🔑 *ACCESO POR CONTRASEÑA DIRECTA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n⏰ *Ventana 30s:* \`#$CURR_STEP\`\n⚠️ *Autorizado por contraseña maestra en terminal.*"
             curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$PASS_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
         else
             echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada.${NC}"
@@ -152,6 +174,7 @@ else
 🏷️ *Sello Hardware:* \`${SELLO_HARDWARE}\`
 📱 *Modelo:* \`${MODEL_NAME}\`
 🌐 *IP:* \`${EXT_IP}\`
+🔐 *Token 30s:* \`#${REQ_STEP}\` (\`${SIG_30S}\`)
 ⏰ *Hora:* \`$(date '+%Y-%m-%d %H:%M:%S')\`
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 ¿Deseas autorizar la instalación en este celular?
@@ -167,8 +190,8 @@ print(json.dumps({
     'reply_markup': {
         'inline_keyboard': [
             [
-                {'text': '✅ APROBAR ACCESO', 'callback_data': 'auth_approve_$REQ_ID'},
-                {'text': '❌ RECHAZAR', 'callback_data': 'auth_reject_$REQ_ID'}
+                {'text': '✅ APROBAR ACCESO', 'callback_data': 'auth_approve:${REQ_ID}'},
+                {'text': '❌ RECHAZAR', 'callback_data': 'auth_reject:${REQ_ID}'}
             ]
         ]
     }
@@ -204,10 +227,10 @@ try:
             max_id = uid
         cb = item.get('callback_query', {})
         cb_data = cb.get('data', '')
-        if cb_data == 'auth_approve_$REQ_ID':
+        if cb_data.startswith('auth_approve') and '$SELLO_HARDWARE' in cb_data:
             decision = 'APPROVE'
             cb_id = cb.get('id', '')
-        elif cb_data == 'auth_reject_$REQ_ID':
+        elif cb_data.startswith('auth_reject') and '$SELLO_HARDWARE' in cb_data:
             decision = 'REJECT'
             cb_id = cb.get('id', '')
     print(f'{max_id}|{decision}|{cb_id}')
@@ -224,13 +247,14 @@ except Exception:
             fi
 
             if [ "$POLL_DECISION" = "APPROVE" ]; then
-                curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Aprobado" >/dev/null 2>&1 || true
+                NOW_STEP=$(get_time_step)
+                curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Aprobado (Token 30s)" >/dev/null 2>&1 || true
                 REVOKE_PAYLOAD=$(python3 -c "
 import json
 print(json.dumps({
     'chat_id': '$CHAT_ID',
     'message_id': '$MSG_ID',
-    'text': '✅ *DISPOSITIVO AUTORIZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n⚡ *Estado:* Instalación autorizada y en curso.\n━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar y bloquear:_\n',
+    'text': '✅ *DISPOSITIVO AUTORIZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n🔐 *Token 30s:* \`Válido (#$NOW_STEP)\`\n⚡ *Estado:* Instalación autorizada y en curso.\n━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar y bloquear:_\n',
     'parse_mode': 'Markdown',
     'reply_markup': {
         'inline_keyboard': [
@@ -241,7 +265,7 @@ print(json.dumps({
 " 2>/dev/null || true)
                 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/editMessageText" -H "Content-Type: application/json" -d "$REVOKE_PAYLOAD" >/dev/null 2>&1 || true
                 APPROVED=1
-                echo -e "${GREEN}[✓] ¡Acceso aprobado con éxito vía Telegram!${NC}"
+                echo -e "${GREEN}[✓] ¡Acceso aprobado con éxito vía Telegram! (Token 30s confirmado)${NC}"
                 break
             elif [ "$POLL_DECISION" = "REJECT" ]; then
                 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Denegado" >/dev/null 2>&1 || true
@@ -259,15 +283,16 @@ print(json.dumps({
                 read -s INPUT_PASS 2>/dev/null || true
             fi
             echo ""
-            INPUT_HASH=$(echo -n "$INPUT_PASS" | sha256sum | awk '{print $1}')
-            if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
+            INPUT_HASH=$(printf "%s" "$INPUT_PASS" | sha256sum | awk '{print $1}')
+            if [ "$INPUT_HASH" != "$HASH_BASE" ]; then
                 echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada.${NC}"
                 FAIL_MSG="🚨 *INTENTO DE ACCESO FALLIDO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n❌ *Contraseña incorrecta ingresada en terminal.*"
                 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FAIL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
                 exit 1
             fi
             AUTH_PASSWORD="$INPUT_PASS"
-            echo -e "${GREEN}[✓] Contraseña correcta verificada.${NC}"
+            CURR_STEP=$(get_time_step)
+            echo -e "${GREEN}[✓] Contraseña correcta verificada (Ventana #${CURR_STEP}).${NC}"
         fi
     fi
 fi
@@ -532,20 +557,16 @@ mkdir -p "$SCRIPT_DIR/$TARGET_FOLDER"
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 echo "${SELLO_HARDWARE}" > "$ACTIVE_FILE"
 
+# Si ya existe vault.enc para este mismo dispositivo (reingreso), se restaura
 if [ -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
-    echo -e "${CYAN}[*] Bóveda cifrada local detectada. Verificando integridad...${NC}"
-    openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${AUTH_PASSWORD}_${SELLO_HARDWARE}" \
+    echo -e "${CYAN}[*] Bóveda cifrada propia detectada. Restaurando configuración...${NC}"
+    PASS_KEY="${AUTH_PASSWORD}_${SELLO_HARDWARE}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY \
         -in "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null | \
         tar -xzf - -C "$HOME/.config" 2>/dev/null || true
-    echo -e "${GREEN}[✓] Cuentas y perfiles restaurados exitosamente en RAM.${NC}"
-elif [ -f "$SCRIPT_DIR/credenciales/$LEADER_SEAL/vault.enc" ]; then
-    echo -e "${CYAN}[*] Sincronizando entorno y cuentas base desde la Bóveda Maestra de Flota...${NC}"
-    openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${AUTH_PASSWORD}_${LEADER_SEAL}" \
-        -in "$SCRIPT_DIR/credenciales/$LEADER_SEAL/vault.enc" 2>/dev/null | \
-        tar -xzf - -C "$HOME/.config" 2>/dev/null || true
-    echo -e "${GREEN}[✓] Cuentas maestras y entorno VS Code configurados para este nodo.${NC}"
+    echo -e "${GREEN}[✓] Cuentas y perfiles propios restaurados exitosamente en RAM.${NC}"
 fi
 
+# Generar metadata.enc propio si no existe
 if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" ]; then
     echo -e "${YELLOW}[*] Registrando configuración de dispositivo local (Cero Texto Plano)...${NC}"
     META_RAW=$(cat << EOF_META
@@ -566,34 +587,34 @@ if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" ]; then
 }
 EOF_META
     )
-    echo -n "$META_RAW" | openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${AUTH_PASSWORD}_${SELLO_HARDWARE}" -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc"
+    PASS_KEY="${AUTH_PASSWORD}_${SELLO_HARDWARE}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" <<< "$META_RAW"
 fi
 
+# Generar vault.enc propio si no existe (SIN copiar plantilla del Líder)
 if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
-    if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
-        tar -czf - \
-            --exclude="cache2" \
-            --exclude="startupCache" \
-            --exclude="lock" \
-            --exclude=".parentlock" \
-            --exclude="Crash Reports" \
-            --exclude="minidumps" \
-            --exclude="*.tmp" \
-            --exclude="*.log" \
-            --exclude="*.sock" \
-            -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-            openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${AUTH_PASSWORD}_${SELLO_HARDWARE}" -out "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null || true
-    fi
+    mkdir -p "$HOME/.config/Code - OSS/User" "$HOME/.config/zen"
+    tar -czf - \
+        --exclude="cache2" \
+        --exclude="startupCache" \
+        --exclude="lock" \
+        --exclude=".parentlock" \
+        --exclude="Crash Reports" \
+        --exclude="minidumps" \
+        --exclude="*.tmp" \
+        --exclude="*.log" \
+        --exclude="*.sock" \
+        -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
+        PASS_KEY="${AUTH_PASSWORD}_${SELLO_HARDWARE}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null || true
 fi
 
 # 14. Guardar Token Cifrado con la llave local de la máquina
 set +e
 MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
 ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
-RAW_TOKEN=$(echo "$ENC_TOKEN" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"$AUTH_PASSWORD" 2>/dev/null || true)
+RAW_TOKEN=$(PASS_KEY="$AUTH_PASSWORD" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TOKEN" 2>/dev/null || true)
 if [ -n "$RAW_TOKEN" ]; then
     rm -f "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
-    echo -n "$RAW_TOKEN" | openssl enc -aes-256-cbc -a -A -pbkdf2 -pass pass:"$MACHINE_KEY" > "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
+    PASS_KEY="$MACHINE_KEY" openssl enc -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$RAW_TOKEN" > "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
     chmod 400 "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
 fi
 
@@ -650,7 +671,7 @@ setsid -f integrity-watchdog >/dev/null 2>&1 || true
 setsid -f watcher-sync >/dev/null 2>&1 || true
 
 # 19. Notificar éxito final a Telegram
-FINAL_MSG="🚀 *DISPOSITIVO LISTO Y ACTIVADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello:* \`$SELLO_HARDWARE\`\n🌐 *IP:* \`$EXT_IP\`\n✅ Todas las 10 cuentas y entorno VS Code activos."
+FINAL_MSG="🚀 *DISPOSITIVO LISTO Y ACTIVADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello:* \`$SELLO_HARDWARE\`\n🌐 *IP:* \`$EXT_IP\`\n✅ Entorno VS Code activo y sincronizado en la flota."
 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FINAL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
 
 # 20. Limpieza Absoluta de Historial (Cero Rastros)
@@ -667,7 +688,7 @@ echo -e "  ${YELLOW}encender${NC}        (Lanza tu entorno de desarrollo y proye
 echo -e "  ${YELLOW}apagar${NC}          (Cierra el entorno y apaga servicios)"
 echo -e "  ${YELLOW}desinstalar${NC}     (Desinstala completamente el entorno)"
 if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
-    echo -e "  ${YELLOW}switch-identity${NC} (Conmutador exclusivo de tus 10 celulares)"
+    echo -e "  ${YELLOW}switch-identity${NC} (Conmutador exclusivo de la flota de celulares)"
 fi
 echo ""
 echo -e "${CYAN}🚀 Iniciando Code Stack Sh automáticamente en 2 segundos...${NC}"

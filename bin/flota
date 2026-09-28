@@ -3,7 +3,7 @@ set -e
 
 # ==============================================================================
 # flota: Centro de Comando y Control de la Flota (Exclusivo del Líder)
-# Control Total sobre los 10 Celulares y sus Cuentas de Google
+# Control Total sobre la Flota de Celulares y sus Cuentas de Google
 # ==============================================================================
 
 BLUE='\033[1;34m'
@@ -43,7 +43,9 @@ fi
 
 CREDS_DIR="$REPO_DIR/credenciales"
 mkdir -p "$CREDS_DIR"
-PASS="09032000Mi."
+ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
+K_ENV="code-stack-sh-termux-vault-v2"
+PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 CURRENT_ACTIVE="ums9230-sp_6300-3724801c"
 [ -f "$ACTIVE_FILE" ] && CURRENT_ACTIVE=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$CURRENT_ACTIVE")
@@ -55,7 +57,7 @@ get_decrypted_meta() {
     local enc_file="$CREDS_DIR/$seal/metadata.enc"
 
     if [ -f "$enc_file" ]; then
-        openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}_${seal}" -in "$enc_file" 2>/dev/null || echo "{}"
+        PASS_KEY="${PASS}_${seal}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$enc_file" 2>/dev/null || echo "{}"
     else
         echo "{}"
     fi
@@ -183,7 +185,7 @@ cmd_bloquear() {
     fi
 
     BLACKLIST_FILE="$CREDS_DIR/.blacklist.enc"
-    echo "$SELECTED" | openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}_${LEADER_SEAL}" -out "$BLACKLIST_FILE"
+    PASS_KEY="${PASS}_${LEADER_SEAL}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$BLACKLIST_FILE" <<< "$SELECTED"
 
     echo -e "${RED}[🚨] DISPOSITIVO BLOQUEADO:${NC} ${SELECTED}"
     echo -e "${YELLOW}[*] Orden de auto-destrucción y borrado de cookies registrada en la flota.${NC}"
@@ -209,7 +211,7 @@ cmd_backup() {
     BACKUP_FILE="$HOME/backup_flota_$(date +%Y%m%d_%H%M%S).bin"
     echo -e "${YELLOW}[*] Generando respaldo maestro ultra-cifrado de la flota completa...${NC}"
     tar -czf - -C "$REPO_DIR" credenciales config bin 2>/dev/null | \
-        openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}" -out "$BACKUP_FILE"
+        PASS_KEY="${PASS}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$BACKUP_FILE"
     echo -e "${GREEN}[✓] Respaldo maestro guardado en:${NC} ${BACKUP_FILE}"
     echo -e "${GRAY}    Puedes guardarlo en un pendrive USB o almacenamiento externo seguro.${NC}"
 }

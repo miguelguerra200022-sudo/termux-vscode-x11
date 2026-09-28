@@ -331,14 +331,18 @@ do_silent_backup() {
         MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
 
         if [ -f "$AUTH_ENC" ]; then
-            TOKEN=$(openssl enc -d -aes-256-cbc -a -A -pbkdf2 -in "$AUTH_ENC" -pass pass:"$MACHINE_KEY" 2>/dev/null || true)
+            TOKEN=$(PASS_KEY="$MACHINE_KEY" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -in "$AUTH_ENC" -pass env:PASS_KEY 2>/dev/null || true)
         elif [ -f "$AUTH_FILE" ]; then
             TOKEN=$(cat "$AUTH_FILE" 2>/dev/null || true)
         fi
 
         if [ -z "$TOKEN" ]; then
+            local ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
+            local K_ENV="code-stack-sh-termux-vault-v2"
+            local MASTER_PASS
+            MASTER_PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
             local ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
-            TOKEN=$(echo "$ENC_TOKEN" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"09032000Mi." 2>/dev/null || true)
+            TOKEN=$(PASS_KEY="$MASTER_PASS" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TOKEN" 2>/dev/null || true)
         fi
 
         if [ -n "$TOKEN" ]; then

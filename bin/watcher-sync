@@ -214,6 +214,9 @@ do_sync() {
     TARGET_SEAL=$(basename "$VAULT_DIR")
 
     if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
+        ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
+        K_ENV="code-stack-sh-termux-vault-v2"
+        MASTER_PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
         tar -czf - \
             --exclude="cache2" \
             --exclude="startupCache" \
@@ -225,7 +228,7 @@ do_sync() {
             --exclude="*.log" \
             --exclude="*.sock" \
             -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-            openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"09032000Mi._${TARGET_SEAL}" -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
+            PASS_KEY="${MASTER_PASS}_${TARGET_SEAL}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
     fi
 
     # 6.4 Sincronizar configuraciones visuales
@@ -262,17 +265,17 @@ do_sync() {
             MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
 
             if [ -z "$TOKEN" ] && [ -f "$AUTH_ENC" ]; then
-                TOKEN=$(openssl enc -d -aes-256-cbc -a -A -pbkdf2 -in "$AUTH_ENC" -pass pass:"$MACHINE_KEY" 2>/dev/null || true)
+                TOKEN=$(PASS_KEY="$MACHINE_KEY" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -in "$AUTH_ENC" -pass env:PASS_KEY 2>/dev/null || true)
             elif [ -z "$TOKEN" ] && [ -f "$AUTH_FILE" ]; then
                 TOKEN=$(cat "$AUTH_FILE" 2>/dev/null || true)
                 if [ -n "$TOKEN" ]; then
-                    echo -n "$TOKEN" | openssl enc -aes-256-cbc -a -A -pbkdf2 -pass pass:"$MACHINE_KEY" > "$AUTH_ENC" 2>/dev/null || true
+                    PASS_KEY="$MACHINE_KEY" openssl enc -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$TOKEN" > "$AUTH_ENC" 2>/dev/null || true
                     chmod 400 "$AUTH_ENC" 2>/dev/null || true
                     rm -f "$AUTH_FILE" 2>/dev/null || true
                 fi
             fi
             if [ -z "$TOKEN" ] && [ -n "${SYNC_PASS:-}" ]; then
-                TOKEN=$(echo "$ENC_TOKEN" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"$SYNC_PASS" 2>/dev/null || true)
+                TOKEN=$(PASS_KEY="$SYNC_PASS" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TOKEN" 2>/dev/null || true)
             fi
 
             if [ -n "$TOKEN" ]; then

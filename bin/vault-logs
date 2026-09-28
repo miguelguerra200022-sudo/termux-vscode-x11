@@ -14,7 +14,21 @@ import time
 import subprocess
 import glob
 
-MASTER_PASS = "09032000Mi."
+ENC_SEED = "U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
+K_ENV = "code-stack-sh-termux-vault-v2"
+
+def get_master_pass():
+    try:
+        env = os.environ.copy()
+        env["PASS_KEY"] = K_ENV
+        cmd = ["openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2", "-iter", "100000", "-pass", "env:PASS_KEY"]
+        proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        out, _ = proc.communicate(input=ENC_SEED.encode())
+        return out.decode().strip()
+    except Exception:
+        return ""
+
+MASTER_PASS = get_master_pass()
 DEFAULT_SEAL = "ums9230-sp_6300-3724801c"
 
 def get_repo_dir():
@@ -69,11 +83,13 @@ def encrypt_log(raw_text, seal):
     compressed = gzip.compress(sanitized, compresslevel=9)
     key = f"{MASTER_PASS}_{seal}"
 
+    env = os.environ.copy()
+    env["PASS_KEY"] = key
     cmd = [
         "openssl", "enc", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000",
-        "-pass", f"pass:{key}"
+        "-pass", "env:PASS_KEY"
     ]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     encrypted, err = proc.communicate(input=compressed)
     if proc.returncode != 0:
         raise RuntimeError(f"Fallo de cifrado OpenSSL: {err.decode()}")
@@ -82,11 +98,13 @@ def encrypt_log(raw_text, seal):
 def decrypt_log(enc_bytes, seal):
     """Descifra con AES-256-CBC y descomprime gzip directamente en memoria RAM."""
     key = f"{MASTER_PASS}_{seal}"
+    env = os.environ.copy()
+    env["PASS_KEY"] = key
     cmd = [
         "openssl", "enc", "-d", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000",
-        "-pass", f"pass:{key}"
+        "-pass", "env:PASS_KEY"
     ]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     compressed, err = proc.communicate(input=enc_bytes)
     if proc.returncode != 0:
         raise RuntimeError(f"Fallo de descifrado OpenSSL: {err.decode()}")

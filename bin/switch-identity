@@ -3,7 +3,7 @@ set -e
 
 # ==============================================================================
 # switch-identity: Conmutador Multi-Dispositivo Exclusivo del Líder
-# Permite alternar instantáneamente entre los 10 celulares y sus cuentas de Google
+# Permite alternar instantáneamente entre los celulares de la flota y sus cuentas de Google
 # ==============================================================================
 
 BLUE='\033[1;34m'
@@ -41,7 +41,9 @@ fi
 
 CREDS_DIR="$REPO_DIR/credenciales"
 mkdir -p "$CREDS_DIR"
-PASS="09032000Mi."
+ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
+K_ENV="code-stack-sh-termux-vault-v2"
+PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
 
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 CURRENT_ACTIVE="ums9230-sp_6300-3724801c"
@@ -50,7 +52,7 @@ CURRENT_ACTIVE="ums9230-sp_6300-3724801c"
 clear 2>/dev/null || true
 echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║   👑 CONMUTADOR DE IDENTIDADES MULTI-DISPOSITIVO (LÍDER)          ║${NC}"
-echo -e "${CYAN}║      Alterna entre los 10 celulares y sus cuentas de Google       ║${NC}"
+echo -e "${CYAN}║      Alterna entre los celulares de la flota y sus cuentas         ║${NC}"
 echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -68,7 +70,7 @@ for d in "$CREDS_DIR"/*; do
     ENC_FILE="$d/metadata.enc"
     META="{}"
     if [ -f "$ENC_FILE" ]; then
-        META=$(openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}_${SEAL}" -in "$ENC_FILE" 2>/dev/null || echo "{}")
+        META=$(PASS_KEY="${PASS}_${SEAL}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$ENC_FILE" 2>/dev/null || echo "{}")
     fi
 
     USER_NAME=$(python3 -c "import json; print(json.loads('''$META''').get('username', '$SEAL'))" 2>/dev/null || echo "$SEAL")
@@ -136,7 +138,7 @@ if [ -d "$CURRENT_VAULT_DIR" ]; then
         --exclude="*.log" \
         --exclude="*.sock" \
         -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-        openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}_${CURRENT_ACTIVE}" -out "$CURRENT_VAULT_DIR/vault.enc" 2>/dev/null || true
+        PASS_KEY="${PASS}_${CURRENT_ACTIVE}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$CURRENT_VAULT_DIR/vault.enc" 2>/dev/null || true
 fi
 
 echo -e "${CYAN}[*] Desempaquetando identidad seleccionada: '${TARGET_SEAL}'...${NC}"
@@ -146,7 +148,7 @@ if [ -f "$TARGET_VAULT" ]; then
     rm -rf "$HOME/.config/Code - OSS/User" "$HOME/.config/zen" 2>/dev/null || true
     mkdir -p "$HOME/.config"
 
-    openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"${PASS}_${TARGET_SEAL}" -in "$TARGET_VAULT" 2>/dev/null | \
+    PASS_KEY="${PASS}_${TARGET_SEAL}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$TARGET_VAULT" 2>/dev/null | \
         tar -xzf - -C "$HOME/.config" 2>/dev/null || true
 
     echo "$TARGET_SEAL" > "$ACTIVE_FILE"
