@@ -194,6 +194,7 @@ def play_intro(fps=12):
         try:
             old_settings = termios.tcgetattr(fd)
             tty.setcbreak(fd)
+            termios.tcflush(fd, termios.TCIFLUSH)
         except Exception:
             pass
 
@@ -208,8 +209,8 @@ def play_intro(fps=12):
 
     try:
         while True:
-            # Salto instantáneo si ya hay tecla pulsada en buffer
-            if fd is not None:
+            # Salto instantáneo si ya hay tecla pulsada en buffer tras dibujar el primer frame
+            if fd is not None and frame_idx > 0:
                 r, _, _ = select.select([fd], [], [], 0)
                 if r:
                     try:

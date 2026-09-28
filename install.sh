@@ -613,14 +613,14 @@ sleep 2
 
 if [ -e /dev/tty ]; then
     if command -v encender >/dev/null 2>&1; then
-        exec encender --no-intro < /dev/tty > /dev/tty 2>&1
+        exec encender < /dev/tty > /dev/tty 2>&1
     elif [ -f "$PREFIX/bin/encender" ]; then
-        exec "$PREFIX/bin/encender" --no-intro < /dev/tty > /dev/tty 2>&1
+        exec "$PREFIX/bin/encender" < /dev/tty > /dev/tty 2>&1
     fi
 else
     if command -v encender >/dev/null 2>&1; then
-        exec encender --no-intro
+        exec encender
     elif [ -f "$PREFIX/bin/encender" ]; then
-        exec "$PREFIX/bin/encender" --no-intro
+        exec "$PREFIX/bin/encender"
     fi
 fi
