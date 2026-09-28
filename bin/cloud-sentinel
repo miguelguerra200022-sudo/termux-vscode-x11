@@ -946,6 +946,24 @@ def bot_daemon_loop():
                                 "text": f"🔴 *ORDEN DE REVOCACIÓN Y BLOQUEO ENVIADA*\nSello: `{r_seal}`",
                                 "parse_mode": "Markdown"
                             })
+
+                        elif cb_data.startswith("auth_approve_"):
+                            a_seal = cb_data.replace("auth_approve_", "").split("_")[0]
+                            send_telegram("editMessageText", {
+                                "chat_id": authorized_chat,
+                                "message_id": msg_id,
+                                "text": f"✅ *DISPOSITIVO AUTORIZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* `{a_seal}`\n⚡ Instalación aprobada desde Telegram.",
+                                "parse_mode": "Markdown"
+                            })
+
+                        elif cb_data.startswith("auth_reject_"):
+                            r_seal = cb_data.replace("auth_reject_", "").split("_")[0]
+                            send_telegram("editMessageText", {
+                                "chat_id": authorized_chat,
+                                "message_id": msg_id,
+                                "text": f"❌ *ACCESO RECHAZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* `{r_seal}`\n⛔ Solicitud denegada.",
+                                "parse_mode": "Markdown"
+                            })
                         continue
 
                     # 2. Manejo de Mensajes de Texto y Comandos
@@ -959,6 +977,15 @@ def bot_daemon_loop():
 
                     text = msg.get("text", "").strip()
                     if not text:
+                        continue
+
+                    if text.startswith("/sentinel_pause_"):
+                        try:
+                            pause_sec = int(text.split("_")[-1])
+                        except Exception:
+                            pause_sec = 45
+                        print(f"[*] Pausando escucha por {pause_sec}s para autorización de dispositivo...")
+                        time.sleep(pause_sec)
                         continue
 
                     if text.startswith("/"):

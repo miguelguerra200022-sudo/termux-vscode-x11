@@ -67,15 +67,23 @@ if [ "$LOCAL_SEAL" = "$LEADER_SEAL" ]; then
     [ -z "$ACTIVE_ID" ] && ACTIVE_ID="Miguel (Líder)_ums9230-sp_6300-3724801c"
 else
     # Dispositivo Worker: Buscar la carpeta asociada a su sello de hardware
-    MATCH=$(find "$REPO_DIR/credenciales" -maxdepth 1 -type d -name "*_${LOCAL_SEAL}" 2>/dev/null | head -n 1)
-    if [ -n "$MATCH" ]; then
-        ACTIVE_ID=$(basename "$MATCH")
+    if [ -d "$REPO_DIR/credenciales/$LOCAL_SEAL" ]; then
+        ACTIVE_ID="$LOCAL_SEAL"
+    else
+        MATCH=$(find "$REPO_DIR/credenciales" -maxdepth 1 -type d -name "*${LOCAL_SEAL}" 2>/dev/null | head -n 1)
+        if [ -n "$MATCH" ]; then
+            ACTIVE_ID=$(basename "$MATCH")
+        fi
     fi
 fi
 
 if [ -z "$ACTIVE_ID" ] || [ ! -f "$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc" ]; then
-    echo -e "${RED}[!] Error: No se encontró la bóveda cifrada 'vault.enc' para el dispositivo (${LOCAL_SEAL}).${NC}"
-    exit 1
+    if [ -f "$REPO_DIR/credenciales/$LEADER_SEAL/vault.enc" ]; then
+        ACTIVE_ID="$LEADER_SEAL"
+    else
+        echo -e "${RED}[!] Error: No se encontró la bóveda cifrada 'vault.enc' para el dispositivo (${LOCAL_SEAL}).${NC}"
+        exit 1
+    fi
 fi
 
 TARGET_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
