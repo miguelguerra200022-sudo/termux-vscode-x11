@@ -159,6 +159,21 @@ def stop_audio(proc):
             except Exception:
                 pass
 
+def get_controlling_tty_fd():
+    """
+    Obtiene el descriptor de archivo de la terminal interactiva (teclado),
+    incluso si sys.stdin fue canalizado a través de una tubería (pipe) como en 'curl ... | bash'.
+    """
+    if sys.stdin.isatty():
+        return sys.stdin.fileno(), None
+    if os.path.exists("/dev/tty"):
+        try:
+            tty_f = open("/dev/tty", "rb", buffering=0)
+            return tty_f.fileno(), tty_f
+        except Exception:
+            pass
+    return None, None
+
 def play_intro(fps=12):
     if not sys.stdout.isatty():
         return 0
@@ -174,7 +189,7 @@ def play_intro(fps=12):
     hint_row = min(term_rows, top_offset + frame_h + 2)
 
     old_settings = None
-    fd = sys.stdin.fileno() if sys.stdin.isatty() else None
+    fd, tty_f = get_controlling_tty_fd()
     if fd is not None:
         try:
             old_settings = termios.tcgetattr(fd)
@@ -244,6 +259,11 @@ def play_intro(fps=12):
                 termios.tcsetattr(fd, termios.TCSANOW, old_settings)
             except Exception:
                 pass
+        if tty_f:
+            try:
+                tty_f.close()
+            except Exception:
+                pass
         sys.stdout.write("\033[0m\033[?25h\033[2J\033[H")
         sys.stdout.flush()
 
@@ -294,10 +314,11 @@ def run_split_command(cmd, title="INSTALACIÓN"):
     os.set_blocking(master, False)
 
     old_stdin = None
-    if sys.stdin.isatty():
+    input_fd, tty_f = get_controlling_tty_fd()
+    if input_fd is not None:
         try:
-            old_stdin = termios.tcgetattr(sys.stdin)
-            tty.setcbreak(sys.stdin.fileno())
+            old_stdin = termios.tcgetattr(input_fd)
+            tty.setcbreak(input_fd)
         except Exception:
             pass
 
@@ -327,8 +348,8 @@ def run_split_command(cmd, title="INSTALACIÓN"):
                 sys.stdout.flush()
 
             readers = [master]
-            if sys.stdin.isatty():
-                readers.append(sys.stdin.fileno())
+            if input_fd is not None:
+                readers.append(input_fd)
 
             r, _, _ = select.select(readers, [], [], 0.02)
             if master in r:
@@ -343,9 +364,9 @@ def run_split_command(cmd, title="INSTALACIÓN"):
                 except OSError:
                     break
 
-            if sys.stdin.isatty() and sys.stdin.fileno() in r:
+            if input_fd is not None and input_fd in r:
                 try:
-                    user_data = os.read(sys.stdin.fileno(), 1024)
+                    user_data = os.read(input_fd, 1024)
                     if user_data:
                         os.write(master, user_data)
                 except OSError:
@@ -361,9 +382,14 @@ def run_split_command(cmd, title="INSTALACIÓN"):
         except OSError:
             pass
     finally:
-        if old_stdin:
+        if old_stdin and input_fd is not None:
             try:
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin)
+                termios.tcsetattr(input_fd, termios.TCSADRAIN, old_stdin)
+            except Exception:
+                pass
+        if tty_f:
+            try:
+                tty_f.close()
             except Exception:
                 pass
         try:
@@ -420,7 +446,7 @@ def play_banner_interactive(fps=12):
         return 0
 
     old_settings = None
-    fd = sys.stdin.fileno() if sys.stdin.isatty() else None
+    fd, tty_f = get_controlling_tty_fd()
     if fd is not None:
         try:
             old_settings = termios.tcgetattr(fd)
@@ -487,6 +513,11 @@ def play_banner_interactive(fps=12):
             try:
                 termios.tcflush(fd, termios.TCIFLUSH)
                 termios.tcsetattr(fd, termios.TCSANOW, old_settings)
+            except Exception:
+                pass
+        if tty_f:
+            try:
+                tty_f.close()
             except Exception:
                 pass
         sys.stdout.write("\033[0m\033[?25h\033[2J\033[H")
