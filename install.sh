@@ -407,7 +407,6 @@ fi
 
 # Enlaces simbólicos de compatibilidad y accesos directos
 ln -sf "$PREFIX/bin/encender" "$PREFIX/bin/vscode" 2>/dev/null || true
-ln -sf "$PREFIX/bin/encender" "$PREFIX/bin/start-vscode" 2>/dev/null || true
 ln -sf "$PREFIX/bin/apagar" "$PREFIX/bin/stop-vscode" 2>/dev/null || true
 ln -sf "$PREFIX/bin/encender" "$HOME/encender.sh" 2>/dev/null || true
 ln -sf "$PREFIX/bin/apagar" "$HOME/apagar.sh" 2>/dev/null || true
@@ -525,10 +524,12 @@ EOF_META
 fi
 
 # 14. Guardar Token Cifrado con la llave local de la máquina
+set +e
 MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
 ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
 RAW_TOKEN=$(echo "$ENC_TOKEN" | openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass pass:"$AUTH_PASSWORD" 2>/dev/null || true)
 if [ -n "$RAW_TOKEN" ]; then
+    rm -f "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
     echo -n "$RAW_TOKEN" | openssl enc -aes-256-cbc -a -A -pbkdf2 -pass pass:"$MACHINE_KEY" > "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
     chmod 400 "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
 fi
@@ -538,29 +539,41 @@ echo -e "${YELLOW}[*] Configurando firmas criptográficas Ed25519...${NC}"
 mkdir -p "$HOME/.ssh" "$HOME/.config/git"
 chmod 700 "$HOME/.ssh" "$HOME/.config/git" 2>/dev/null || true
 if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
-    ssh-keygen -t ed25519 -N "" -f "$HOME/.ssh/id_ed25519" >/dev/null 2>&1
+    ssh-keygen -t ed25519 -N "" -f "$HOME/.ssh/id_ed25519" >/dev/null 2>&1 || true
 fi
 chmod 400 "$HOME/.ssh/id_ed25519" 2>/dev/null || true
-PUBKEY=$(cat "$HOME/.ssh/id_ed25519.pub")
-echo "principal $PUBKEY" > "$HOME/.config/git/allowed_signers"
-chmod 400 "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+PUBKEY=""
+if [ -f "$HOME/.ssh/id_ed25519.pub" ]; then
+    PUBKEY=$(cat "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true)
+fi
+if [ -n "$PUBKEY" ]; then
+    rm -f "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+    echo "principal $PUBKEY" > "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+    chmod 400 "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+fi
 
 git config --global user.name "Miguel Guerra" 2>/dev/null || true
 git config --global user.email "miguelguerra200022@gmail.com" 2>/dev/null || true
-git config --global user.signingkey "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true
-git config --global gpg.format ssh 2>/dev/null || true
-git config --global commit.gpgsign true 2>/dev/null || true
-git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+if [ -f "$HOME/.ssh/id_ed25519.pub" ]; then
+    git config --global user.signingkey "$HOME/.ssh/id_ed25519.pub" 2>/dev/null || true
+    git config --global gpg.format ssh 2>/dev/null || true
+    git config --global commit.gpgsign true 2>/dev/null || true
+    git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signers" 2>/dev/null || true
+fi
 
 # 16. Bóveda Dorada (Golden Vault)
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 mkdir -p "$GOLDEN_DIR"
 for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota"; do
-    [ -f "$PREFIX/bin/$bin_name" ] && cp "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
-    chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+    if [ -f "$PREFIX/bin/$bin_name" ]; then
+        rm -f "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+        cp -f "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+        chmod 500 "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
+    fi
 done
-cp "$HOME/.ssh/id_ed25519"* "$GOLDEN_DIR/" 2>/dev/null || true
-cp "$HOME/.config/git/allowed_signers" "$GOLDEN_DIR/" 2>/dev/null || true
+rm -f "$GOLDEN_DIR/id_ed25519"* "$GOLDEN_DIR/allowed_signers" 2>/dev/null || true
+cp -f "$HOME/.ssh/id_ed25519"* "$GOLDEN_DIR/" 2>/dev/null || true
+[ -f "$HOME/.config/git/allowed_signers" ] && cp -f "$HOME/.config/git/allowed_signers" "$GOLDEN_DIR/" 2>/dev/null || true
 
 # 17. Sellar integridad del repositorio
 if command -v integrity-guard >/dev/null 2>&1; then
@@ -598,8 +611,16 @@ echo -e "${CYAN}🚀 Iniciando Code Stack Sh automáticamente en 2 segundos...${
 echo -e "${GRAY}(Si deseas salir a la consola, presiona Ctrl+C ahora)${NC}"
 sleep 2
 
-if command -v encender >/dev/null 2>&1; then
-    exec encender
-elif [ -f "$PREFIX/bin/encender" ]; then
-    exec "$PREFIX/bin/encender"
+if [ -e /dev/tty ]; then
+    if command -v encender >/dev/null 2>&1; then
+        exec encender --no-intro < /dev/tty > /dev/tty 2>&1
+    elif [ -f "$PREFIX/bin/encender" ]; then
+        exec "$PREFIX/bin/encender" --no-intro < /dev/tty > /dev/tty 2>&1
+    fi
+else
+    if command -v encender >/dev/null 2>&1; then
+        exec encender --no-intro
+    elif [ -f "$PREFIX/bin/encender" ]; then
+        exec "$PREFIX/bin/encender" --no-intro
+    fi
 fi

@@ -149,10 +149,24 @@ def get_subdirs(path):
     except Exception:
         return []
 
+def ensure_controlling_tty():
+    """Si stdin no es una tty (por ejemplo en tuberías curl ... | bash), reconecta stdin a /dev/tty."""
+    if not sys.stdin.isatty() and os.path.exists("/dev/tty"):
+        try:
+            f = open("/dev/tty", "r")
+            os.dup2(f.fileno(), 0)
+            sys.stdin = open(0, "r")
+        except Exception:
+            pass
+
 def get_key():
     """Lee una tecla o secuencia de escape directamente desde el descriptor del SO sin buffer de Python."""
     if not sys.stdin.isatty():
-        return sys.stdin.read(1)
+        ch = sys.stdin.read(1)
+        if not ch:
+            time.sleep(0.5)
+            return 'QUIT'
+        return ch
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     try:
@@ -221,6 +235,11 @@ def prompt_text_with_esc(prompt_str):
       - str: El texto ingresado (puede ser vacío si presionó ENTER).
       - None: Si el usuario presionó ESC o Ctrl+C para volver atrás.
     """
+    if not sys.stdin.isatty():
+        try:
+            return input(prompt_str)
+        except Exception:
+            return ""
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     buf = []
@@ -359,6 +378,7 @@ def edit_description_dialog(target_path, item_name):
         save_data(data)
 
 def main():
+    ensure_controlling_tty()
     if '--switch' in sys.argv or '-s' in sys.argv:
         subprocess.run(["switch-identity"])
         sys.exit(0)

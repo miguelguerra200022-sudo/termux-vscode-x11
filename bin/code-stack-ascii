@@ -249,6 +249,8 @@ def play_intro(fps=12):
                     break
             else:
                 time.sleep(frame_duration)
+                if frame_idx >= total_frames:
+                    break
 
             frame_idx += 1
     finally:
