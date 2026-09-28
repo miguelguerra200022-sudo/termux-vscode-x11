@@ -12,9 +12,6 @@ set -e
 # ==============================================================================
 
 PIDFILE="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/watcher-sync.pid"
-HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
-ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
-AUTH_FILE="$HOME/.config/termux-vscode/.auth_token"
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 
 # 1. Evitar múltiples instancias del demonio
@@ -214,9 +211,7 @@ do_sync() {
     TARGET_SEAL=$(basename "$VAULT_DIR")
 
     if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
-        ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-        K_ENV="code-stack-sh-termux-vault-v2"
-        MASTER_PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
+        SESSION_KEY=$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null || true)
         tar -czf - \
             --exclude="cache2" \
             --exclude="startupCache" \
@@ -228,7 +223,8 @@ do_sync() {
             --exclude="*.log" \
             --exclude="*.sock" \
             -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-            PASS_KEY="${MASTER_PASS}_${TARGET_SEAL}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
+            PASS_KEY="$SESSION_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
+        unset SESSION_KEY
     fi
 
     # 6.4 Sincronizar configuraciones visuales
@@ -256,43 +252,10 @@ do_sync() {
         UNPUSHED="1"
     fi
 
-    # 6.7 Si hay commits sin empujar, subir a GitHub de forma silenciosa con GIT_ASKPASS efímero
+    # 6.7 Si hay commits sin empujar, subir a GitHub con validación efímera y quemado inmediato
     if [ -n "$UNPUSHED" ]; then
         if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://github.com >/dev/null 2>&1; then
-            TOKEN="${SYNC_TOKEN:-}"
-            AUTH_FILE="$HOME/.config/termux-vscode/.auth_token"
-            AUTH_ENC="$HOME/.config/termux-vscode/.auth_token.enc"
-            MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
-
-            if [ -z "$TOKEN" ] && [ -f "$AUTH_ENC" ]; then
-                TOKEN=$(PASS_KEY="$MACHINE_KEY" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -in "$AUTH_ENC" -pass env:PASS_KEY 2>/dev/null || true)
-            elif [ -z "$TOKEN" ] && [ -f "$AUTH_FILE" ]; then
-                TOKEN=$(cat "$AUTH_FILE" 2>/dev/null || true)
-                if [ -n "$TOKEN" ]; then
-                    PASS_KEY="$MACHINE_KEY" openssl enc -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$TOKEN" > "$AUTH_ENC" 2>/dev/null || true
-                    chmod 400 "$AUTH_ENC" 2>/dev/null || true
-                    rm -f "$AUTH_FILE" 2>/dev/null || true
-                fi
-            fi
-            if [ -z "$TOKEN" ] && [ -n "${SYNC_PASS:-}" ]; then
-                TOKEN=$(PASS_KEY="$SYNC_PASS" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TOKEN" 2>/dev/null || true)
-            fi
-
-            if [ -n "$TOKEN" ]; then
-                ASKPASS="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.git_askpass_$$"
-                cat << EOF_AP > "$ASKPASS"
-#!/bin/sh
-case "\$1" in
-    *Username*) echo "miguelguerra200022-sudo" ;;
-    *Password*) echo "$TOKEN" ;;
-esac
-EOF_AP
-                chmod 700 "$ASKPASS"
-                GIT_ASKPASS="$ASKPASS" timeout 30 git push origin main >/dev/null 2>&1 || true
-                shred -u "$ASKPASS" 2>/dev/null || rm -f "$ASKPASS"
-            else
-                timeout 30 git push origin main >/dev/null 2>&1 || true
-            fi
+            GIT_ASKPASS="github-auth-broker" timeout 45 git push origin main >/dev/null 2>&1 || true
         fi
     fi
 }

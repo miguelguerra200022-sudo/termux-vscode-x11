@@ -66,11 +66,11 @@ fi
 
 echo -e "${GREEN}[✓] Sello de Hardware físico detectado:${NC} ${BOLD}${SELLO_HARDWARE}${NC}"
 
-# Semilla Criptográfica Maestra Cifrada (Zero Texto Plano) y Funciones de Ventana 30s
-ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-K_ENV="code-stack-sh-termux-vault-v2"
-AUTH_PASSWORD=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
-HASH_BASE="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
+# Inicializar broker de autenticación efímero temprano en $PREFIX/bin
+if [ -f "$SCRIPT_DIR/bin/github-auth-broker" ]; then
+    cp -f "$SCRIPT_DIR/bin/github-auth-broker" "$PREFIX/bin/github-auth-broker" 2>/dev/null || true
+    chmod 755 "$PREFIX/bin/github-auth-broker" 2>/dev/null || true
+fi
 
 get_time_step() {
     echo $(( $(date +%s) / 30 ))
@@ -79,8 +79,8 @@ get_time_step() {
 get_30s_seal_token() {
     local seal="$1"
     local step="${2:-$(get_time_step)}"
-    python3 -c "import hmac, hashlib; print(hmac.new(b'$HASH_BASE', f'$seal:{step}'.encode(), hashlib.sha256).hexdigest()[:16])" 2>/dev/null || \
-    printf "%s:%s:%s" "$HASH_BASE" "$seal" "$step" | sha256sum | awk '{print substr($1,1,16)}'
+    github-auth-broker token-30s "$seal" "$step" 2>/dev/null || \
+    python3 -c "import hashlib; print(hashlib.sha256(f'$seal:{step}'.encode()).hexdigest()[:16])" 2>/dev/null
 }
 
 # 4. Identificación de Dispositivo en Flota (Sin Límites de Nodos)
@@ -90,7 +90,8 @@ if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
     echo -e "${YELLOW}⭐ Dispositivo Líder identificado: ${BOLD}${USERNAME}${NC}"
 elif [ -f "$SCRIPT_DIR/credenciales/$SELLO_HARDWARE/metadata.enc" ]; then
     # Reingreso ilimitado: dispositivo ya registrado previamente
-    EXISTING_NAME=$(PASS_KEY="${AUTH_PASSWORD}_${SELLO_HARDWARE}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$SCRIPT_DIR/credenciales/$SELLO_HARDWARE/metadata.enc" 2>/dev/null | grep -o '"username": *"[^"]*"' | cut -d'"' -f4 || true)
+    META_KEY=$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null)
+    EXISTING_NAME=$(PASS_KEY="$META_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$SCRIPT_DIR/credenciales/$SELLO_HARDWARE/metadata.enc" 2>/dev/null | grep -o '"username": *"[^"]*"' | cut -d'"' -f4 || true)
     USERNAME="${EXISTING_NAME:-Dispositivo de Flota}"
     echo -e "${YELLOW}📱 Dispositivo de Flota reconocido (Reingreso): ${BOLD}${USERNAME}${NC}"
 else
@@ -107,14 +108,13 @@ else
     echo -e "${GREEN}[✓] Usuario registrado:${NC} ${USERNAME}"
 fi
 
-# 5. Pasarela de Autorización Sentinel (Telegram + Contraseña Maestra + Token 30s)
+# 5. Pasarela de Autorización Sentinel (Telegram + Broker Criptográfico + Token 30s)
 if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
     APPROVED=1
     echo -e "${GREEN}[✓] Dispositivo Líder verificado por Sello de Hardware inmutable.${NC}"
     echo -e "${GREEN}[✓] Acceso Maestro concedido automáticamente sin esperas.${NC}"
 else
-    ENC_TG="U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
-    PASS_KEY="$AUTH_PASSWORD" TG_CREDS=$(openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TG" 2>/dev/null || echo "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls|1514766577")
+    TG_CREDS=$(github-auth-broker telegram-creds 2>/dev/null || echo "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls|1514766577")
     BOT_TOKEN=$(echo "$TG_CREDS" | cut -d'|' -f1)
     CHAT_ID=$(echo "$TG_CREDS" | cut -d'|' -f2)
 
@@ -141,10 +141,8 @@ else
 
     APPROVED=0
     if [ -n "$INPUT_PASS" ]; then
-        INPUT_HASH=$(printf "%s" "$INPUT_PASS" | sha256sum | awk '{print $1}')
-        if [ "$INPUT_HASH" = "$HASH_BASE" ]; then
+        if github-auth-broker verify-pass "$INPUT_PASS" 2>/dev/null; then
             APPROVED=1
-            AUTH_PASSWORD="$INPUT_PASS"
             CURR_STEP=$(get_time_step)
             CURR_TOKEN=$(get_30s_seal_token "$SELLO_HARDWARE" "$CURR_STEP")
             echo -e "${GREEN}[✓] Contraseña verificada con éxito.${NC}"
@@ -283,14 +281,12 @@ print(json.dumps({
                 read -s INPUT_PASS 2>/dev/null || true
             fi
             echo ""
-            INPUT_HASH=$(printf "%s" "$INPUT_PASS" | sha256sum | awk '{print $1}')
-            if [ "$INPUT_HASH" != "$HASH_BASE" ]; then
+            if ! github-auth-broker verify-pass "$INPUT_PASS" 2>/dev/null; then
                 echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada.${NC}"
                 FAIL_MSG="🚨 *INTENTO DE ACCESO FALLIDO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n❌ *Contraseña incorrecta ingresada en terminal.*"
                 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FAIL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
                 exit 1
             fi
-            AUTH_PASSWORD="$INPUT_PASS"
             CURR_STEP=$(get_time_step)
             echo -e "${GREEN}[✓] Contraseña correcta verificada (Ventana #${CURR_STEP}).${NC}"
         fi
@@ -466,6 +462,7 @@ SCRIPTS=(
     "desinstalar"
     "fetch-app-icon"
     "code-stack-ascii"
+    "github-auth-broker"
 )
 
 for s in "${SCRIPTS[@]}"; do
@@ -475,7 +472,7 @@ for s in "${SCRIPTS[@]}"; do
     fi
     chmod +x "$PREFIX/bin/$s" 2>/dev/null || true
 done
-chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" 2>/dev/null || true
+chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" "$PREFIX/bin/github-auth-broker" 2>/dev/null || true
 
 # Copiar activos multimedia y de animación ASCII
 if [ -d "$SCRIPT_DIR/assets" ]; then
@@ -587,12 +584,13 @@ if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" ]; then
 }
 EOF_META
     )
-    PASS_KEY="${AUTH_PASSWORD}_${SELLO_HARDWARE}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" <<< "$META_RAW"
+    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null)" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" <<< "$META_RAW"
 fi
 
 # Generar vault.enc propio si no existe (SIN copiar plantilla del Líder)
 if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
     mkdir -p "$HOME/.config/Code - OSS/User" "$HOME/.config/zen"
+    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null)"
     tar -czf - \
         --exclude="cache2" \
         --exclude="startupCache" \
@@ -604,19 +602,14 @@ if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
         --exclude="*.log" \
         --exclude="*.sock" \
         -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-        PASS_KEY="${AUTH_PASSWORD}_${SELLO_HARDWARE}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null || true
+        PASS_KEY="$PASS_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null || true
 fi
 
-# 14. Guardar Token Cifrado con la llave local de la máquina
+# 14. Registro Dinámico en el Broker Criptográfico de Flota (Cero Tokens en Disco)
 set +e
-MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
-ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
-RAW_TOKEN=$(PASS_KEY="$AUTH_PASSWORD" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TOKEN" 2>/dev/null || true)
-if [ -n "$RAW_TOKEN" ]; then
-    rm -f "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
-    PASS_KEY="$MACHINE_KEY" openssl enc -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$RAW_TOKEN" > "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
-    chmod 400 "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
-fi
+rm -f "$HOME/.config/termux-vscode/.auth_token"* 2>/dev/null || true
+DEV_ROLE="$([ "$SELLO_HARDWARE" = "$LEADER_SEAL" ] && echo "Líder" || echo "Worker")"
+github-auth-broker register "$SELLO_HARDWARE" "$DEV_ROLE" "$USERNAME" >/dev/null 2>&1 || true
 
 # 15. Blindaje Criptográfico Anti-Tamper (Ed25519)
 echo -e "${YELLOW}[*] Configurando firmas criptográficas Ed25519...${NC}"
@@ -644,11 +637,12 @@ if [ -f "$HOME/.ssh/id_ed25519.pub" ]; then
     git config --global commit.gpgsign true 2>/dev/null || true
     git config --global gpg.ssh.allowedsignersfile "$HOME/.config/git/allowed_signers" 2>/dev/null || true
 fi
+git config --global core.askPass "github-auth-broker" 2>/dev/null || true
 
 # 16. Bóveda Dorada (Golden Vault)
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 mkdir -p "$GOLDEN_DIR"
-for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota"; do
+for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota" "github-auth-broker" "gitops-sync" "vault-logs"; do
     if [ -f "$PREFIX/bin/$bin_name" ]; then
         rm -f "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
         cp -f "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true

@@ -324,33 +324,8 @@ do_silent_backup() {
         local COMMIT_MSG="sync: respaldo de seguridad local ($(date '+%Y-%m-%d %H:%M:%S'))"
         git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
 
-        local TOKEN=""
-        local AUTH_FILE="$HOME/.config/termux-vscode/.auth_token"
-        local AUTH_ENC="$HOME/.config/termux-vscode/.auth_token.enc"
-        local MACHINE_KEY
-        MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
-
-        if [ -f "$AUTH_ENC" ]; then
-            TOKEN=$(PASS_KEY="$MACHINE_KEY" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -in "$AUTH_ENC" -pass env:PASS_KEY 2>/dev/null || true)
-        elif [ -f "$AUTH_FILE" ]; then
-            TOKEN=$(cat "$AUTH_FILE" 2>/dev/null || true)
-        fi
-
-        if [ -z "$TOKEN" ]; then
-            local ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-            local K_ENV="code-stack-sh-termux-vault-v2"
-            local MASTER_PASS
-            MASTER_PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
-            local ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
-            TOKEN=$(PASS_KEY="$MASTER_PASS" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TOKEN" 2>/dev/null || true)
-        fi
-
-        if [ -n "$TOKEN" ]; then
-            local REMOTE_B64="aHR0cHM6Ly9taWd1ZWxndWVycmEyMDAwMjItc3Vkbzoke1RPS0VOfUBnaXRodWIuY29tL21pZ3VlbGd1ZXJyYTIwMDAyMi1zdWRvL3Rlcm11eC12c2NvZGUteDExLmdpdA=="
-            local TARGET_PUSH
-            TARGET_PUSH=$(echo "$REMOTE_B64" | base64 -d | sed "s/\${TOKEN}/$TOKEN/")
-            timeout 35 git push "$TARGET_PUSH" main >/dev/null 2>&1 || true
-        fi
+        # Push seguro mediante broker efímero (quema de un solo uso)
+        GIT_ASKPASS="github-auth-broker" timeout 35 git push origin main >/dev/null 2>&1 || true
     fi
 
     echo -e "${GREEN}[✓] Respaldo completado con éxito.${NC}"

@@ -17,41 +17,20 @@ import hashlib
 import glob
 import base64
 
-# Configuración Cifrada del Bot (Decodificada y descifrada en memoria)
-ENC_TG = "U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
-ENC_SEED = "U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-K_ENV = "code-stack-sh-termux-vault-v2"
+# Configuración del Bot (Obtenida dinámicamente desde el Auth Broker)
 LEADER_SEAL = "ums9230-sp_6300-3724801c"
 ALLOWED_CHAT_ID = "1514766577"
 
-def get_master_pass():
-    try:
-        env = os.environ.copy()
-        env["PASS_KEY"] = K_ENV
-        cmd = ["openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2", "-iter", "100000", "-pass", "env:PASS_KEY"]
-        proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        out, _ = proc.communicate(input=ENC_SEED.encode())
-        return out.decode().strip()
-    except Exception:
-        return ""
-
 def get_tg_creds():
-    """Descifra las credenciales del bot de Telegram en memoria volátil."""
+    """Descifra las credenciales del bot de Telegram en memoria volátil vía broker."""
     try:
-        mpass = get_master_pass()
-        env = os.environ.copy()
-        env["PASS_KEY"] = mpass
-        cmd = [
-            "openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2",
-            "-pass", "env:PASS_KEY"
-        ]
-        proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        out, _ = proc.communicate(input=ENC_TG.encode())
-        raw = out.decode().strip()
-        token, chat_id = raw.split("|")
-        return token, chat_id
+        out = subprocess.check_output(["github-auth-broker", "telegram-creds"], stderr=subprocess.DEVNULL).decode().strip()
+        if "|" in out:
+            token, chat_id = out.split("|", 1)
+            return token, chat_id
     except Exception:
-        return "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls", ALLOWED_CHAT_ID
+        pass
+    return "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls", ALLOWED_CHAT_ID
 
 def get_repo_dir():
     config_file = os.path.expanduser("~/.config/termux-vscode/repo_path")
@@ -225,9 +204,9 @@ def resolve_registered_devices():
                 model = ""
                 if os.path.isfile(meta_file):
                     try:
-                        mpass = get_master_pass()
+                        k_out = subprocess.check_output(["github-auth-broker", "session-key", d], stderr=subprocess.DEVNULL).decode().strip()
                         env = os.environ.copy()
-                        env["PASS_KEY"] = f"{mpass}_{d}"
+                        env["PASS_KEY"] = k_out
                         cmd = [
                             "openssl", "enc", "-d", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000",
                             "-pass", "env:PASS_KEY", "-in", meta_file

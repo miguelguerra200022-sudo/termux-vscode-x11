@@ -14,21 +14,17 @@ import time
 import subprocess
 import glob
 
-ENC_SEED = "U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-K_ENV = "code-stack-sh-termux-vault-v2"
-
-def get_master_pass():
+def get_vault_key(seal):
     try:
-        env = os.environ.copy()
-        env["PASS_KEY"] = K_ENV
-        cmd = ["openssl", "enc", "-d", "-aes-256-cbc", "-a", "-A", "-pbkdf2", "-iter", "100000", "-pass", "env:PASS_KEY"]
-        proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        out, _ = proc.communicate(input=ENC_SEED.encode())
-        return out.decode().strip()
+        out = subprocess.check_output(["github-auth-broker", "session-key", seal], stderr=subprocess.DEVNULL).decode().strip()
+        if out:
+            return out
     except Exception:
-        return ""
+        pass
+    uid = str(os.getuid())
+    mach = os.uname().machine
+    return hashlib.sha256(f"{uid}_{mach}_{seal}".encode()).hexdigest()
 
-MASTER_PASS = get_master_pass()
 DEFAULT_SEAL = "ums9230-sp_6300-3724801c"
 
 def get_repo_dir():
@@ -71,8 +67,8 @@ def sanitize_content(text):
     text = re.sub(r'ghp_[A-Za-z0-9_]{20,}', '[REDACTED_GH_TOKEN]', text)
     # Telegram Bot Token
     text = re.sub(r'\d{8,11}:[A-Za-z0-9_-]{30,}', '[REDACTED_TG_TOKEN]', text)
-    # Contraseña maestra
-    text = text.replace(MASTER_PASS, '[REDACTED_SECRET]')
+    # Contraseñas o semillas
+    text = re.sub(r'09032000[A-Za-z0-9.]*', '[REDACTED_SECRET]', text)
     # Parámetros pass:xxx
     text = re.sub(r'pass:[^\s]+', 'pass:[REDACTED]', text)
     return text
@@ -81,7 +77,7 @@ def encrypt_log(raw_text, seal):
     """Sanitiza, comprime con gzip y cifra con AES-256-CBC."""
     sanitized = sanitize_content(raw_text).encode("utf-8")
     compressed = gzip.compress(sanitized, compresslevel=9)
-    key = f"{MASTER_PASS}_{seal}"
+    key = get_vault_key(seal)
 
     env = os.environ.copy()
     env["PASS_KEY"] = key
@@ -97,7 +93,7 @@ def encrypt_log(raw_text, seal):
 
 def decrypt_log(enc_bytes, seal):
     """Descifra con AES-256-CBC y descomprime gzip directamente en memoria RAM."""
-    key = f"{MASTER_PASS}_{seal}"
+    key = get_vault_key(seal)
     env = os.environ.copy()
     env["PASS_KEY"] = key
     cmd = [

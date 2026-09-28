@@ -49,15 +49,13 @@ else
     fi
 fi
 
-ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-K_ENV="code-stack-sh-termux-vault-v2"
-MASTER_PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
-
 if [ ! -d "$HOME/.config/Code - OSS/User" ] || [ ! -d "$HOME/.config/zen" ]; then
     if [ -n "$VAULT_ENC" ] && [ -f "$VAULT_ENC" ]; then
         echo "[*] Restaurando credenciales y cuentas en RAM para: $TARGET_SEAL..."
-        PASS_KEY="${MASTER_PASS}_${TARGET_SEAL}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$VAULT_ENC" 2>/dev/null | \
+        SESSION_KEY=$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null || true)
+        PASS_KEY="$SESSION_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$VAULT_ENC" 2>/dev/null | \
             tar -xzf - -C "$HOME/.config" 2>/dev/null || true
+        unset SESSION_KEY
     fi
 fi
 
@@ -268,7 +266,7 @@ USER_NAME_DISPLAY="Miguel (Líder)"
 if [ "$TARGET_SEAL" != "ums9230-sp_6300-3724801c" ]; then
     META_ENC="$REPO_DIR/credenciales/$TARGET_SEAL/metadata.enc"
     if [ -f "$META_ENC" ]; then
-        DEC_USER=$(PASS_KEY="${MASTER_PASS}_${TARGET_SEAL}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$META_ENC" 2>/dev/null | grep -o '"username": *"[^"]*"' | cut -d'"' -f4 || true)
+        DEC_USER=$(PASS_KEY="$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null)" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$META_ENC" 2>/dev/null | grep -o '"username": *"[^"]*"' | cut -d'"' -f4 || true)
         [ -n "$DEC_USER" ] && USER_NAME_DISPLAY="$DEC_USER"
     else
         USER_NAME_DISPLAY="$TARGET_SEAL"

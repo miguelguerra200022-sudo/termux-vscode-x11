@@ -43,9 +43,6 @@ fi
 
 CREDS_DIR="$REPO_DIR/credenciales"
 mkdir -p "$CREDS_DIR"
-ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-K_ENV="code-stack-sh-termux-vault-v2"
-PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 CURRENT_ACTIVE="ums9230-sp_6300-3724801c"
 [ -f "$ACTIVE_FILE" ] && CURRENT_ACTIVE=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$CURRENT_ACTIVE")
@@ -57,7 +54,7 @@ get_decrypted_meta() {
     local enc_file="$CREDS_DIR/$seal/metadata.enc"
 
     if [ -f "$enc_file" ]; then
-        PASS_KEY="${PASS}_${seal}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$enc_file" 2>/dev/null || echo "{}"
+        PASS_KEY="$(github-auth-broker session-key "$seal" 2>/dev/null)" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$enc_file" 2>/dev/null || echo "{}"
     else
         echo "{}"
     fi
@@ -185,9 +182,10 @@ cmd_bloquear() {
     fi
 
     BLACKLIST_FILE="$CREDS_DIR/.blacklist.enc"
-    PASS_KEY="${PASS}_${LEADER_SEAL}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$BLACKLIST_FILE" <<< "$SELECTED"
+    github-auth-broker revoke "$SELECTED" >/dev/null 2>&1 || true
+    PASS_KEY="$(github-auth-broker session-key "$LEADER_SEAL" 2>/dev/null)" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$BLACKLIST_FILE" <<< "$SELECTED"
 
-    echo -e "${RED}[🚨] DISPOSITIVO BLOQUEADO:${NC} ${SELECTED}"
+    echo -e "${RED}[🚨] DISPOSITIVO BLOQUEADO Y HASH QUEMADO:${NC} ${SELECTED}"
     echo -e "${YELLOW}[*] Orden de auto-destrucción y borrado de cookies registrada en la flota.${NC}"
 
     if command -v cloud-sentinel >/dev/null 2>&1; then
@@ -211,7 +209,7 @@ cmd_backup() {
     BACKUP_FILE="$HOME/backup_flota_$(date +%Y%m%d_%H%M%S).bin"
     echo -e "${YELLOW}[*] Generando respaldo maestro ultra-cifrado de la flota completa...${NC}"
     tar -czf - -C "$REPO_DIR" credenciales config bin 2>/dev/null | \
-        PASS_KEY="${PASS}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$BACKUP_FILE"
+        PASS_KEY="$(github-auth-broker session-key "$LEADER_SEAL" 2>/dev/null)" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$BACKUP_FILE"
     echo -e "${GREEN}[✓] Respaldo maestro guardado en:${NC} ${BACKUP_FILE}"
     echo -e "${GRAY}    Puedes guardarlo en un pendrive USB o almacenamiento externo seguro.${NC}"
 }

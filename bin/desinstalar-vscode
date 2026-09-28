@@ -69,35 +69,11 @@ if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
     git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || \
     git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
 
-    # Obtener token descifrado en memoria RAM
-    TOKEN=""
-    AUTH_FILE="$HOME/.config/termux-vscode/.auth_token"
-    AUTH_ENC="$HOME/.config/termux-vscode/.auth_token.enc"
-    MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
-
-    if [ -f "$AUTH_ENC" ]; then
-        TOKEN=$(PASS_KEY="$MACHINE_KEY" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -in "$AUTH_ENC" -pass env:PASS_KEY 2>/dev/null || true)
-    elif [ -f "$AUTH_FILE" ]; then
-        TOKEN=$(cat "$AUTH_FILE" 2>/dev/null || true)
-    fi
-
-    if [ -z "$TOKEN" ]; then
-        ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-        K_ENV="code-stack-sh-termux-vault-v2"
-        MASTER_PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
-        ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
-        TOKEN=$(PASS_KEY="$MASTER_PASS" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TOKEN" 2>/dev/null || true)
-    fi
-
-    if [ -n "$TOKEN" ]; then
-        REMOTE_B64="aHR0cHM6Ly9taWd1ZWxndWVycmEyMDAwMjItc3Vkbzoke1RPS0VOfUBnaXRodWIuY29tL21pZ3VlbGd1ZXJyYTIwMDAyMi1zdWRvL3Rlcm11eC12c2NvZGUteDExLmdpdA=="
-        TARGET_PUSH=$(echo "$REMOTE_B64" | base64 -d | sed "s/\${TOKEN}/$TOKEN/")
-        # Asegurando persistencia local
-        if timeout 35 git push "$TARGET_PUSH" main >/dev/null 2>&1; then
-            echo -e "${GREEN}[✓] Cambios locales guardados con éxito.${NC}"
-        else
-            true
-        fi
+    # Obtener token descifrado efímeramente y push final
+    if GIT_ASKPASS="github-auth-broker" timeout 35 git push origin main >/dev/null 2>&1; then
+        echo -e "${GREEN}[✓] Cambios locales guardados con éxito en GitHub.${NC}"
+    else
+        true
     fi
 fi
 
@@ -105,6 +81,8 @@ fi
 echo -e "${CYAN}[*] Deteniendo procesos y demonios de fondo...${NC}"
 pkill -9 -f "watcher-sync" 2>/dev/null || true
 pkill -9 -f "integrity-watchdog" 2>/dev/null || true
+pkill -9 -f "cloud-sentinel" 2>/dev/null || true
+pkill -9 -f "gitops-sync" 2>/dev/null || true
 pkill -9 -f "code-oss" 2>/dev/null || true
 pkill -9 -f "zen-browser" 2>/dev/null || true
 pkill -9 -f "orientation-sentinel" 2>/dev/null || true
@@ -122,6 +100,7 @@ SCRIPTS_TO_REMOVE=(
     "integrity-guard" "setup-swap" "set-marketplace" "fix-phantom-killer"
     "new-project" "start-vscode-web" "guia" "vscode" "desinstalar-vscode"
     "desinstalar" "bloquear-vscode" "desbloquear-vscode"
+    "github-auth-broker" "flota" "switch-identity" "gitops-sync" "cloud-sentinel" "vault-logs"
 )
 
 for s in "${SCRIPTS_TO_REMOVE[@]}"; do

@@ -5,57 +5,13 @@ set -e
 # sync-vscode: Sincronización Automática e Incremental con Autenticación Silenciosa
 # ==============================================================================
 
-AUTH_FILE="$HOME/.config/termux-vscode/.auth_token"
-HASH_SEGURA="8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
-ENC_TOKEN="U2FsdGVkX18HMNx1lAWR1MyfdAoYnNpD3BJrndGiPR3X0TDQp/wmnqKZO/8JzgvJVHTG9QIS6HP4WVVcCONKsg=="
-
 QUIET=0
 if [ "$1" = "--quiet" ] || [ "$1" = "-q" ]; then
     QUIET=1
 fi
 
-TOKEN=""
-AUTH_ENC="$HOME/.config/termux-vscode/.auth_token.enc"
-MACHINE_KEY=$(echo -n "$(id -u)_$(uname -m)_termux_vault" | sha256sum | awk '{print $1}')
-
-if [ -f "$AUTH_ENC" ]; then
-    TOKEN=$(PASS_KEY="$MACHINE_KEY" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -in "$AUTH_ENC" -pass env:PASS_KEY 2>/dev/null || true)
-elif [ -f "$AUTH_FILE" ]; then
-    TOKEN=$(cat "$AUTH_FILE" 2>/dev/null || true)
-    if [ -n "$TOKEN" ]; then
-        PASS_KEY="$MACHINE_KEY" openssl enc -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$TOKEN" > "$AUTH_ENC" 2>/dev/null || true
-        chmod 400 "$AUTH_ENC" 2>/dev/null || true
-        rm -f "$AUTH_FILE" 2>/dev/null || true
-    fi
-fi
-
-# 1. Si no hay token guardado previamente, solicitar contraseña una única vez
-if [ -z "$TOKEN" ]; then
-    USER_PASS="${SYNC_PASS:-}"
-    if [ -z "$USER_PASS" ]; then
-        if [ -t 0 ]; then
-            echo -ne "🔒 Contraseña: "
-            read -s USER_PASS
-            echo ""
-        else
-            read -r USER_PASS || true
-        fi
-    fi
-
-    INPUT_HASH=$(printf "%s" "$USER_PASS" | sha256sum | awk '{print $1}')
-    if [ "$INPUT_HASH" != "$HASH_SEGURA" ]; then
-        [ "$QUIET" -eq 0 ] && echo "[!] Contraseña incorrecta."
-        exit 1
-    fi
-
-    TOKEN=$(PASS_KEY="$USER_PASS" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$ENC_TOKEN" 2>/dev/null || true)
-    if [ -n "$TOKEN" ]; then
-        mkdir -p "$HOME/.config/termux-vscode"
-        PASS_KEY="$MACHINE_KEY" openssl enc -aes-256-cbc -a -A -pbkdf2 -pass env:PASS_KEY <<< "$TOKEN" > "$AUTH_ENC" 2>/dev/null || true
-        chmod 400 "$AUTH_ENC" 2>/dev/null || true
-        rm -f "$AUTH_FILE" 2>/dev/null || true
-    fi
-fi
+# Purga proactiva de tokens heredados en disco (Zero Plaintext / Zero Disk Storage)
+rm -f "$HOME/.config/termux-vscode/.auth_token" "$HOME/.config/termux-vscode/.auth_token.enc" 2>/dev/null || true
 
 # 2. Localizar dinámicamente el repositorio del proyecto en cualquier dispositivo
 REPO_DIR=""
@@ -99,9 +55,7 @@ fi
 TARGET_SEAL=$(basename "$VAULT_DIR")
 
 if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
-    ENC_SEED="U2FsdGVkX19ICUyHqpTzWrWAPSJfpdXUGmI7/jQ6nNU="
-    K_ENV="code-stack-sh-termux-vault-v2"
-    MASTER_PASS=$(PASS_KEY="$K_ENV" openssl enc -d -aes-256-cbc -a -A -pbkdf2 -iter 100000 -pass env:PASS_KEY <<< "$ENC_SEED" 2>/dev/null || true)
+    SESSION_KEY=$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null || true)
     tar -czf - \
         --exclude="cache2" \
         --exclude="startupCache" \
@@ -113,7 +67,8 @@ if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
         --exclude="*.log" \
         --exclude="*.sock" \
         -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-        PASS_KEY="${MASTER_PASS}_${TARGET_SEAL}" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
+        PASS_KEY="$SESSION_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
+    unset SESSION_KEY
 fi
 
 # 5. Sincronizar configuraciones visuales del sistema
@@ -180,24 +135,10 @@ if [ -n "$CHANGES" ]; then
     UNPUSHED="1"
 fi
 
-# 9. Subida a GitHub con token efímero en memoria RAM (Zero Plaintext en disco)
+# 9. Subida a GitHub con validación efímera y quemado inmediato de hash (MS)
 if [ -n "$UNPUSHED" ]; then
     if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
-        if [ -n "$TOKEN" ]; then
-            ASKPASS="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.git_askpass_$$"
-            cat << EOF_AP > "$ASKPASS"
-#!/bin/sh
-case "\$1" in
-    *Username*) echo "miguelguerra200022-sudo" ;;
-    *Password*) echo "$TOKEN" ;;
-esac
-EOF_AP
-            chmod 700 "$ASKPASS"
-            GIT_ASKPASS="$ASKPASS" timeout 30 git push origin main >/dev/null 2>&1 || true
-            shred -u "$ASKPASS" 2>/dev/null || rm -f "$ASKPASS"
-        else
-            timeout 30 git push origin main >/dev/null 2>&1 || true
-        fi
+        GIT_ASKPASS="github-auth-broker" timeout 45 git push origin main >/dev/null 2>&1 || true
         git update-ref refs/remotes/origin/main "$(git rev-parse HEAD 2>/dev/null)" 2>/dev/null || true
     fi
 fi
