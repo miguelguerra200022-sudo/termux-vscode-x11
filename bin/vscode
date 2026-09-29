@@ -929,6 +929,11 @@ def main():
 
 if __name__ == "__main__":
     try:
+        # Disparo oportunista Serverless: vaciar búfer offline cifrado y sincronizar (<30ms)
+        try:
+            subprocess.Popen(["watcher-sync", "--once"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
         main()
     except KeyboardInterrupt:
         print("\nSaliendo...")
