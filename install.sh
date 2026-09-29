@@ -28,10 +28,20 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 2. Paso 1 Obligatorio: Instalar utilidades iniciales (curl, openssl, git, python)
-echo -e "${YELLOW}[*] Verificando e instalando utilidades de red y cifrado (curl, git, openssl, python)...${NC}"
-export DEBIAN_FRONTEND=noninteractive
-pkg install -y -o Dpkg::Options::="--force-confnew" curl openssl git python >/dev/null 2>&1 || true
+# 2. Paso 1 Obligatorio: Verificar dependencias iniciales (curl, openssl, git, python)
+NEED_PKG=""
+for p in curl git openssl python; do
+    case "$p" in
+        python) command -v python3 >/dev/null 2>&1 || NEED_PKG="$NEED_PKG python" ;;
+        *) command -v "$p" >/dev/null 2>&1 || NEED_PKG="$NEED_PKG $p" ;;
+    esac
+done
+
+if [ -n "$NEED_PKG" ]; then
+    echo -e "${YELLOW}[*] Instalando herramientas requeridas:${NEED_PKG}...${NC}"
+    export DEBIAN_FRONTEND=noninteractive
+    pkg install -y -o Dpkg::Options::="--force-confnew" $NEED_PKG 2>/dev/null || apt-get install -y -o Dpkg::Options::="--force-confnew" $NEED_PKG 2>/dev/null || true
+fi
 
 # 2.1 Lanzar animación cinemática 3D de Code Stack Sh (saltable con cualquier tecla)
 if [ -f "$SCRIPT_DIR/bin/code-stack-ascii" ]; then
