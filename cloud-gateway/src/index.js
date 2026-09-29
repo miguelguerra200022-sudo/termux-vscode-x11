@@ -1342,37 +1342,40 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 export GATEWAY_URL="${origin}"
 
-# 0. Reconectar stdin al teclado físico (evita que pipe | bash bloquee reads)
-if [ -e /dev/tty ]; then
-    exec < /dev/tty
+# 1. Configurar espejo Cloudflare CDN para Termux de inmediato (evita cuelgues de 30 minutos probando mirrors)
+if [ -d "$PREFIX/etc/apt" ]; then
+    mkdir -p "$PREFIX/etc/apt/sources.list.d" 2>/dev/null || true
+    echo "deb https://packages-cf.termux.dev/apt/termux-main stable main" > "$PREFIX/etc/apt/sources.list" 2>/dev/null || true
+    echo "deb https://packages-cf.termux.dev/apt/termux-x11-nightly/ stable main" > "$PREFIX/etc/apt/sources.list.d/x11.list" 2>/dev/null || true
 fi
 
-# 1. Guardar la URL del Gateway de forma permanente
-mkdir -p "\$HOME/.config/termux-vscode"
-echo -n "${origin}" > "\$HOME/.config/termux-vscode/gateway_url"
-chmod 600 "\$HOME/.config/termux-vscode/gateway_url" 2>/dev/null || true
+# 2. Guardar la URL del Gateway de forma permanente
+mkdir -p "$HOME/.config/termux-vscode" 2>/dev/null || true
+echo -n "${origin}" > "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null || true
+chmod 600 "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null || true
 
 echo ""
 echo "  🚀 Code Stack Sh — Cargador Bootstrap (Cloudflare Edge)"
 echo "  🌐 Gateway: ${origin}"
 echo ""
 
-# 2. Asegurar curl disponible ANTES de descargar el instalador
+# 3. Asegurar curl disponible ANTES de descargar el instalador
 if ! command -v curl >/dev/null 2>&1; then
-    echo "[*] Instalando curl desde repositorios de Termux..."
-    pkg install -y curl 2>/dev/null || apt-get install -y curl 2>/dev/null || true
+    echo "[*] Instalando curl desde repositorio CDN Cloudflare..."
+    apt-get update -y -o Dpkg::Options::="--force-confnew" -o Acquire::ForceIPv4=true 2>/dev/null || true
+    apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" curl openssl 2>/dev/null || true
 fi
 
 if ! command -v curl >/dev/null 2>&1; then
-    echo "[!] Error: curl no disponible. Instala Termux actualizado e inténtalo de nuevo."
+    echo "[!] Error: curl no disponible. Instala curl e inténtalo de nuevo."
     exit 1
 fi
 
-# 3. Descargar install.sh directamente desde Cloudflare Edge (NUNCA desde GitHub)
+# 4. Descargar install.sh directamente desde Cloudflare Edge (NUNCA desde GitHub)
 TMP_INSTALL="\${TMPDIR:-/data/data/com.termux/files/usr/tmp}/install_\$\$.sh"
 trap 'rm -f "\$TMP_INSTALL"' EXIT
 
-echo "[*] Descargando instalador desde Cloudflare Edge..."
+echo "[*] Descargando instalador maestro desde Cloudflare Edge..."
 HTTP_CODE=\$(curl -sL --connect-timeout 15 --retry 3 --retry-delay 2 \\
     -w "%{http_code}" -o "\$TMP_INSTALL" \\
     "${origin}/install.sh" 2>/dev/null || echo "000")
@@ -1386,7 +1389,7 @@ fi
 echo "[✓] Instalador descargado exitosamente desde Cloudflare Edge."
 echo ""
 
-# 4. Ejecutar el instalador con TTY conectado
+# 5. Ejecutar el instalador con TTY conectado para interacción
 if [ -e /dev/tty ]; then
     bash "\$TMP_INSTALL" "\$@" < /dev/tty
 else

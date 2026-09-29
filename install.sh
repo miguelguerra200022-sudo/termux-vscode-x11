@@ -28,6 +28,13 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Pre-configuración del espejo CDN Cloudflare para Termux (evita bloqueo de 30 min por test de mirrors)
+if [ -d "$PREFIX/etc/apt" ]; then
+    mkdir -p "$PREFIX/etc/apt/sources.list.d" 2>/dev/null || true
+    echo "deb https://packages-cf.termux.dev/apt/termux-main stable main" > "$PREFIX/etc/apt/sources.list" 2>/dev/null || true
+    echo "deb https://packages-cf.termux.dev/apt/termux-x11-nightly/ stable main" > "$PREFIX/etc/apt/sources.list.d/x11.list" 2>/dev/null || true
+fi
+
 # 2. Paso 1 Obligatorio: Verificar dependencias iniciales (curl, openssl, git, python)
 NEED_PKG=""
 for p in curl git openssl python; do
@@ -40,7 +47,9 @@ done
 if [ -n "$NEED_PKG" ]; then
     echo -e "${YELLOW}[*] Instalando herramientas requeridas:${NEED_PKG}...${NC}"
     export DEBIAN_FRONTEND=noninteractive
-    pkg install -y -o Dpkg::Options::="--force-confnew" $NEED_PKG 2>/dev/null || apt-get install -y -o Dpkg::Options::="--force-confnew" $NEED_PKG 2>/dev/null || true
+    apt-get update -y -o Dpkg::Options::="--force-confnew" -o Acquire::ForceIPv4=true 2>/dev/null || true
+    apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $NEED_PKG 2>/dev/null || \
+    pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $NEED_PKG 2>/dev/null || true
 fi
 
 # 2.1 Lanzar animación cinemática 3D de Code Stack Sh (saltable con cualquier tecla)
