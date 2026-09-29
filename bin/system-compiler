@@ -49,10 +49,11 @@ compile_script() {
     local work_bin="$TMP_BUILD/${name}.bin"
 
     if [[ "$first_line" == *"python"* ]] || [[ "$first_line" == *"python3"* ]]; then
-        cat << 'EOF_PYWRAP' > "$work_sh"
+        cat << EOF_PYWRAP > "$work_sh"
 #!/data/data/com.termux/files/usr/bin/bash
+ulimit -c 0 2>/dev/null || true
 PAYLOAD_B64='__PY_PAYLOAD_PLACEHOLDER__'
-exec /data/data/com.termux/files/usr/bin/python3 -c "import base64; exec(base64.b64decode('$PAYLOAD_B64').decode('utf-8'))" "$@"
+exec /data/data/com.termux/files/usr/bin/python3 -c "import sys, base64; sys.argv[0]='$name'; exec(base64.b64decode('$PAYLOAD_B64').decode('utf-8'))" "\$@"
 EOF_PYWRAP
         local py_b64=$(base64 -w 0 < "$src")
         python3 -c "

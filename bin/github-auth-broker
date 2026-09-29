@@ -30,6 +30,20 @@ K_ENV = "code-stack-sh-termux-vault-v2"
 ENC_TG = "U2FsdGVkX18DI6Fzl/wp6R640ySgonsv8H06zF7IAP/70XQSQSPpFlIctOqiwlHpGOeVuSPXV+jFANcBnuPjq1VtNrNMsDrcK21oJXeD3mc="
 HASH_BASE = "8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315"
 
+def disable_ram_dumps():
+    """
+    Bloquea volcados de memoria y previene que otros procesos o root lean /proc/$PID/mem
+    mediante prctl(PR_SET_DUMPABLE, 0).
+    """
+    try:
+        import ctypes
+        libc = ctypes.CDLL(None)
+        libc.prctl(4, 0, 0, 0, 0)
+    except Exception:
+        pass
+
+disable_ram_dumps()
+
 def getprop(prop, fallback=""):
     try:
         res = subprocess.check_output(["getprop", prop], stderr=subprocess.DEVNULL).decode().strip()
@@ -151,6 +165,7 @@ def get_ledger_file():
 def get_candidate_ledger_paths():
     candidates = [
         get_ledger_file(),
+        os.path.expanduser("~/.config/termux-vscode/credenciales/.auth_ledger.enc"),
         os.path.expanduser("~/termux-vscode-x11/credenciales/.auth_ledger.enc"),
         "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11/credenciales/.auth_ledger.enc"
     ]

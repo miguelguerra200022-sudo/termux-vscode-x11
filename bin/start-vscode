@@ -44,15 +44,20 @@ ACTIVE_SEAL="ums9230-sp_6300-3724801c"
 VAULT_ENC=""
 TARGET_SEAL="$ACTIVE_SEAL"
 
-if [ -f "$REPO_DIR/credenciales/$ACTIVE_SEAL/vault.enc" ]; then
-    VAULT_ENC="$REPO_DIR/credenciales/$ACTIVE_SEAL/vault.enc"
-else
-    MATCH=$(find "$REPO_DIR/credenciales" -maxdepth 1 -type d -name "*${ACTIVE_SEAL}" 2>/dev/null | head -n 1)
-    if [ -n "$MATCH" ] && [ -f "$MATCH/vault.enc" ]; then
-        VAULT_ENC="$MATCH/vault.enc"
-        TARGET_SEAL=$(basename "$MATCH")
+for creds_cand in "$REPO_DIR/credenciales" "$HOME/.config/termux-vscode/credenciales"; do
+    [ -d "$creds_cand" ] || continue
+    if [ -f "$creds_cand/$ACTIVE_SEAL/vault.enc" ]; then
+        VAULT_ENC="$creds_cand/$ACTIVE_SEAL/vault.enc"
+        break
+    else
+        MATCH=$(find "$creds_cand" -maxdepth 1 -type d -name "*${ACTIVE_SEAL}" 2>/dev/null | head -n 1)
+        if [ -n "$MATCH" ] && [ -f "$MATCH/vault.enc" ]; then
+            VAULT_ENC="$MATCH/vault.enc"
+            TARGET_SEAL=$(basename "$MATCH")
+            break
+        fi
     fi
-fi
+done
 
 if [ ! -d "$HOME/.config/Code - OSS/User" ] || [ ! -d "$HOME/.config/zen" ]; then
     if [ -n "$VAULT_ENC" ] && [ -f "$VAULT_ENC" ]; then
