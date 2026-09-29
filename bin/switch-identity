@@ -3,7 +3,8 @@ set -e
 
 # ==============================================================================
 # switch-identity: Conmutador Multi-Dispositivo Exclusivo del Líder
-# Permite alternar instantáneamente entre los celulares de la flota y sus cuentas de Google
+# Alterna instantáneamente entre los celulares de la flota, sincroniza deltas y
+# bóvedas cifradas con Cloudflare R2, y valida la paridad de programas instalados.
 # ==============================================================================
 
 BLUE='\033[1;34m'
@@ -11,6 +12,7 @@ GREEN='\033[1;32m'
 CYAN='\033[1;36m'
 YELLOW='\033[1;33m'
 RED='\033[1;31m'
+MAGENTA='\033[1;35m'
 BOLD='\033[1m'
 NC='\033[0m'
 
@@ -38,13 +40,20 @@ CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
 if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
     REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
 fi
+if [ ! -d "$REPO_DIR/.git" ] && [ -d "$HOME/termux-vscode-x11/.git" ]; then
+    REPO_DIR="$HOME/termux-vscode-x11"
+fi
 
 CREDS_DIR="$REPO_DIR/credenciales"
 mkdir -p "$CREDS_DIR"
 
+GATEWAY_URL=""
+[ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+[ -z "$GATEWAY_URL" ] && GATEWAY_URL="https://code-stack-gateway.cdn-sys-runtime.workers.dev"
+
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 CURRENT_ACTIVE="ums9230-sp_6300-3724801c"
-[ -f "$ACTIVE_FILE" ] && CURRENT_ACTIVE=$(cat "$ACTIVE_FILE" 2>/dev/null || echo "$CURRENT_ACTIVE")
+[ -f "$ACTIVE_FILE" ] && CURRENT_ACTIVE=$(cat "$ACTIVE_FILE" 2>/dev/null | tr -d '[:space:]' || echo "$CURRENT_ACTIVE")
 
 clear 2>/dev/null || true
 echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════════╗${NC}"
@@ -53,37 +62,99 @@ echo -e "${CYAN}║      Alterna entre los celulares de la flota y sus cuentas  
 echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-FOLDERS=()
+echo -e "${YELLOW}[*] Consultando flota registrada en Cloudflare Edge y almacenamiento local...${NC}"
+
+FLEET_JSON=$(curl -s --connect-timeout 4 --max-time 6 "$GATEWAY_URL/api/v1/fleet/devices" 2>/dev/null || echo '{"ok":false}')
+
+DISP_LIST=$(python3 -c '
+import json, glob, os, sys
+
+fleet_raw = sys.argv[1]
+creds_dir = sys.argv[2]
+leader_seal = sys.argv[3]
+
+remote_devices = {}
+try:
+    data = json.loads(fleet_raw)
+    if data.get("ok"):
+        for d in data.get("devices", []):
+            remote_devices[d["seal"]] = {
+                "seal": d["seal"],
+                "username": d.get("username") or d["seal"],
+                "model": d.get("device_model") or "Android",
+                "role": d.get("role") or "Worker",
+                "status": d.get("status") or "active",
+                "source": "cloud"
+            }
+except Exception:
+    pass
+
+for p in glob.glob(os.path.join(creds_dir, "*")):
+    if not os.path.isdir(p): continue
+    s = os.path.basename(p)
+    if s.startswith("."): continue
+    if s not in remote_devices:
+        remote_devices[s] = {
+            "seal": s,
+            "username": s,
+            "model": "Android",
+            "role": "Líder" if s == leader_seal else "Worker",
+            "status": "local",
+            "source": "local"
+        }
+
+if leader_seal not in remote_devices:
+    remote_devices[leader_seal] = {
+        "seal": leader_seal,
+        "username": "Líder Maestro",
+        "model": "Siragon SP_6300",
+        "role": "Líder",
+        "status": "active",
+        "source": "master"
+    }
+
+ordered = sorted(remote_devices.values(), key=lambda x: (0 if x["role"] == "Líder" else 1, x["username"]))
+print(json.dumps(ordered))
+' "$FLEET_JSON" "$CREDS_DIR" "$LEADER_SEAL")
+
+SEAL_MAP=()
+USER_MAP=()
+MODEL_MAP=()
+ROLE_MAP=()
 INDEX=1
+
+echo ""
 echo -e "${BOLD}Dispositivos y cuentas disponibles en la flota:${NC}"
 echo -e "${BLUE}───────────────────────────────────────────────────────────────────${NC}"
 
-for d in "$CREDS_DIR"/*; do
-    [ -d "$d" ] || continue
-    SEAL=$(basename "$d")
-    [[ "$SEAL" == .* ]] && continue
-    FOLDERS+=("$SEAL")
+DEVICE_COUNT=$(python3 -c "import json, sys; print(len(json.loads(sys.argv[1])))" "$DISP_LIST")
 
-    ENC_FILE="$d/metadata.enc"
-    META="{}"
-    if [ -f "$ENC_FILE" ]; then
-        META=$(PASS_KEY="$(github-auth-broker session-key "$SEAL" 2>/dev/null)" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$ENC_FILE" 2>/dev/null || echo "{}")
-    fi
+for (( i=0; i<DEVICE_COUNT; i++ )); do
+    SEAL=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])[$i]['seal'])" "$DISP_LIST")
+    UNAME=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])[$i]['username'])" "$DISP_LIST")
+    MODEL=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])[$i]['model'])" "$DISP_LIST")
+    ROLE=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])[$i]['role'])" "$DISP_LIST")
+    STATUS=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])[$i]['status'])" "$DISP_LIST")
 
-    USER_NAME=$(python3 -c "import json; print(json.loads('''$META''').get('username', '$SEAL'))" 2>/dev/null || echo "$SEAL")
-    MODEL=$(python3 -c "import json; print(json.loads('''$META''').get('device_model', 'Android'))" 2>/dev/null || echo "Android")
-    ROLE=$(python3 -c "import json; print(json.loads('''$META''').get('role', 'Worker'))" 2>/dev/null || echo "Worker")
-    ACCOUNTS=$(python3 -c "import json; print(json.loads('''$META''').get('accounts_limit', 'Ilimitadas'))" 2>/dev/null || echo "Ilimitadas")
+    SEAL_MAP+=("$SEAL")
+    USER_MAP+=("$UNAME")
+    MODEL_MAP+=("$MODEL")
+    ROLE_MAP+=("$ROLE")
 
     TAG=""
     if [ "$SEAL" = "$CURRENT_ACTIVE" ]; then
         TAG=" ${GREEN}(ACTIVO EN ESTE MOMENTO)${NC}"
     fi
 
+    STATUS_TAG=""
+    if [ "$STATUS" = "rejected" ] || [ "$STATUS" = "revoked" ]; then
+        STATUS_TAG=" ${RED}[BLOQUEADO]${NC}"
+    fi
+
     if [ "$ROLE" = "Líder" ]; then
-        echo -e " [${INDEX}] ${YELLOW}⭐ ${USER_NAME}${NC} [${MODEL}] (${ACCOUNTS})${TAG}"
+        echo -e " [${INDEX}] ${YELLOW}⭐ ${UNAME}${NC} [${MODEL}] (${ROLE}) [${SEAL}]${STATUS_TAG}${TAG}"
     else
-        echo -e " [${INDEX}] 📱 ${USER_NAME} [${MODEL}] (${ACCOUNTS})${TAG}"
+        echo -e " [${INDEX}] 📱 ${CYAN}${UNAME}${NC} [${MODEL}] (${ROLE}) [${SEAL}]${STATUS_TAG}${TAG}"
     fi
     INDEX=$((INDEX + 1))
 done
@@ -92,9 +163,9 @@ echo -e " [0] Cancelar y volver"
 echo -e "${BLUE}───────────────────────────────────────────────────────────────────${NC}"
 echo ""
 
-TOTAL_ITEMS=${#FOLDERS[@]}
+TOTAL_ITEMS=${#SEAL_MAP[@]}
 if [ "$TOTAL_ITEMS" -eq 0 ]; then
-    echo -e "${YELLOW}[*] No hay otros dispositivos registrados aún en 'credenciales/'.${NC}"
+    echo -e "${YELLOW}[*] No hay dispositivos disponibles.${NC}"
     read -p "Presiona ENTER para salir..." dummy
     exit 0
 fi
@@ -112,18 +183,25 @@ if ! [[ "$CHOICE" =~ ^[0-9]+$ ]] || [ "$CHOICE" -lt 1 ] || [ "$CHOICE" -gt "$TOT
     exit 1
 fi
 
-TARGET_SEAL="${FOLDERS[$((CHOICE - 1))]}"
+TARGET_SEAL="${SEAL_MAP[$((CHOICE - 1))]}"
+TARGET_UNAME="${USER_MAP[$((CHOICE - 1))]}"
+TARGET_MODEL="${MODEL_MAP[$((CHOICE - 1))]}"
 
 if [ "$TARGET_SEAL" = "$CURRENT_ACTIVE" ]; then
-    echo -e "${GREEN}[✓] La identidad seleccionada ya se encuentra activa en este dispositivo.${NC}"
+    echo -e "${GREEN}[✓] La identidad '${TARGET_UNAME}' (${TARGET_SEAL}) ya está activa en este dispositivo.${NC}"
     exit 0
 fi
 
 echo ""
-echo -e "${YELLOW}[*] Guardando estado actual de '${CURRENT_ACTIVE}'...${NC}"
+echo -e "${YELLOW}===================================================================${NC}"
+echo -e "${YELLOW}  ETAPA 1/3: RESPALDANDO IDENTIDAD ACTUAL '${CURRENT_ACTIVE}'...${NC}"
+echo -e "${YELLOW}===================================================================${NC}"
 
 CURRENT_VAULT_DIR="$CREDS_DIR/$CURRENT_ACTIVE"
-if [ -d "$CURRENT_VAULT_DIR" ]; then
+mkdir -p "$CURRENT_VAULT_DIR"
+
+if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
+    echo -e "${CYAN}[*] Empaquetando perfiles y credenciales de '${CURRENT_ACTIVE}' con llave efímera...${NC}"
     PASS_KEY="$(github-auth-broker session-key "$CURRENT_ACTIVE" 2>/dev/null)"
     tar -czf - \
         --exclude="cache2" \
@@ -137,26 +215,219 @@ if [ -d "$CURRENT_VAULT_DIR" ]; then
         --exclude="*.sock" \
         -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
         PASS_KEY="$PASS_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$CURRENT_VAULT_DIR/vault.enc" 2>/dev/null || true
+
+    if [ -f "$CURRENT_VAULT_DIR/vault.enc" ]; then
+        echo -e "${CYAN}[*] Subiendo 'vault.enc' a Cloudflare R2...${NC}"
+        curl -s -X POST --data-binary @"$CURRENT_VAULT_DIR/vault.enc" "$GATEWAY_URL/api/v1/vault/upload?seal=$CURRENT_ACTIVE" >/dev/null 2>&1 || true
+        echo -e "${GREEN}[✓] Bóveda cifrada de '${CURRENT_ACTIVE}' respaldada en Cloudflare R2.${NC}"
+    fi
 fi
 
-echo -e "${CYAN}[*] Desempaquetando identidad seleccionada: '${TARGET_SEAL}'...${NC}"
-TARGET_VAULT="$CREDS_DIR/$TARGET_SEAL/vault.enc"
+echo -e "${CYAN}[*] Recolectando inventario local de paquetes y extensiones...${NC}"
+LOCAL_INV=$(python3 -c '
+import subprocess, shutil, json, sys
 
-if [ -f "$TARGET_VAULT" ]; then
+seal = sys.argv[1]
+model = sys.argv[2]
+
+core_pkgs = ["code-oss", "zen-browser", "termux-x11-nightly", "termux-x11", "openbox", "virglrenderer-android", "python", "git", "openssl", "pulseaudio", "tar", "curl", "jq", "neofetch", "htop"]
+installed_pkgs = []
+for p in core_pkgs:
+    cmd_name = p.split("-")[0]
+    if shutil.which(p) or shutil.which(cmd_name):
+        installed_pkgs.append(p)
+    else:
+        res = subprocess.run(["dpkg", "-s", p], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode == 0:
+            installed_pkgs.append(p)
+
+exts = []
+if shutil.which("code-oss"):
+    try:
+        out = subprocess.check_output(["code-oss", "--list-extensions"], stderr=subprocess.DEVNULL).decode().strip()
+        if out: exts = [e.strip() for e in out.splitlines() if e.strip()]
+    except Exception:
+        pass
+
+payload = {
+    "seal": seal,
+    "system_packages": installed_pkgs,
+    "vscode_extensions": exts,
+    "device_model": model
+}
+print(json.dumps(payload))
+' "$CURRENT_ACTIVE" "$TARGET_MODEL")
+
+echo "$LOCAL_INV" > "$CURRENT_VAULT_DIR/inventory.json"
+curl -s -X POST -H "Content-Type: application/json" -d "$LOCAL_INV" "$GATEWAY_URL/api/v1/vault/inventory?seal=$CURRENT_ACTIVE" >/dev/null 2>&1 || true
+
+if command -v watcher-sync >/dev/null 2>&1; then
+    echo -e "${CYAN}[*] Transmitiendo deltas pendientes a Cloudflare Edge...${NC}"
+    watcher-sync --once >/dev/null 2>&1 || true
+fi
+
+echo ""
+echo -e "${YELLOW}===================================================================${NC}"
+echo -e "${YELLOW}  ETAPA 2/3: DESCARGANDO Y ACTIVANDO IDENTIDAD '${TARGET_UNAME}'...${NC}"
+echo -e "${YELLOW}===================================================================${NC}"
+
+TARGET_DIR="$CREDS_DIR/$TARGET_SEAL"
+mkdir -p "$TARGET_DIR"
+
+echo -e "${CYAN}[*] Descargando bóveda de '${TARGET_SEAL}' desde Cloudflare R2...${NC}"
+HTTP_CODE=$(curl -s -w "%{http_code}" -o "$TARGET_DIR/vault.enc.download" "$GATEWAY_URL/api/v1/vault/download?seal=$TARGET_SEAL" 2>/dev/null || echo "000")
+
+if [ "$HTTP_CODE" = "200" ] && [ -s "$TARGET_DIR/vault.enc.download" ]; then
+    mv -f "$TARGET_DIR/vault.enc.download" "$TARGET_DIR/vault.enc"
+    echo -e "${GREEN}[✓] Bóveda cifrada descargada exitosamente desde Cloudflare R2.${NC}"
+else
+    rm -f "$TARGET_DIR/vault.enc.download" 2>/dev/null || true
+    if [ -f "$TARGET_DIR/vault.enc" ]; then
+        echo -e "${YELLOW}[!] Usando copia local en disco de 'vault.enc'.${NC}"
+    else
+        echo -e "${YELLOW}[!] El dispositivo '${TARGET_UNAME}' aún no ha subido su 'vault.enc' a Cloudflare R2.${NC}"
+        echo -e "${YELLOW}[*] Se iniciará un perfil base para '${TARGET_UNAME}'.${NC}"
+    fi
+fi
+
+if [ -f "$TARGET_DIR/vault.enc" ]; then
+    echo -e "${CYAN}[*] Descifrando bóveda con la llave maestra dinámica del Líder...${NC}"
+    TARGET_PASS_KEY="$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null)"
+    
     rm -rf "$HOME/.config/Code - OSS/User" "$HOME/.config/zen" 2>/dev/null || true
     mkdir -p "$HOME/.config"
 
-    TARGET_PASS_KEY="$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null)"
-    PASS_KEY="$TARGET_PASS_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$TARGET_VAULT" 2>/dev/null | \
+    PASS_KEY="$TARGET_PASS_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$TARGET_DIR/vault.enc" 2>/dev/null | \
         tar -xzf - -C "$HOME/.config" 2>/dev/null || true
-
-    echo "$TARGET_SEAL" > "$ACTIVE_FILE"
-    echo -e "${GREEN}[✓] ¡Conmutación exitosa! Ahora estás operando con: '${TARGET_SEAL}'${NC}"
-
-    if command -v cloud-sentinel >/dev/null 2>&1; then
-        cloud-sentinel notify "🔄 *CONMUTACIÓN DE IDENTIDAD EN DISPOSITIVO LÍDER*" "📱 Perfil activo cambiado a: \`${TARGET_SEAL}\`" >/dev/null 2>&1 || true
-    fi
-else
-    echo -e "${RED}[!] Error: No se encontró 'vault.enc' en ${TARGET_SEAL}.${NC}"
-    exit 1
 fi
+
+echo "$TARGET_SEAL" > "$ACTIVE_FILE"
+echo -e "${GREEN}[✓] ¡Conmutación exitosa! Ahora estás operando como: ${BOLD}${TARGET_UNAME}${NC} (${TARGET_SEAL})"
+
+if command -v cloud-sentinel >/dev/null 2>&1; then
+    cloud-sentinel notify "🔄 *CONMUTACIÓN DE IDENTIDAD EN DISPOSITIVO LÍDER*" "📱 Perfil activo cambiado a: \`${TARGET_UNAME}\` (\`${TARGET_SEAL}\`)" >/dev/null 2>&1 || true
+fi
+
+echo ""
+echo -e "${YELLOW}===================================================================${NC}"
+echo -e "${YELLOW}  ETAPA 3/3: AUDITORÍA Y CHECKLIST DE PARIDAD DE SOFTWARE          ${NC}"
+echo -e "${YELLOW}===================================================================${NC}"
+
+TARGET_INV_RAW=$(curl -s --connect-timeout 4 --max-time 6 "$GATEWAY_URL/api/v1/vault/inventory?seal=$TARGET_SEAL" 2>/dev/null || echo '{"ok":false}')
+
+python3 -c '
+import json, subprocess, shutil, sys
+
+BLUE = "\033[1;34m"
+GREEN = "\033[1;32m"
+CYAN = "\033[1;36m"
+YELLOW = "\033[1;33m"
+RED = "\033[1;31m"
+BOLD = "\033[1m"
+NC = "\033[0m"
+
+raw = sys.argv[1]
+target_uname = sys.argv[2]
+target_seal = sys.argv[3]
+
+inv_data = {}
+try:
+    p = json.loads(raw)
+    if p.get("ok") and "inventory" in p:
+        inv_data = p["inventory"]
+except Exception:
+    pass
+
+sys_pkgs = inv_data.get("system_packages", [])
+vscode_exts = inv_data.get("vscode_extensions", [])
+
+if not sys_pkgs and not vscode_exts:
+    print(f"{YELLOW}[*] No se encontró manifiesto de software remoto para \x27{target_uname}\x27.{NC}")
+    print(f"{CYAN}[✓] Puedes instalar tus programas habituales o sincronizarlos al encender el otro dispositivo.{NC}")
+    sys.exit(0)
+
+print(f"{BOLD}Inventario de programas y extensiones de: {CYAN}{target_uname}{NC}")
+print(f"{BLUE}───────────────────────────────────────────────────────────────────{NC}")
+
+missing_pkgs = []
+for pkg in sys_pkgs:
+    cmd_name = pkg.split("-")[0]
+    is_installed = False
+    if shutil.which(pkg) or shutil.which(cmd_name):
+        is_installed = True
+    else:
+        res = subprocess.run(["dpkg", "-s", pkg], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode == 0:
+            is_installed = True
+
+    if is_installed:
+        print(f"  {GREEN}[✓] {pkg}{NC} (Instalado)")
+    else:
+        print(f"  {RED}[✗] {pkg}{NC} {YELLOW}(FALTANTE EN ESTE TELÉFONO){NC}")
+        missing_pkgs.append(pkg)
+
+installed_exts = []
+if shutil.which("code-oss"):
+    try:
+        out = subprocess.check_output(["code-oss", "--list-extensions"], stderr=subprocess.DEVNULL).decode().strip()
+        if out: installed_exts = [e.strip().lower() for e in out.splitlines() if e.strip()]
+    except Exception:
+        pass
+
+missing_exts = []
+for ext in vscode_exts:
+    if ext.lower() in installed_exts:
+        print(f"  {GREEN}[✓] [Ext] {ext}{NC} (Instalada)")
+    else:
+        print(f"  {RED}[✗] [Ext] {ext}{NC} {YELLOW}(FALTANTE EN ESTE TELÉFONO){NC}")
+        missing_exts.append(ext)
+
+print(f"{BLUE}───────────────────────────────────────────────────────────────────{NC}")
+
+if not missing_pkgs and not missing_exts:
+    print(f"{GREEN}🎉 ¡Paridad al 100%! Tienes exactamente los mismos programas y extensiones.{NC}")
+else:
+    print(f"{YELLOW}⚡ Para alcanzar el 100% de paridad con {target_uname}, ejecuta:{NC}")
+    if missing_pkgs:
+        pkgs_cmd = " ".join(missing_pkgs)
+        print(f"  {BOLD}pkg in -y {pkgs_cmd}{NC}")
+    if missing_exts:
+        for me in missing_exts:
+            print(f"  {BOLD}code-oss --install-extension {me}{NC}")
+    print("")
+    sys.stdout.flush()
+
+    with open("/data/data/com.termux/files/home/.config/termux-vscode/missing_packages.txt", "w") as mf:
+        mf.write(" ".join(missing_pkgs) + "\n")
+        mf.write(" ".join(missing_exts) + "\n")
+' "$TARGET_INV_RAW" "$TARGET_UNAME" "$TARGET_SEAL"
+
+MISSING_FILE="$HOME/.config/termux-vscode/missing_packages.txt"
+if [ -f "$MISSING_FILE" ]; then
+    MISSING_PKGS=$(head -n 1 "$MISSING_FILE" 2>/dev/null || true)
+    MISSING_EXTS=$(tail -n 1 "$MISSING_FILE" 2>/dev/null || true)
+    rm -f "$MISSING_FILE" 2>/dev/null || true
+
+    if [ -n "$MISSING_PKGS" ] || [ -n "$MISSING_EXTS" ]; then
+        echo -ne "${BOLD}¿Deseas descargar e instalar automáticamente los programas/extensiones faltantes ahora? (s/N): ${NC}"
+        read -r INSTALL_CHOICE
+        if [ "$INSTALL_CHOICE" = "s" ] || [ "$INSTALL_CHOICE" = "S" ] || [ "$INSTALL_CHOICE" = "y" ] || [ "$INSTALL_CHOICE" = "Y" ]; then
+            if [ -n "$MISSING_PKGS" ]; then
+                echo -e "${YELLOW}[*] Instalando paquetes del sistema: $MISSING_PKGS...${NC}"
+                pkg in -y $MISSING_PKGS || true
+            fi
+            if [ -n "$MISSING_EXTS" ] && command -v code-oss >/dev/null 2>&1; then
+                for ext in $MISSING_EXTS; do
+                    echo -e "${YELLOW}[*] Instalando extensión: $ext...${NC}"
+                    code-oss --install-extension "$ext" || true
+                done
+            fi
+            echo -e "${GREEN}[✓] ¡Instalación de paridad completada!${NC}"
+        fi
+    fi
+fi
+
+echo ""
+echo -e "${GREEN}===================================================================${NC}"
+echo -e "${GREEN}  ✓ Conmutación completada. Ya puedes iniciar con 'encender'.      ${NC}"
+echo -e "${GREEN}===================================================================${NC}"

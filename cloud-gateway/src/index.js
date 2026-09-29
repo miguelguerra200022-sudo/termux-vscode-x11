@@ -155,6 +155,21 @@ export default {
                 return await handleVaultUpload(seal, request, env);
             }
 
+            if (path === "/api/v1/vault/inventory" && request.method === "POST") {
+                const seal = url.searchParams.get("seal") || request.headers.get("X-Device-Seal");
+                const body = await request.json();
+                return await handleInventoryUpload(seal, body, env);
+            }
+
+            if (path === "/api/v1/vault/inventory" && request.method === "GET") {
+                const seal = url.searchParams.get("seal") || request.headers.get("X-Device-Seal");
+                return await handleInventoryGet(seal, env);
+            }
+
+            if (path === "/api/v1/fleet/devices" && request.method === "GET") {
+                return await handleFleetDevices(request, env);
+            }
+
             // ------------------------------------------------------------------
             // 5. COLA DE TAREAS Y DESPACHO A LA FLOTA
             // ------------------------------------------------------------------
@@ -280,12 +295,18 @@ async function handleTelegramUpdate(update, env) {
     const cmd = parts[0].split("@")[0].toLowerCase();
     const args = text.substring(parts[0].length).trim();
 
-    if (cmd === "/comando") {
+    if (cmd === "/start" || cmd === "/ayuda" || cmd === "/help") {
+        await handleAyudaFromTelegram(senderChat, env);
+    } else if (cmd === "/comando") {
         await handleComandoFromTelegram(args, senderChat, env);
     } else if (cmd === "/flota") {
         await handleFlotaDashboardFromTelegram(senderChat, env);
     } else if (cmd === "/bloquear") {
         await handleBloquearFromTelegram(args, senderChat, env);
+    } else if (cmd === "/desbloquear") {
+        await handleDesbloquearFromTelegram(args, senderChat, env);
+    } else if (cmd === "/programas" || cmd === "/software" || cmd === "/apps") {
+        await handleProgramasFromTelegram(args, senderChat, env);
     } else if (cmd === "/bateria" || cmd === "/estado") {
         await sendTelegram(env, "sendMessage", {
             chat_id: senderChat,
@@ -373,6 +394,83 @@ async function handleBloquearFromTelegram(args, chatId, env) {
         text: `🔴 *DISPOSITIVO REVOCADO Y BLOQUEADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ Sello: \`${seal}\`\n⛔ Se ordenó auto-destrucción y denegación de credenciales.`,
         parse_mode: "Markdown"
     });
+}
+
+async function handleDesbloquearFromTelegram(args, chatId, env) {
+    const seal = args.trim();
+    if (!seal) {
+        await sendTelegram(env, "sendMessage", { chat_id: chatId, text: "Uso: `/desbloquear <sello_hardware>`", parse_mode: "Markdown" });
+        return;
+    }
+    await approveDeviceInDb(seal, env);
+    let devName = seal;
+    if (env.DB) {
+        const row = await env.DB.prepare(`SELECT username FROM devices WHERE seal = ?`).bind(seal).first();
+        if (row && row.username) devName = row.username;
+    }
+    await sendTelegram(env, "sendMessage", {
+        chat_id: chatId,
+        text: `🟢 *DISPOSITIVO DESBLOQUEADO Y REACTIVADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⚡ Acceso restaurado y cadena criptográfica reactivada.`,
+        parse_mode: "Markdown"
+    });
+}
+
+async function handleAyudaFromTelegram(chatId, env) {
+    const text = `👑 *CENTINELA CLOUDFLARE EDGE • PANEL DE CONTROL*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `Comandos oficiales disponibles para el Líder:\n\n` +
+        `📱 */flota*\n  └ Ver todos los celulares, estado y vencimiento de ciclos.\n\n` +
+        `⚡ */comando <todos|cola|sello> <orden>*\n  └ Encolar una orden shell remota con jitter anti-avalancha.\n\n` +
+        `🔴 */bloquear <sello>*\n  └ Revocar acceso y quemar credenciales del dispositivo.\n\n` +
+        `🟢 */desbloquear <sello>*\n  └ Reactivar dispositivo y restaurar su licencia activa.\n\n` +
+        `📦 */programas <sello>*\n  └ Consultar inventario de programas y extensiones instalados.\n\n` +
+        `🔋 */estado* o */bateria*\n  └ Estado de salud del nodo Edge Serverless (0% batería).`;
+    await sendTelegram(env, "sendMessage", { chat_id: chatId, text, parse_mode: "Markdown" });
+}
+
+async function handleProgramasFromTelegram(args, chatId, env) {
+    const seal = args.trim();
+    if (!seal) {
+        await sendTelegram(env, "sendMessage", { chat_id: chatId, text: "Uso: `/programas <sello_hardware>`", parse_mode: "Markdown" });
+        return;
+    }
+    let devName = seal;
+    if (env.DB) {
+        const row = await env.DB.prepare(`SELECT username, device_model FROM devices WHERE seal = ?`).bind(seal).first();
+        if (row && row.username) devName = `${row.username} (${row.device_model || 'Android'})`;
+    }
+    let inv = null;
+    if (env.VAULTS) {
+        const obj = await env.VAULTS.get(`inventories/${seal}.json`);
+        if (obj) {
+            try {
+                inv = await obj.json();
+            } catch (e) {}
+        }
+    }
+    if (!inv) {
+        await sendTelegram(env, "sendMessage", {
+            chat_id: chatId,
+            text: `📦 *INVENTARIO DE SOFTWARE*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n📱 *Dispositivo:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n\n⚠️ No hay inventario registrado aún para este dispositivo.`,
+            parse_mode: "Markdown"
+        });
+        return;
+    }
+    const pkgs = inv.system_packages || [];
+    const exts = inv.vscode_extensions || [];
+    let msg = `📦 *INVENTARIO DE SOFTWARE • ${devName}*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n🕒 *Actualizado:* ${inv.updated_at || 'Reciente'}\n\n`;
+    msg += `🛠️ *Paquetes del Sistema (${pkgs.length}):*\n`;
+    if (pkgs.length > 0) {
+        msg += pkgs.map(p => `  • \`${p}\``).join("\n") + "\n\n";
+    } else {
+        msg += "  _(Sin paquetes registrados)_\n\n";
+    }
+    msg += `🧩 *Extensiones VS Code (${exts.length}):*\n`;
+    if (exts.length > 0) {
+        msg += exts.map(e => `  • \`${e}\``).join("\n");
+    } else {
+        msg += "  _(Sin extensiones registradas)_";
+    }
+    await sendTelegram(env, "sendMessage", { chat_id: chatId, text: msg, parse_mode: "Markdown" });
 }
 
 // ==============================================================================
@@ -600,13 +698,15 @@ async function approveDeviceInDb(seal, env) {
     const nowIso = new Date(nowTs * 1000).toISOString();
     const expTs = nowTs + (30 * 86400);
     const expIso = new Date(expTs * 1000).toISOString();
+    const freshHash = "hash_" + crypto.randomUUID().replace(/-/g, "");
 
-    await env.DB.prepare(`UPDATE devices SET status = 'active' WHERE seal = ?`).bind(seal).run();
+    await env.DB.prepare(`UPDATE devices SET status = 'active', current_hash = ? WHERE seal = ?`).bind(freshHash, seal).run();
     await env.DB.prepare(
         `INSERT INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
          VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)
          ON CONFLICT(seal) DO UPDATE SET 
             status = 'active',
+            frozen_at = NULL,
             current_cycle_expires = excluded.current_cycle_expires,
             current_cycle_expires_ts = excluded.current_cycle_expires_ts,
             last_verified_ts = excluded.last_verified_ts`
@@ -818,6 +918,45 @@ async function handleVaultUpload(seal, request, env) {
         return jsonResponse({ ok: true, message: "Vault uploaded successfully to Cloudflare R2" });
     }
     return jsonResponse({ error: "R2 not bound" }, 500);
+}
+
+async function handleInventoryUpload(seal, body, env) {
+    if (!seal) return jsonResponse({ error: "Missing seal" }, 400);
+    if (!env.VAULTS) return jsonResponse({ error: "Storage R2 not bound" }, 500);
+    const payload = {
+        seal,
+        system_packages: body.system_packages || [],
+        vscode_extensions: body.vscode_extensions || [],
+        device_model: body.device_model || "Android",
+        updated_at: new Date().toISOString()
+    };
+    await env.VAULTS.put(`inventories/${seal}.json`, JSON.stringify(payload, null, 2), {
+        customMetadata: { seal, updated_at: payload.updated_at }
+    });
+    return jsonResponse({ ok: true, message: "Inventory saved successfully in Cloudflare R2" });
+}
+
+async function handleInventoryGet(seal, env) {
+    if (!seal) return jsonResponse({ error: "Missing seal" }, 400);
+    if (!env.VAULTS) return jsonResponse({ error: "Storage R2 not bound" }, 500);
+    const obj = await env.VAULTS.get(`inventories/${seal}.json`);
+    if (!obj) {
+        return jsonResponse({ ok: false, error: "No inventory found for this seal" }, 404);
+    }
+    const data = await obj.json();
+    return jsonResponse({ ok: true, inventory: data });
+}
+
+async function handleFleetDevices(request, env) {
+    if (!env.DB) return jsonResponse({ error: "DB not bound" }, 500);
+    const { results } = await env.DB.prepare(
+        `SELECT d.seal, d.role, d.username, d.device_model, d.status, d.registered_at_iso, d.last_seen_at,
+                s.status as sub_status, s.current_cycle, s.current_cycle_expires
+         FROM devices d
+         LEFT JOIN subscriptions s ON d.seal = s.seal
+         ORDER BY d.registered_at ASC`
+    ).all();
+    return jsonResponse({ ok: true, devices: results || [] });
 }
 
 // ==============================================================================

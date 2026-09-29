@@ -343,7 +343,11 @@ do_sync() {
     # 6.3 Sincronización Incremental por Deltas hacia Cloudflare Edge Gateway (en Bytes)
     sync_deltas_to_gateway "$TARGET_SEAL"
 
-    # Respaldo local de seguridad en disco
+    GW_SYNC_URL=""
+    [ -f "$HOME/.config/termux-vscode/gateway_url" ] && GW_SYNC_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+    [ -z "$GW_SYNC_URL" ] && GW_SYNC_URL="https://code-stack-gateway.cdn-sys-runtime.workers.dev"
+
+    # Respaldo local de seguridad en disco y subida a Cloudflare R2
     if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
         SESSION_KEY=$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null || true)
         tar -czf - \
@@ -359,6 +363,10 @@ do_sync() {
             -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
             PASS_KEY="$SESSION_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
         unset SESSION_KEY
+
+        if [ -f "$VAULT_DIR/vault.enc" ] && [ -n "$GW_SYNC_URL" ]; then
+            curl -s -X POST --data-binary @"$VAULT_DIR/vault.enc" "$GW_SYNC_URL/api/v1/vault/upload?seal=$TARGET_SEAL" >/dev/null 2>&1 || true
+        fi
     fi
 
     # 6.4 Sincronizar configuraciones visuales locales

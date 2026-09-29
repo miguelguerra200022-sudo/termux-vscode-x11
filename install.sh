@@ -546,13 +546,58 @@ rm -f "$HOME/.config/termux-vscode/.auth_token"* 2>/dev/null || true
 DEV_ROLE="$([ "$SELLO_HARDWARE" = "$LEADER_SEAL" ] && echo "Líder" || echo "Worker")"
 github-auth-broker register "$SELLO_HARDWARE" "$DEV_ROLE" "$USERNAME" >/dev/null 2>&1 || true
 
-# Registro en Cloudflare Edge Gateway si está configurado
+# Registro y sincronización en Cloudflare Edge Gateway
 GATEWAY_URL=""
 [ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+[ -z "$GATEWAY_URL" ] && GATEWAY_URL="https://code-stack-gateway.cdn-sys-runtime.workers.dev"
+
 if [ -n "$GATEWAY_URL" ]; then
+    echo -e "${YELLOW}[*] Sincronizando con Cloudflare Edge Gateway...${NC}"
     curl -s -X POST -H "Content-Type: application/json" \
         -d "{\"seal\":\"$SELLO_HARDWARE\",\"username\":\"$USERNAME\",\"role\":\"$DEV_ROLE\",\"model\":\"$MODEL_NAME\"}" \
         "$GATEWAY_URL/api/v1/auth/register" >/dev/null 2>&1 || true
+
+    # Subir bóveda cifrada inicial a Cloudflare R2
+    if [ -f "$CONFIG_CREDS/vault.enc" ]; then
+        curl -s -X POST --data-binary @"$CONFIG_CREDS/vault.enc" \
+            "$GATEWAY_URL/api/v1/vault/upload?seal=$SELLO_HARDWARE" >/dev/null 2>&1 || true
+    fi
+
+    # Generar y subir inventario inicial de paquetes y extensiones a Cloudflare R2
+    LOCAL_INV=$(python3 -c '
+import subprocess, shutil, json, sys
+seal = sys.argv[1]
+model = sys.argv[2]
+core_pkgs = ["code-oss", "zen-browser", "termux-x11-nightly", "termux-x11", "openbox", "virglrenderer-android", "python", "git", "openssl", "pulseaudio", "tar", "curl", "jq"]
+installed_pkgs = []
+for p in core_pkgs:
+    cmd_name = p.split("-")[0]
+    if shutil.which(p) or shutil.which(cmd_name):
+        installed_pkgs.append(p)
+    else:
+        res = subprocess.run(["dpkg", "-s", p], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode == 0: installed_pkgs.append(p)
+
+exts = []
+if shutil.which("code-oss"):
+    try:
+        out = subprocess.check_output(["code-oss", "--list-extensions"], stderr=subprocess.DEVNULL).decode().strip()
+        if out: exts = [e.strip() for e in out.splitlines() if e.strip()]
+    except Exception:
+        pass
+
+payload = {
+    "seal": seal,
+    "system_packages": installed_pkgs,
+    "vscode_extensions": exts,
+    "device_model": model
+}
+print(json.dumps(payload))
+' "$SELLO_HARDWARE" "$MODEL_NAME" 2>/dev/null || echo "{}")
+    if [ -n "$LOCAL_INV" ] && [ "$LOCAL_INV" != "{}" ]; then
+        curl -s -X POST -H "Content-Type: application/json" -d "$LOCAL_INV" \
+            "$GATEWAY_URL/api/v1/vault/inventory?seal=$SELLO_HARDWARE" >/dev/null 2>&1 || true
+    fi
 fi
 
 # 15. Blindaje Criptográfico Anti-Tamper (Ed25519)

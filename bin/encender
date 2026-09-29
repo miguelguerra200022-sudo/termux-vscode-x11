@@ -31,6 +31,23 @@ STORAGE_ROOT = "/storage/emulated/0"
 TERMUX_HOME = os.path.expanduser("~")
 CONFIG_DIR = os.path.expanduser("~/.config/termux-vscode")
 DATA_FILE = os.path.join(CONFIG_DIR, "proyectos.json")
+LEADER_SEAL = "ums9230-sp_6300-3724801c"
+
+def is_current_device_leader():
+    seal = ""
+    try:
+        seal = subprocess.check_output(["cloud-sentinel", "seal"], stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        pass
+    if not seal:
+        hw_file = os.path.expanduser("~/.config/termux-vscode/.device_hw_seal")
+        if os.path.isfile(hw_file):
+            try:
+                with open(hw_file, "r") as f:
+                    seal = f.read().strip()
+            except Exception:
+                pass
+    return seal == LEADER_SEAL
 
 def get_term_cols():
     """Obtiene el ancho actual de la pantalla del terminal."""
@@ -211,9 +228,11 @@ def classify_key(k):
     # Volver / Subir nivel: ESC o Backspace (o letra A)
     if k in ('\x7f', '\b', '\x1b', 'a', 'A'):
         return 'BACK'
-    # Conmutar Identidad Multi-dispositivo (Líder)
+    # Conmutar Identidad Multi-dispositivo (Exclusivo Líder)
     if k in ('c', 'C', 'i', 'I'):
-        return 'SWITCH_IDENTITY'
+        if is_current_device_leader():
+            return 'SWITCH_IDENTITY'
+        return 'OTHER'
     # Búsqueda / Filtro rápido por nombre
     if k in ('/', 'f', 'F'):
         return 'SEARCH'
@@ -389,7 +408,10 @@ def main():
         pass
 
     if '--switch' in sys.argv or '-s' in sys.argv:
-        subprocess.run(["switch-identity"])
+        if is_current_device_leader():
+            subprocess.run(["switch-identity"])
+        else:
+            print(f"{RED}[!] Función de conmutación exclusiva del dispositivo Líder.{NC}")
         sys.exit(0)
 
     # 1. Si se pasó una ruta directa como argumento, abrirla de inmediato
@@ -626,8 +648,8 @@ def main():
             print(f" • {YELLOW}Flechas ←/→ o P/N{NC}   : Cambiar de página  • {YELLOW}ESC o Backspace{NC}: Subir un nivel")
             print(f" • {YELLOW}[1-9]{NC}               : Salto numérico     • {YELLOW}[ / ]{NC}          : Buscar / Filtrar")
             print(f" • {YELLOW}[E]{NC}                 : Poner descripción  • {YELLOW}TAB{NC}            : Ver Historial")
-            print(div_line)
-            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {BOLD}{WHITE}c{NC}{GRAY} Identidad  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
+            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {c_hint}{BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
 
         # ------------------ CONTENIDO PESTAÑA 1: HISTORIAL ------------------
         else:
@@ -685,8 +707,8 @@ def main():
             print(f" • {YELLOW}[D]{NC}                       : Eliminar este proyecto del historial")
             print(f" • {YELLOW}TAB o ESC o [0]{NC}          : Volver al Explorador de carpetas")
             print(f" • {YELLOW}[Q]{NC}                       : Salir sin abrir nada")
-            print(div_line)
-            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {BOLD}{WHITE}c{NC}{GRAY} Identidad  {BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
+            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {c_hint}{BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
 
         if status_msg:
             print(f"\n{YELLOW}⚠️  {status_msg}{NC}")
@@ -715,8 +737,9 @@ def main():
             sys.exit(0)
 
         if action == 'SWITCH_IDENTITY':
-            subprocess.run(["switch-identity"])
-            status_msg = "Identidad actualizada."
+            if is_current_device_leader():
+                subprocess.run(["switch-identity"])
+                status_msg = "Identidad actualizada."
             continue
 
         # ------------------ EVENTOS: EXPLORADOR ------------------
