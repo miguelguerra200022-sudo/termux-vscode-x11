@@ -47,7 +47,7 @@ cd "$TARGET_DIR"
 MANIFEST_FILE="$TARGET_DIR/.integrity.manifest"
 SIG_FILE="$TARGET_DIR/.integrity.manifest.sig"
 
-EXCLUDE_PATTERN='(\.git|\.integrity|node_modules|__pycache__|\.cache|\.tmp|\.log|\.sock|\.cpuprofile|\.heapsnapshot|checkpoints)'
+EXCLUDE_PATTERN='(\.git|\.integrity|\.auth_ledger|node_modules|__pycache__|\.cache|\.tmp|\.log|\.sock|\.cpuprofile|\.heapsnapshot|checkpoints)'
 
 # ==============================================================================
 # 1. FUNCIÓN DE FIRMADO DE INTEGRIDAD (sign)
