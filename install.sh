@@ -622,6 +622,15 @@ rm -f "$HOME/.config/termux-vscode/.auth_token"* 2>/dev/null || true
 DEV_ROLE="$([ "$SELLO_HARDWARE" = "$LEADER_SEAL" ] && echo "Líder" || echo "Worker")"
 github-auth-broker register "$SELLO_HARDWARE" "$DEV_ROLE" "$USERNAME" >/dev/null 2>&1 || true
 
+# Registro en Cloudflare Edge Gateway si está configurado
+GATEWAY_URL=""
+[ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+if [ -n "$GATEWAY_URL" ]; then
+    curl -s -X POST -H "Content-Type: application/json" \
+        -d "{\"seal\":\"$SELLO_HARDWARE\",\"username\":\"$USERNAME\",\"role\":\"$DEV_ROLE\",\"model\":\"$MODEL_NAME\"}" \
+        "$GATEWAY_URL/api/v1/auth/register" >/dev/null 2>&1 || true
+fi
+
 # 15. Blindaje Criptográfico Anti-Tamper (Ed25519)
 echo -e "${YELLOW}[*] Configurando firmas criptográficas Ed25519...${NC}"
 mkdir -p "$HOME/.ssh" "$HOME/.config/git"

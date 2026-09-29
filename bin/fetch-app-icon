@@ -172,10 +172,30 @@ def fetch_icon(slug):
     if not url:
         url = f"{PAPIRUS_BASE}/application-x-executable.svg"
 
+    gw_url = os.environ.get("GATEWAY_URL", "").strip()
+    if not gw_url:
+        cfg = os.path.expanduser("~/.config/termux-vscode/gateway_url")
+        if os.path.isfile(cfg):
+            try:
+                with open(cfg, "r") as f:
+                    gw_url = f.read().strip()
+            except Exception:
+                pass
+
+    data = None
+    if gw_url:
+        try:
+            req = urllib.request.Request(f"{gw_url}/cdn/icons/{slug}", headers={"User-Agent": "Code-Stack-Client"})
+            with urllib.request.urlopen(req, timeout=3) as r:
+                data = r.read()
+        except Exception:
+            data = None
+
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=8) as r:
-            data = r.read()
+        if not data:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = r.read()
 
         if url.endswith(".png"):
             with open(target_png, "wb") as f:

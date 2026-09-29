@@ -55,21 +55,47 @@ else
     fi
 fi
 
-if [ -z "$ACTIVE_ID" ] || [ ! -f "$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc" ]; then
-    echo -e "${RED}[!] Error: No se encontró la bóveda cifrada 'vault.enc' para el dispositivo (${LOCAL_SEAL}).${NC}"
-    exit 1
+GATEWAY_URL=""
+[ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+
+VAULT_SOURCE=""
+if [ -n "$ACTIVE_ID" ] && [ -f "$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc" ]; then
+    VAULT_SOURCE="$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc"
+elif [ -n "$GATEWAY_URL" ]; then
+    echo -e "${CYAN}[*] Descargando bóveda de credenciales desde Cloudflare Edge Gateway (<200ms)...${NC}"
+    TEMP_VAULT="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/vault_${LOCAL_SEAL}.enc"
+    if curl -s -f -H "X-Device-Seal: $LOCAL_SEAL" "$GATEWAY_URL/api/v1/vault/download?seal=$LOCAL_SEAL" -o "$TEMP_VAULT" 2>/dev/null && [ -s "$TEMP_VAULT" ]; then
+        VAULT_SOURCE="$TEMP_VAULT"
+    fi
+fi
+
+if [ -z "$VAULT_SOURCE" ] || [ ! -f "$VAULT_SOURCE" ]; then
+    echo -e "${YELLOW}[*] No se encontró bóveda remota previa. Iniciando entorno limpio con credenciales génesis.${NC}"
+    mkdir -p "$HOME/.config/termux-vscode"
+    echo "$LOCAL_SEAL" > "$ACTIVE_FILE"
+    exit 0
 fi
 
 TARGET_SEAL=$(echo "$ACTIVE_ID" | awk -F'_' '{print $NF}')
 [ -z "$TARGET_SEAL" ] && TARGET_SEAL="$LOCAL_SEAL"
 
-echo -e "${CYAN}[*] Descifrando bóveda en RAM para: ${ACTIVE_ID}...${NC}"
+echo -e "${CYAN}[*] Descifrando bóveda en RAM para: ${ACTIVE_ID:-$LOCAL_SEAL}...${NC}"
 
 # 5. Descifrar directamente en RAM a destino sin exponer clave en ps aux
 mkdir -p "$HOME/.config"
 PASS_KEY="$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null)" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY \
-    -in "$REPO_DIR/credenciales/$ACTIVE_ID/vault.enc" 2>/dev/null | \
+    -in "$VAULT_SOURCE" 2>/dev/null | \
     tar -xzf - -C "$HOME/.config" 2>/dev/null || true
+
+# Limpiar temporal si fue descargado
+[ -n "$TEMP_VAULT" ] && rm -f "$TEMP_VAULT" 2>/dev/null || true
+
+# Informar programas y credenciales restauradas
+INSTALLED_REGISTRY="$HOME/.config/termux-software-center/installed.list"
+if [ -f "$INSTALLED_REGISTRY" ]; then
+    PROG_COUNT=$(wc -l < "$INSTALLED_REGISTRY" 2>/dev/null || echo 0)
+    echo -e "${GREEN}[✓] Perfiles y credenciales de ${PROG_COUNT} programa(s) restauradas en RAM exitosamente.${NC}"
+fi
 
 # Registrar identidad activa
 mkdir -p "$HOME/.config/termux-vscode"

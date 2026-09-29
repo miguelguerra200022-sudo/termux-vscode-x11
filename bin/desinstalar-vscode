@@ -62,18 +62,19 @@ if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
         integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
     fi
 
-    # 2.3 Commit final y Push a GitHub
-    cd "$REPO_DIR"
-    git add -A >/dev/null 2>&1 || true
-    COMMIT_MSG="sync: respaldo final antes de desinstalacion ($(date '+%Y-%m-%d %H:%M:%S'))"
-    git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || \
-    git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
+    # 2.3 Respaldo final exclusivo del Líder (Workers no tocan Git)
+    LOCAL_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null || github-auth-broker seal 2>/dev/null || echo "")
+    if [ "$LOCAL_SEAL" = "ums9230-sp_6300-3724801c" ]; then
+        cd "$REPO_DIR"
+        git add -A >/dev/null 2>&1 || true
+        COMMIT_MSG="sync: respaldo final antes de desinstalacion ($(date '+%Y-%m-%d %H:%M:%S'))"
+        git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || \
+        git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
 
-    # Obtener token descifrado efímeramente y push final
-    if GIT_ASKPASS="github-auth-broker" timeout 35 git push origin main >/dev/null 2>&1; then
-        echo -e "${GREEN}[✓] Cambios locales guardados con éxito en GitHub.${NC}"
-    else
-        true
+        # Obtener token descifrado efímeramente y push final
+        if GIT_ASKPASS="github-auth-broker" timeout 35 git push origin main >/dev/null 2>&1; then
+            echo -e "${GREEN}[✓] Cambios locales guardados con éxito en GitHub.${NC}"
+        fi
     fi
 fi
 

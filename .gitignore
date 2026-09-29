@@ -20,6 +20,9 @@ node_modules/
 *.key
 *.pem
 .env*
+credenciales/
+*.enc
+.auth_ledger.enc
 
 # Datos locales del usuario (no compartir en Git)
 *proyectos.json

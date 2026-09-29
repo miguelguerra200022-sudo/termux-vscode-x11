@@ -180,6 +180,92 @@ check_and_heal_tamper() {
     fi
 }
 
+# 5.1 Sincronización Incremental por Deltas hacia Cloudflare Edge Gateway (Bytes en tiempo real)
+sync_deltas_to_gateway() {
+    local target_seal="$1"
+    local gw_url=""
+    [ -f "$HOME/.config/termux-vscode/gateway_url" ] && gw_url=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+    [ -n "$GATEWAY_URL" ] && gw_url="$GATEWAY_URL"
+    [ -z "$gw_url" ] && return 0
+
+    python3 -c '
+import os, sys, json, hashlib, urllib.request, subprocess
+
+seal = sys.argv[1]
+gw = sys.argv[2]
+watch_dirs = [
+    os.path.expanduser("~/.config/Code - OSS/User"),
+    os.path.expanduser("~/.config/zen"),
+    os.path.expanduser("~/.config/termux-software-center")
+]
+hash_cache_file = os.path.expanduser("~/.config/termux-vscode/.file_hashes.json")
+hashes = {}
+if os.path.isfile(hash_cache_file):
+    try:
+        with open(hash_cache_file, "r") as f:
+            hashes = json.load(f)
+    except Exception:
+        pass
+
+changed_files = []
+for wdir in watch_dirs:
+    if not os.path.isdir(wdir):
+        continue
+    for root, _, files in os.walk(wdir):
+        for fname in files:
+            if any(x in fname for x in [".tmp", ".log", ".sock", "lock", "Crash Reports", "minidumps", "cache2"]):
+                continue
+            fpath = os.path.join(root, fname)
+            try:
+                st = os.stat(fpath)
+                if st.st_size > 5 * 1024 * 1024:
+                    continue
+                with open(fpath, "rb") as f:
+                    h = hashlib.sha256(f.read()).hexdigest()
+                rel = os.path.relpath(fpath, os.path.expanduser("~/.config"))
+                if hashes.get(rel) != h:
+                    hashes[rel] = h
+                    changed_files.append((fpath, rel, h))
+            except Exception:
+                continue
+
+if not changed_files:
+    sys.exit(0)
+
+try:
+    pass_key = subprocess.check_output(["github-auth-broker", "session-key", seal], stderr=subprocess.DEVNULL).decode().strip()
+except Exception:
+    pass_key = "vault_key"
+
+for fpath, rel, h in changed_files[:10]:
+    try:
+        env = os.environ.copy()
+        env["PASS_KEY"] = pass_key
+        cmd = ["openssl", "enc", "-aes-256-cbc", "-a", "-A", "-salt", "-pbkdf2", "-iter", "10000", "-pass", "env:PASS_KEY", "-in", fpath]
+        enc_payload = subprocess.check_output(cmd, env=env, stderr=subprocess.DEVNULL).decode().strip()
+        
+        req_data = json.dumps({
+            "seal": seal,
+            "file_rel": rel,
+            "file_hash": h,
+            "delta_enc": enc_payload
+        }).encode()
+        
+        req = urllib.request.Request(f"{gw}/api/v1/vault/sync-delta", data=req_data, headers={"Content-Type": "application/json", "X-Device-Seal": seal})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            pass
+    except Exception:
+        continue
+
+os.makedirs(os.path.dirname(hash_cache_file), exist_ok=True)
+try:
+    with open(hash_cache_file, "w") as f:
+        json.dump(hashes, f)
+except Exception:
+    pass
+' "$target_seal" "$gw_url" 2>/dev/null || true
+}
+
 # 6. Función de Sincronización, Firma Criptográfica y Subida a GitHub
 do_sync() {
     # 6.1 Limpiar posibles bloqueos huérfanos de Git si hubo un cierre forzado
@@ -210,6 +296,10 @@ do_sync() {
     fi
     TARGET_SEAL=$(basename "$VAULT_DIR")
 
+    # 6.3 Sincronización Incremental por Deltas hacia Cloudflare Edge Gateway (en Bytes)
+    sync_deltas_to_gateway "$TARGET_SEAL"
+
+    # Respaldo local de seguridad en disco
     if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
         SESSION_KEY=$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null || true)
         tar -czf - \
@@ -227,7 +317,7 @@ do_sync() {
         unset SESSION_KEY
     fi
 
-    # 6.4 Sincronizar configuraciones visuales
+    # 6.4 Sincronizar configuraciones visuales locales
     [ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
     [ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
     [ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
@@ -240,22 +330,25 @@ do_sync() {
         integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
     fi
 
-    # 6.6 Comprobar si hay cambios para Git
-    cd "$REPO_DIR"
-    CHANGES=$(git status --porcelain 2>/dev/null || true)
-    UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || true)
+    # 6.6 Regla de Oro: Solo el Celular Líder puede hacer commits/push de código a GitHub
+    # Los celulares Workers NO tocan GitHub (cero colisiones y cero llamadas de fondo)
+    LOCAL_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null || github-auth-broker seal 2>/dev/null || echo "")
+    if [ "$LOCAL_SEAL" = "ums9230-sp_6300-3724801c" ]; then
+        cd "$REPO_DIR"
+        CHANGES=$(git status --porcelain 2>/dev/null || true)
+        UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || true)
 
-    if [ -n "$CHANGES" ]; then
-        git add -A 2>/dev/null || true
-        git commit -S -m "sync: cambios en tiempo real ($(date '+%Y-%m-%d %H:%M:%S'))" >/dev/null 2>&1 || \
-        git commit -m "sync: cambios en tiempo real ($(date '+%Y-%m-%d %H:%M:%S'))" >/dev/null 2>&1 || true
-        UNPUSHED="1"
-    fi
+        if [ -n "$CHANGES" ]; then
+            git add -A 2>/dev/null || true
+            git commit -S -m "sync: cambios en tiempo real ($(date '+%Y-%m-%d %H:%M:%S'))" >/dev/null 2>&1 || \
+            git commit -m "sync: cambios en tiempo real ($(date '+%Y-%m-%d %H:%M:%S'))" >/dev/null 2>&1 || true
+            UNPUSHED="1"
+        fi
 
-    # 6.7 Si hay commits sin empujar, subir a GitHub con validación efímera y quemado inmediato
-    if [ -n "$UNPUSHED" ]; then
-        if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://github.com >/dev/null 2>&1; then
-            GIT_ASKPASS="github-auth-broker" timeout 45 git push origin main >/dev/null 2>&1 || true
+        if [ -n "$UNPUSHED" ]; then
+            if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://github.com >/dev/null 2>&1; then
+                GIT_ASKPASS="github-auth-broker" timeout 45 git push origin main >/dev/null 2>&1 || true
+            fi
         fi
     fi
 }

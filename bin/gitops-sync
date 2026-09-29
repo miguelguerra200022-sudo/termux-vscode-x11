@@ -40,8 +40,29 @@ check_updates() {
         return 0
     fi
 
-    REMOTE_HEAD=$(GIT_ASKPASS="github-auth-broker" git ls-remote origin main 2>/dev/null | awk '{print $1}')
+    # 1. Comprobación ultra-rápida contra Cloudflare Edge CDN (Cero peticiones a GitHub)
+    GATEWAY_URL=""
+    [ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
     LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null)
+
+    if [ -n "$GATEWAY_URL" ]; then
+        REMOTE_DATA=$(curl -s -f -H "If-None-Match: \"$LOCAL_HEAD\"" "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
+        if [ -n "$REMOTE_DATA" ]; then
+            REMOTE_HEAD=$(python3 -c "import json; print(json.loads('''$REMOTE_DATA''').get('commit', ''))" 2>/dev/null || true)
+            if [ -n "$REMOTE_HEAD" ] && [ "$REMOTE_HEAD" != "main" ] && [ "$REMOTE_HEAD" != "initial" ]; then
+                if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ]; then
+                    [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con Cloudflare Edge CDN ($LOCAL_HEAD)."
+                    return 0
+                else
+                    [ "$QUIET" -eq 0 ] && echo "[*] Actualización disponible en Cloudflare Edge: $REMOTE_HEAD"
+                    return 2
+                fi
+            fi
+        fi
+    fi
+
+    # 2. Fallback a Git si no hay Gateway configurado
+    REMOTE_HEAD=$(GIT_ASKPASS="github-auth-broker" git ls-remote origin main 2>/dev/null | awk '{print $1}')
 
     if [ -z "$REMOTE_HEAD" ]; then
         true

@@ -1,0 +1,26 @@
+name = "code-stack-gateway"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+LEADER_SEAL = "ums9230-sp_6300-3724801c"
+ALLOWED_CHAT_ID = "1514766577"
+DEFAULT_REPO = "github.com/miguelguerra200022-sudo/termux-vscode-x11"
+
+# Base de Datos Distribuida D1
+[[d1_databases]]
+binding = "DB"
+database_name = "fleet-d1"
+database_id = "fleet-d1-production-id"
+
+# Almacenamiento de Bóvedas R2 (Sin costo de transferencia)
+[[r2_buckets]]
+binding = "VAULTS"
+bucket_name = "code-stack-vaults"
+preview_bucket_name = "code-stack-vaults-preview"
+
+# Rutas públicas opcionales / dominios personalizados
+# routes = [
+#   { pattern = "api.tudominio.com/*", zone_name = "tudominio.com" }
+# ]

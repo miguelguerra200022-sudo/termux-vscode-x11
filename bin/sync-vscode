@@ -121,25 +121,35 @@ if command -v integrity-guard >/dev/null 2>&1; then
     integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
 fi
 
-# 8. Detectar cambios en Git y realizar commit firmado
-cd "$REPO_DIR"
-
-CHANGES=$(git status --porcelain 2>/dev/null || true)
-UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || true)
-
-if [ -n "$CHANGES" ]; then
-    git add -A 2>/dev/null || true
-    COMMIT_MSG="sync: actualización de datos ($(date '+%Y-%m-%d %H:%M:%S'))"
-    git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || \
-    git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
-    UNPUSHED="1"
+# 7.1 Sincronización a Cloudflare Edge Gateway (R2 Vault)
+GATEWAY_URL=""
+[ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+if [ -n "$GATEWAY_URL" ] && [ -f "$VAULT_DIR/vault.enc" ]; then
+    curl -s -X POST -H "X-Device-Seal: $ACTIVE_SEAL" --data-binary @"$VAULT_DIR/vault.enc" "$GATEWAY_URL/api/v1/vault/upload?seal=$ACTIVE_SEAL" >/dev/null 2>&1 || true
 fi
 
-# 9. Subida a GitHub con validación efímera y quemado inmediato de hash (MS)
-if [ -n "$UNPUSHED" ]; then
-    if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
-        GIT_ASKPASS="github-auth-broker" timeout 45 git push origin main >/dev/null 2>&1 || true
-        git update-ref refs/remotes/origin/main "$(git rev-parse HEAD 2>/dev/null)" 2>/dev/null || true
+# 8. Regla de Oro: Solo el Líder puede hacer commits y push a GitHub
+LOCAL_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null || github-auth-broker seal 2>/dev/null || echo "")
+if [ "$LOCAL_SEAL" = "ums9230-sp_6300-3724801c" ]; then
+    cd "$REPO_DIR"
+
+    CHANGES=$(git status --porcelain 2>/dev/null || true)
+    UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || true)
+
+    if [ -n "$CHANGES" ]; then
+        git add -A 2>/dev/null || true
+        COMMIT_MSG="sync: actualización de datos ($(date '+%Y-%m-%d %H:%M:%S'))"
+        git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || \
+        git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
+        UNPUSHED="1"
+    fi
+
+    # Subida a GitHub exclusiva del Líder con validación efímera (MS)
+    if [ -n "$UNPUSHED" ]; then
+        if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
+            GIT_ASKPASS="github-auth-broker" timeout 45 git push origin main >/dev/null 2>&1 || true
+            git update-ref refs/remotes/origin/main "$(git rev-parse HEAD 2>/dev/null)" 2>/dev/null || true
+        fi
     fi
 fi
 

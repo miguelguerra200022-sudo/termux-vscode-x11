@@ -317,8 +317,12 @@ do_silent_backup() {
         integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
     fi
 
-    # 3. Respaldo silencioso
-    if [ -d "$REPO_DIR/.git" ]; then
+    # 3. Respaldo silencioso (Exclusivo del Líder Maestro para no colisionar en Git)
+    local local_seal=""
+    [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ] && local_seal=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null)
+    [ -z "$local_seal" ] && command -v github-auth-broker >/dev/null 2>&1 && local_seal=$(github-auth-broker seal 2>/dev/null || true)
+
+    if [ "$local_seal" = "ums9230-sp_6300-3724801c" ] && [ -d "$REPO_DIR/.git" ]; then
         cd "$REPO_DIR" || return 0
         git add -A >/dev/null 2>&1 || true
         local COMMIT_MSG="sync: respaldo de seguridad local ($(date '+%Y-%m-%d %H:%M:%S'))"
