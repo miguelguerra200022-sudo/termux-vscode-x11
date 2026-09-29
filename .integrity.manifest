@@ -179,7 +179,7 @@ cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./config/argv.
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./config/tint2rc
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./config/tint2rc_horizontal
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./config/tint2rc_vertical
-d3b22c99c81dfbb59e8d85c3e65134f8530882e27de837064d73a3482762b685  ./credenciales/ums9230-sp_6300-3724801c/vault.enc
+acb38363b13ecd3a0764da8b5997dcdfb931a23bbeef624a4c2f3a957c6bc945  ./credenciales/ums9230-sp_6300-3724801c/vault.enc
 e87ba641d25f2e5c24c0574e707b6738233acaf1003c262d62498317613883b7  ./data/applications/touch-toggle.desktop
 8ddfcbc6c36dbf6d49099df772995db3c5d794fb094bc91c23df7ca6adc68c5a  ./data/icons/code-oss-128.png
 d21e8851bff8bb77770a6b96eab6eec583ec4feafdbf5409e1e8dc13b353cda5  ./data/icons/code-oss-16.png
