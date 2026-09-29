@@ -379,6 +379,15 @@ def edit_description_dialog(target_path, item_name):
 
 def main():
     ensure_controlling_tty()
+    try:
+        broker = shutil.which("github-auth-broker")
+        if broker:
+            res = subprocess.run([broker, "enforce-gate"])
+            if res.returncode != 0:
+                sys.exit(1)
+    except Exception:
+        pass
+
     if '--switch' in sys.argv or '-s' in sys.argv:
         subprocess.run(["switch-identity"])
         sys.exit(0)

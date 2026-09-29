@@ -82,9 +82,6 @@ def get_repo_dir():
         except Exception:
             pass
 
-    fallback = "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
-    if os.path.isdir(os.path.join(fallback, ".git")):
-        return fallback
     return os.path.expanduser("~/termux-vscode-x11")
 
 def get_master_pass():
@@ -151,34 +148,60 @@ def get_ledger_file():
     os.makedirs(creds_dir, exist_ok=True)
     return os.path.join(creds_dir, ".auth_ledger.enc")
 
+def get_candidate_ledger_paths():
+    candidates = [
+        get_ledger_file(),
+        os.path.expanduser("~/termux-vscode-x11/credenciales/.auth_ledger.enc"),
+        "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11/credenciales/.auth_ledger.enc"
+    ]
+    config_file = os.path.expanduser("~/.config/termux-vscode/repo_path")
+    if os.path.isfile(config_file):
+        try:
+            with open(config_file, "r") as f:
+                p = f.read().strip()
+                candidates.append(os.path.join(p, "credenciales", ".auth_ledger.enc"))
+        except Exception:
+            pass
+    seen = set()
+    result = []
+    for c in candidates:
+        abs_c = os.path.abspath(c)
+        if abs_c not in seen:
+            seen.add(abs_c)
+            result.append(abs_c)
+    return result
+
 def load_ledger():
     """Carga y descifra el libro mayor de hashes dinámicos en memoria RAM."""
-    ledger_file = get_ledger_file()
-    if not os.path.isfile(ledger_file):
-        return {
-            "version": 2,
-            "created_at": time.time(),
-            "devices": {
-                LEADER_SEAL: {
-                    "sequence": 1,
-                    "current_hash": hashlib.sha256(f"{LEADER_SEAL}:initial".encode()).hexdigest(),
-                    "salt": secrets.token_hex(16),
-                    "status": "active",
-                    "role": "Líder",
-                    "last_burn_ms": int(time.time() * 1000)
-                }
+    mpass = get_master_pass()
+    env = os.environ.copy()
+    env["PASS_KEY"] = f"{mpass}_LEDGER_V2"
+
+    for candidate in get_candidate_ledger_paths():
+        if os.path.isfile(candidate):
+            try:
+                cmd = ["openssl", "enc", "-d", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000", "-pass", "env:PASS_KEY", "-in", candidate]
+                raw = subprocess.check_output(cmd, env=env, stderr=subprocess.DEVNULL).decode()
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict) and "devices" in parsed and len(parsed["devices"]) > 0:
+                    return parsed
+            except Exception:
+                continue
+
+    return {
+        "version": 2,
+        "created_at": time.time(),
+        "devices": {
+            LEADER_SEAL: {
+                "sequence": 1,
+                "current_hash": hashlib.sha256(f"{LEADER_SEAL}:initial".encode()).hexdigest(),
+                "salt": secrets.token_hex(16),
+                "status": "active",
+                "role": "Líder",
+                "last_burn_ms": int(time.time() * 1000)
             }
         }
-    
-    mpass = get_master_pass()
-    try:
-        env = os.environ.copy()
-        env["PASS_KEY"] = f"{mpass}_LEDGER_V2"
-        cmd = ["openssl", "enc", "-d", "-aes-256-cbc", "-salt", "-pbkdf2", "-iter", "100000", "-pass", "env:PASS_KEY", "-in", ledger_file]
-        raw = subprocess.check_output(cmd, env=env, stderr=subprocess.DEVNULL).decode()
-        return json.loads(raw)
-    except Exception:
-        return {"version": 2, "devices": {}}
+    }
 
 def save_ledger(ledger):
     """Cifra y guarda el libro mayor con el hash mutado."""
@@ -195,17 +218,14 @@ def save_ledger(ledger):
             return False
         os.chmod(ledger_file, 0o600)
         
-        alt_dirs = [
-            "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11/credenciales",
-            os.path.expanduser("~/termux-vscode-x11/credenciales")
-        ]
-        for ad in alt_dirs:
-            if os.path.isdir(ad):
-                target = os.path.join(ad, ".auth_ledger.enc")
-                if target != ledger_file:
+        # Espejar a todas las rutas de repositorios conocidas
+        for candidate in get_candidate_ledger_paths():
+            if os.path.abspath(candidate) != os.path.abspath(ledger_file):
+                cand_dir = os.path.dirname(candidate)
+                if os.path.isdir(cand_dir):
                     try:
-                        shutil.copy2(ledger_file, target)
-                        os.chmod(target, 0o600)
+                        shutil.copy2(ledger_file, candidate)
+                        os.chmod(candidate, 0o600)
                     except Exception:
                         pass
         return True
@@ -347,24 +367,505 @@ def handle_revoke(target_seal):
         print(f"[-] Dispositivo {target_seal} no encontrado en el ledger.")
 
 def handle_register(seal, role="Worker", username=""):
-    """Registra un nuevo dispositivo en la cadena de hashes de la flota."""
+    """Registra un nuevo dispositivo en la cadena de hashes y crea su suscripción génesis."""
     ledger = load_ledger()
     if "devices" not in ledger:
         ledger["devices"] = {}
 
-    initial_hash = hashlib.sha256(f"{seal}:{time.time_ns()}".encode()).hexdigest()
+    now_ts = int(time.time())
+    now_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(now_ts))
+    exp_ts = now_ts + (30 * 86400)
+    exp_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(exp_ts))
+
+    dev = ledger["devices"].get(seal, {})
+    
+    # Preservar la fecha del primer registro histórico si ya existía
+    existing_sub = dev.get("subscription", {})
+    first_reg = existing_sub.get("first_registration_at") or dev.get("registered_at_iso") or now_iso
+    total_cycles = existing_sub.get("total_cycles_paid", 1)
+    cur_cycle = existing_sub.get("current_cycle", 1)
+    hist = existing_sub.get("cycles_history", [])
+    
+    if not hist:
+        hist = [{
+            "cycle": 1,
+            "started_at": now_iso,
+            "expires_at": exp_iso,
+            "approved_by": "Génesis de Registro",
+            "expired_at": None,
+            "renewed_at": None
+        }]
+
+    subscription = {
+        "first_registration_at": first_reg,
+        "status": "active" if seal == LEADER_SEAL else existing_sub.get("status", "active"),
+        "total_cycles_paid": total_cycles,
+        "current_cycle": cur_cycle,
+        "current_cycle_start": existing_sub.get("current_cycle_start", now_iso),
+        "current_cycle_start_ts": existing_sub.get("current_cycle_start_ts", now_ts),
+        "current_cycle_expires": existing_sub.get("current_cycle_expires", exp_iso),
+        "current_cycle_expires_ts": existing_sub.get("current_cycle_expires_ts", exp_ts),
+        "frozen_at": existing_sub.get("frozen_at", None),
+        "last_verified_ts": now_ts,
+        "cycles_history": hist
+    }
+
+    initial_hash = dev.get("current_hash") or hashlib.sha256(f"{seal}:{time.time_ns()}".encode()).hexdigest()
     ledger["devices"][seal] = {
-        "sequence": 1,
+        "sequence": dev.get("sequence", 1),
         "current_hash": initial_hash,
-        "salt": secrets.token_hex(16),
-        "status": "active",
+        "salt": dev.get("salt") or secrets.token_hex(16),
+        "status": dev.get("status", "active"),
         "role": role,
-        "username": username or f"Worker_{seal[:6]}",
-        "registered_at": time.time(),
-        "burn_count": 0
+        "username": username or dev.get("username") or f"Worker_{seal[:6]}",
+        "registered_at": dev.get("registered_at", now_ts),
+        "registered_at_iso": first_reg,
+        "first_registration_date": first_reg,
+        "burn_count": dev.get("burn_count", 0),
+        "subscription": subscription
     }
     save_ledger(ledger)
     return initial_hash
+
+def check_license(seal=None):
+    """
+    Verifica el estado de la suscripción del dispositivo contra el libro mayor.
+    Devuelve un dict con status ('active', 'warning_3days', 'frozen_expired', 'tampered', 'unregistered').
+    """
+    if not seal:
+        seal = get_hardware_seal()
+        
+    if seal == LEADER_SEAL:
+        return {
+            "status": "active",
+            "is_leader": True,
+            "days_left": 99999,
+            "hours_left": 0,
+            "cycle": 1,
+            "expires_at": "Ilimitado",
+            "first_reg": "Génesis Líder",
+            "message": "Dispositivo Líder Maestro (Acceso Ilimitado Permanente)"
+        }
+        
+    ledger = load_ledger()
+    devices = ledger.get("devices", {})
+    if seal not in devices:
+        return {
+            "status": "unregistered",
+            "is_leader": False,
+            "days_left": 0,
+            "hours_left": 0,
+            "cycle": 0,
+            "expires_at": None,
+            "first_reg": None,
+            "message": "Dispositivo no registrado en la flota."
+        }
+        
+    dev = devices[seal]
+    sub = dev.get("subscription")
+    now_ts = int(time.time())
+    now_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(now_ts))
+    
+    if not sub:
+        exp_ts = now_ts + (30 * 86400)
+        exp_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(exp_ts))
+        first_reg = dev.get("registered_at_iso", now_iso)
+        sub = {
+            "first_registration_at": first_reg,
+            "status": "active",
+            "total_cycles_paid": 1,
+            "current_cycle": 1,
+            "current_cycle_start": now_iso,
+            "current_cycle_start_ts": now_ts,
+            "current_cycle_expires": exp_iso,
+            "current_cycle_expires_ts": exp_ts,
+            "frozen_at": None,
+            "last_verified_ts": now_ts,
+            "cycles_history": [{
+                "cycle": 1,
+                "started_at": now_iso,
+                "expires_at": exp_iso,
+                "approved_by": "Génesis",
+                "expired_at": None,
+                "renewed_at": None
+            }]
+        }
+        dev["subscription"] = sub
+        save_ledger(ledger)
+
+    # 1. Detección Anti-Tamper de Reloj (Anti-Time-Travel)
+    last_verified = sub.get("last_verified_ts", 0)
+    if now_ts < (last_verified - 300):
+        sub["status"] = "tampered"
+        dev["status"] = "tampered"
+        save_ledger(ledger)
+        return {
+            "status": "tampered",
+            "is_leader": False,
+            "days_left": 0,
+            "hours_left": 0,
+            "cycle": sub.get("current_cycle", 1),
+            "expires_at": sub.get("current_cycle_expires"),
+            "first_reg": sub.get("first_registration_at"),
+            "message": "ALERTA DE SEGURIDAD: Manipulación de reloj detectada (Reloj atrasado)."
+        }
+        
+    sub["last_verified_ts"] = now_ts
+    exp_ts = sub.get("current_cycle_expires_ts", 0)
+    diff = exp_ts - now_ts
+    days_left = diff // 86400
+    hours_left = (diff % 86400) // 3600
+
+    if diff <= 0:
+        # Mes cumplido: CONGELAR
+        sub["status"] = "frozen_expired"
+        dev["status"] = "frozen_expired"
+        if not sub.get("frozen_at"):
+            sub["frozen_at"] = now_iso
+            if sub.get("cycles_history"):
+                sub["cycles_history"][-1]["expired_at"] = now_iso
+        save_ledger(ledger)
+        return {
+            "status": "frozen_expired",
+            "is_leader": False,
+            "days_left": 0,
+            "hours_left": 0,
+            "cycle": sub.get("current_cycle", 1),
+            "expired_at": sub.get("frozen_at", now_iso),
+            "first_reg": sub.get("first_registration_at"),
+            "message": f"SISTEMA CONGELADO: Suscripción vencida el {sub.get('frozen_at', now_iso)}."
+        }
+    elif diff <= (3 * 86400):
+        # Faltan 3 días o menos
+        sub["status"] = "warning_3days"
+        save_ledger(ledger)
+        return {
+            "status": "warning_3days",
+            "is_leader": False,
+            "days_left": max(0, days_left),
+            "hours_left": max(0, hours_left),
+            "cycle": sub.get("current_cycle", 1),
+            "expires_at": sub.get("current_cycle_expires"),
+            "first_reg": sub.get("first_registration_at"),
+            "message": f"AVISO: Su suscripción vencerá en {days_left}d {hours_left}h ({sub.get('current_cycle_expires')})."
+        }
+    else:
+        sub["status"] = "active"
+        save_ledger(ledger)
+        return {
+            "status": "active",
+            "is_leader": False,
+            "days_left": days_left,
+            "hours_left": hours_left,
+            "cycle": sub.get("current_cycle", 1),
+            "expires_at": sub.get("current_cycle_expires"),
+            "first_reg": sub.get("first_registration_at"),
+            "message": f"Suscripción activa. Días restantes: {days_left}d {hours_left}h."
+        }
+
+def renew_license(seal, approved_by="Telegram"):
+    """
+    Renueva la suscripción por 30 días adicionales sin borrar el registro de génesis.
+    Añade un nuevo ciclo al historial contable y descongela el sistema.
+    """
+    ledger = load_ledger()
+    if "devices" not in ledger or seal not in ledger["devices"]:
+        return False, "Dispositivo no encontrado en el ledger."
+        
+    dev = ledger["devices"][seal]
+    sub = dev.get("subscription")
+    now_ts = int(time.time())
+    now_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(now_ts))
+    
+    new_exp_ts = now_ts + (30 * 86400)
+    new_exp_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(new_exp_ts))
+    
+    if not sub:
+        first_reg = dev.get("registered_at_iso", now_iso)
+        sub = {
+            "first_registration_at": first_reg,
+            "status": "active",
+            "total_cycles_paid": 1,
+            "current_cycle": 1,
+            "current_cycle_start": now_iso,
+            "current_cycle_start_ts": now_ts,
+            "current_cycle_expires": new_exp_iso,
+            "current_cycle_expires_ts": new_exp_ts,
+            "frozen_at": None,
+            "last_verified_ts": now_ts,
+            "cycles_history": []
+        }
+    else:
+        if sub.get("cycles_history"):
+            if not sub["cycles_history"][-1].get("expired_at"):
+                sub["cycles_history"][-1]["expired_at"] = sub.get("frozen_at") or now_iso
+            sub["cycles_history"][-1]["renewed_at"] = now_iso
+
+    new_cycle = sub.get("current_cycle", 0) + 1
+    sub["current_cycle"] = new_cycle
+    sub["total_cycles_paid"] = sub.get("total_cycles_paid", 0) + 1
+    sub["current_cycle_start"] = now_iso
+    sub["current_cycle_start_ts"] = now_ts
+    sub["current_cycle_expires"] = new_exp_iso
+    sub["current_cycle_expires_ts"] = new_exp_ts
+    sub["frozen_at"] = None
+    sub["status"] = "active"
+    sub["last_verified_ts"] = now_ts
+    
+    cycle_record = {
+        "cycle": new_cycle,
+        "started_at": now_iso,
+        "expires_at": new_exp_iso,
+        "approved_by": approved_by,
+        "expired_at": None,
+        "renewed_at": None
+    }
+    if "cycles_history" not in sub:
+        sub["cycles_history"] = []
+    sub["cycles_history"].append(cycle_record)
+    
+    dev["subscription"] = sub
+    dev["status"] = "active"
+    
+    mutate_and_burn_hash(seal, ledger)
+    save_ledger(ledger)
+    sync_ledger_to_github()
+    return True, f"Ciclo #{new_cycle} activado con éxito hasta {new_exp_iso} ({approved_by})."
+
+def sync_ledger_to_github():
+    """Sincroniza y sube el ledger cifrado a GitHub de forma asíncrona."""
+    try:
+        repo_dir = get_repo_dir()
+        if os.path.isdir(os.path.join(repo_dir, ".git")):
+            subprocess.run(["git", "-C", repo_dir, "add", "credenciales/.auth_ledger.enc"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "-C", repo_dir, "commit", "-m", "[Security] Actualizar libro mayor de licencias y suscripciones"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            env = os.environ.copy()
+            env["GIT_ASKPASS"] = "github-auth-broker"
+            subprocess.Popen(["git", "-C", repo_dir, "push", "origin", "main"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def enforce_gate():
+    """
+    Pasarela Obligatoria de Licencia y Suscripción (30 días).
+    - Líder: Bypass inmediato en 0ms.
+    - Worker Activo: Pasa inmediatamente.
+    - Worker Aviso 3 días: Emite notificación Android y banner de alerta en consola, pero permite continuar.
+    - Worker Congelado (>= 30 días): Bloquea completamente el acceso. Muestra pantalla de bloqueo.
+      Pide contraseña de autorización o ENTER para solicitar aprobación interactiva en Telegram.
+      Al aprobar, renueva el ciclo contable por 30 días adicionales, actualiza el ledger y desbloquea.
+    - Worker Tampered (reloj manipulado): Bloquea hasta validación con Líder.
+    """
+    seal = get_hardware_seal()
+    if seal == LEADER_SEAL:
+        return 0
+
+    lic = check_license(seal)
+    st = lic.get("status")
+
+    if st == "active":
+        return 0
+
+    elif st == "warning_3days":
+        days = lic.get("days_left", 0)
+        hours = lic.get("hours_left", 0)
+        exp = lic.get("expires_at", "")
+        try:
+            subprocess.run([
+                "termux-notification",
+                "--id", "license_warning",
+                "--title", "⚠️ SUSCRIPCIÓN PRÓXIMA A VENCER",
+                "--content", f"Tu suscripción vence en {days}d {hours}h ({exp}). Contacta al Líder.",
+                "--priority", "high"
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+        print("\033[1;33m╔═══════════════════════════════════════════════════════════════════╗\033[0m")
+        print("\033[1;33m║          ⚠️  AVISO DE SUSCRIPCIÓN: VENCIMIENTO PRÓXIMO             ║\033[0m")
+        print("\033[1;33m╚═══════════════════════════════════════════════════════════════════╝\033[0m")
+        print(f"\033[1;33m[!] Tu acceso vence en {days} días y {hours} horas ({exp}).\033[0m")
+        print("\033[0;90m    Para renovar sin interrupciones, comunícate con el Administrador.\033[0m\n")
+        time.sleep(1.5)
+        return 0
+
+    elif st in ("frozen_expired", "tampered", "unregistered"):
+        sys.stdout.write("\033[H\033[J")
+        print("\033[1;31m╔═══════════════════════════════════════════════════════════════════╗\033[0m")
+        print("\033[1;31m║            🔒 ACCESO BLOQUEADO: SISTEMA CONGELADO                 ║\033[0m")
+        print("\033[1;31m╚═══════════════════════════════════════════════════════════════════╝\033[0m\n")
+        
+        first_reg = lic.get("first_reg", "Desconocida")
+        cur_cycle = lic.get("cycle", 1)
+        exp_date = lic.get("expired_at") or lic.get("expires_at") or "Vencida"
+        print(f"\033[1m📱 Dispositivo:\033[0m {seal}")
+        print(f"\033[1m📅 Fecha de Registro Génesis:\033[0m {first_reg}")
+        print(f"\033[1m🔄 Ciclo Contable:\033[0m #{cur_cycle}")
+        print(f"\033[1m⏰ Fecha de Congelamiento:\033[0m {exp_date}")
+        if st == "tampered":
+            print("\033[1;31m⚠️ CAUSA: Alteración del reloj del sistema detectada (Anti-Time-Travel).\033[0m")
+        else:
+            print("\033[1;31m⚠️ CAUSA: Suscripción mensual de 30 días vencida.\033[0m")
+        print("\033[0;90m───────────────────────────────────────────────────────────────────\033[0m\n")
+
+        import getpass
+        try:
+            input_pass = getpass.getpass("🔒 Ingrese contraseña de autorización (o presione ENTER para Telegram): ").strip()
+        except Exception:
+            input_pass = ""
+
+        if input_pass:
+            if verify_password(input_pass):
+                ok, msg = renew_license(seal, "Contraseña Maestra en Terminal")
+                print(f"\n\033[1;32m[✓] {msg}\033[0m")
+                print("\033[1;32m[✓] ¡Sistema descongelado y renovado con éxito! Iniciando entorno...\033[0m\n")
+                time.sleep(1.5)
+                return 0
+            else:
+                print("\n\033[1;31m[!] Contraseña incorrecta. El sistema permanece congelado.\033[0m")
+                sys.exit(1)
+        else:
+            tok, cid = get_tg_creds()
+            print("\n\033[1;36m[*] Solicitando reactivación y renovación al Líder en Telegram...\033[0m")
+            
+            try:
+                subprocess.run(["curl", "-s", "-X", "POST", f"https://api.telegram.org/bot{tok}/sendMessage",
+                                "-d", f"chat_id={cid}&text=/sentinel_pause_50"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+            time.sleep(1)
+
+            req_time = int(time.time())
+            req_step = req_time // 30
+            sig = get_30s_token(seal, req_step)
+            req_id = f"{seal}:{req_step}:{sig}"
+            mfg = getprop("ro.product.manufacturer", "")
+            mdl = getprop("ro.product.model", "")
+            model_name = f"{mfg} {mdl}".strip() or "Android"
+
+            tg_text = (
+                f"🛡️ *SOLICITUD DE DESCONGELAMIENTO Y RENOVACIÓN*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🏷️ *Sello Hardware:* `{seal}`\n"
+                f"📱 *Modelo:* `{model_name}`\n"
+                f"📅 *Génesis:* `{first_reg}`\n"
+                f"🔄 *Ciclo a Renovar:* `#{cur_cycle + 1}`\n"
+                f"🔐 *Token 30s:* `#{req_step}` (`{sig}`)\n"
+                f"⏰ *Hora:* `{time.strftime('%Y-%m-%d %H:%M:%S')}`\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"¿Deseas autorizar la reactivación y renovación por 30 días más?"
+            )
+            buttons = {
+                "inline_keyboard": [[
+                    {"text": "✅ APROBAR RENOVACIÓN", "callback_data": f"renew_approve:{req_id}"},
+                    {"text": "❌ RECHAZAR", "callback_data": f"renew_reject:{req_id}"}
+                ]]
+            }
+            try:
+                res = subprocess.check_output([
+                    "curl", "-s", "-X", "POST", f"https://api.telegram.org/bot{tok}/sendMessage",
+                    "-d", f"chat_id={cid}",
+                    "--data-urlencode", f"text={tg_text}",
+                    "-d", "parse_mode=Markdown",
+                    "--data-urlencode", f"reply_markup={json.dumps(buttons)}"
+                ]).decode()
+                res_obj = json.loads(res)
+                msg_id = res_obj.get("result", {}).get("message_id")
+            except Exception:
+                msg_id = None
+
+            print("\033[1;33m⏳ Esperando aprobación en Telegram (@CloudNodeSync_bot)...\033[0m")
+            print("\033[0;90m   👉 Pulsa [APROBAR RENOVACIÓN] en el chat de Telegram (Tienes 45s).\033[0m")
+
+            start_t = time.time()
+            offset = 0
+            approved = False
+
+            while (time.time() - start_t) < 45:
+                time.sleep(2)
+                try:
+                    up_raw = subprocess.check_output([
+                        "curl", "-s", f"https://api.telegram.org/bot{tok}/getUpdates?offset={offset}&timeout=1"
+                    ]).decode()
+                    up_data = json.loads(up_raw)
+                    for item in up_data.get("result", []):
+                        offset = max(offset, item.get("update_id", 0) + 1)
+                        cb = item.get("callback_query", {})
+                        cb_data = cb.get("data", "")
+                        cb_id = cb.get("id")
+                        if cb_data.startswith("renew_approve") and seal in cb_data:
+                            subprocess.run(["curl", "-s", "-X", "POST", f"https://api.telegram.org/bot{tok}/answerCallbackQuery",
+                                            "-d", f"callback_query_id={cb_id}&text=Renovación Aprobada"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            if msg_id:
+                                confirm_txt = f"✅ *SISTEMA DESCONGELADO Y RENOVADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* `{seal}`\n⚡ Reactivación por 30 días aprobada."
+                                subprocess.run(["curl", "-s", "-X", "POST", f"https://api.telegram.org/bot{tok}/editMessageText",
+                                                "-d", f"chat_id={cid}&message_id={msg_id}",
+                                                "--data-urlencode", f"text={confirm_txt}",
+                                                "-d", "parse_mode=Markdown"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            approved = True
+                            break
+                        elif cb_data.startswith("renew_reject") and seal in cb_data:
+                            subprocess.run(["curl", "-s", "-X", "POST", f"https://api.telegram.org/bot{tok}/answerCallbackQuery",
+                                            "-d", f"callback_query_id={cb_id}&text=Renovación Rechazada"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            print("\n\033[1;31m[!] Renovación rechazada por el administrador. El sistema permanece congelado.\033[0m")
+                            sys.exit(1)
+                    if approved:
+                        break
+                except Exception:
+                    continue
+
+            if approved:
+                ok, msg = renew_license(seal, "Telegram (@CloudSentinel)")
+                print(f"\n\033[1;32m[✓] {msg}\033[0m")
+                print("\033[1;32m[✓] ¡Sistema reactivado y descongelado con éxito! Iniciando...\033[0m\n")
+                time.sleep(1.5)
+                return 0
+            else:
+                print("\n\033[1;31m[!] Tiempo de espera agotado sin aprobación. El sistema permanece congelado.\033[0m")
+                sys.exit(1)
+
+def print_accounting():
+    """Imprime el libro contable de suscripciones de la flota (Líder)."""
+    ledger = load_ledger()
+    devices = ledger.get("devices", {})
+    print("╔═══════════════════════════════════════════════════════════════════╗")
+    print("║     📊 LIBRO DE CONTABILIDAD Y SUSCRIPCIONES (LÍDER MAESTRO)      ║")
+    print("╚═══════════════════════════════════════════════════════════════════╝")
+    print(f"Total de Nodos Registrados: {len(devices)}\n")
+    
+    idx = 1
+    for seal, dev in devices.items():
+        role = dev.get("role", "Worker")
+        uname = dev.get("username", seal)
+        sub = dev.get("subscription", {})
+        first_reg = sub.get("first_registration_at") or dev.get("registered_at_iso", "Desconocida")
+        cycles = sub.get("total_cycles_paid", 1)
+        cur_cycle = sub.get("current_cycle", 1)
+        cur_status = sub.get("status", dev.get("status", "active")).upper()
+        exp = sub.get("current_cycle_expires", "Ilimitado" if seal == LEADER_SEAL else "N/A")
+        
+        icon = "⭐" if seal == LEADER_SEAL else "📱"
+        print(f" [{idx}] {icon} {uname} [{seal}]")
+        print(f"     ├─ Rol en Flota     : {role}")
+        print(f"     ├─ Primer Registro  : {first_reg} (Génesis Inmutable)")
+        print(f"     ├─ Meses Pagados    : {cycles} ciclo(s) completo(s)")
+        print(f"     ├─ Ciclo Actual     : #{cur_cycle}")
+        print(f"     ├─ Estado Licencia  : {cur_status}")
+        print(f"     └─ Vencimiento      : {exp}")
+        
+        hist = sub.get("cycles_history", [])
+        if hist:
+            print("         📜 Historial de Pagos y Cortes:")
+            for h in hist:
+                c_num = h.get("cycle", 1)
+                st = h.get("started_at", "")[:10]
+                ex = h.get("expires_at", "")[:10]
+                by = h.get("approved_by", "Sistema")
+                rn = h.get("renewed_at")
+                rn_str = rn[:10] if rn else "Vigente"
+                print(f"            • Ciclo #{c_num}: Inicio: {st} | Corte: {ex} | Aprobó: {by} | Renovación: {rn_str}")
+        print("───────────────────────────────────────────────────────────────────")
+        idx += 1
 
 def handle_status():
     """Muestra el estado criptográfico del libro mayor de hashes (Líder)."""
@@ -421,6 +922,38 @@ def main():
         print(f"[✓] Dispositivo {seal} registrado con hash inicial: {h[:16]}...")
     elif cmd in ("status", "ls"):
         handle_status()
+    elif cmd in ("check-license", "license", "licencia"):
+        seal = sys.argv[2] if len(sys.argv) > 2 else get_hardware_seal()
+        res = check_license(seal)
+        if "--json" in sys.argv:
+            print(json.dumps(res, indent=2))
+        else:
+            print(res.get("message", ""))
+        st = res.get("status")
+        if st == "active":
+            sys.exit(0)
+        elif st == "warning_3days":
+            sys.exit(1)
+        elif st == "frozen_expired":
+            sys.exit(2)
+        elif st == "tampered":
+            sys.exit(3)
+        else:
+            sys.exit(4)
+    elif cmd in ("enforce-gate", "gate", "pasarela"):
+        rc = enforce_gate()
+        sys.exit(rc)
+    elif cmd in ("renew-license", "renovar", "renew"):
+        if len(sys.argv) < 2:
+            print("Uso: github-auth-broker renew-license <sello> [metodo]")
+            sys.exit(1)
+        seal = sys.argv[2] if len(sys.argv) > 2 else get_hardware_seal()
+        method = sys.argv[3] if len(sys.argv) > 3 else "Telegram"
+        ok, msg = renew_license(seal, method)
+        print(("[✓] " if ok else "[!] ") + msg)
+        sys.exit(0 if ok else 1)
+    elif cmd in ("accounting", "contabilidad", "reporte"):
+        print_accounting()
     elif cmd in ("telegram-creds", "tg"):
         tok, cid = get_tg_creds()
         print(f"{tok}|{cid}")

@@ -22,7 +22,7 @@ if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
     REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
 fi
 if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
-    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    REPO_DIR="$HOME/termux-vscode-x11"
 fi
 
 # 3. Detectar Hardware Seal local

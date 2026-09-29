@@ -42,14 +42,14 @@ def get_repo_dir():
                     return p
         except Exception:
             pass
-    fallback = "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
-    if os.path.isdir(os.path.join(fallback, ".git")):
-        return fallback
     try:
         out = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], stderr=subprocess.DEVNULL)
-        return out.decode().strip()
+        p = out.decode().strip()
+        if os.path.isdir(os.path.join(p, ".git")):
+            return p
     except Exception:
-        return fallback
+        pass
+    return os.path.expanduser("~/termux-vscode-x11")
 
 def getprop(prop, fallback=""):
     try:
@@ -683,6 +683,37 @@ def handle_telegram_command(cmd, args_text, msg_obj, chat_id):
         except Exception as e:
             send_telegram("sendMessage", {"chat_id": chat_id, "text": f"Error: {e}"})
 
+    elif cmd in ("/contabilidad", "/suscripciones", "/reporte"):
+        try:
+            out = subprocess.check_output(["github-auth-broker", "accounting"], stderr=subprocess.DEVNULL).decode("utf-8", errors="replace")
+            send_telegram("sendMessage", {
+                "chat_id": chat_id,
+                "text": f"```text\n{out}\n```",
+                "parse_mode": "Markdown"
+            })
+        except Exception as e:
+            send_telegram("sendMessage", {"chat_id": chat_id, "text": f"Error ejecutando contabilidad: {e}"})
+
+    elif cmd == "/renovar":
+        target = args_text.strip()
+        if not target:
+            send_telegram("sendMessage", {
+                "chat_id": chat_id,
+                "text": "💡 *Uso de renovación:*\n`/renovar <sello_hardware>`",
+                "parse_mode": "Markdown"
+            })
+            return
+        try:
+            cmd_args = ["github-auth-broker", "renew-license", target, "Telegram (@CloudSentinel)"]
+            out = subprocess.check_output(cmd_args, stderr=subprocess.DEVNULL).decode("utf-8", errors="replace")
+            send_telegram("sendMessage", {
+                "chat_id": chat_id,
+                "text": f"✅ *RENOVACIÓN EJECUTADA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n{out}",
+                "parse_mode": "Markdown"
+            })
+        except Exception as e:
+            send_telegram("sendMessage", {"chat_id": chat_id, "text": f"Error al renovar: {e}"})
+
     elif cmd == "/estado":
         ram = get_ram_info()
         ip = get_public_ip()
@@ -971,6 +1002,49 @@ def bot_daemon_loop():
                                 "chat_id": authorized_chat,
                                 "message_id": msg_id,
                                 "text": f"❌ *ACCESO RECHAZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* `{r_seal}`\n⛔ Solicitud denegada.",
+                                "parse_mode": "Markdown"
+                            })
+                        elif cb_data.startswith("auth_dl_approve:") or cb_data.startswith("auth_dl_approve_"):
+                            parts = cb_data.split(":") if ":" in cb_data else cb_data.split("_")
+                            a_seal = parts[1] if len(parts) > 1 else ""
+                            send_telegram("editMessageText", {
+                                "chat_id": authorized_chat,
+                                "message_id": msg_id,
+                                "text": f"✅ *DESCARGA AUTORIZADA (FASE 1)*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* `{a_seal}`\n⚡ Descarga del repositorio aprobada desde Telegram.",
+                                "parse_mode": "Markdown"
+                            })
+
+                        elif cb_data.startswith("auth_dl_reject:") or cb_data.startswith("auth_dl_reject_"):
+                            parts = cb_data.split(":") if ":" in cb_data else cb_data.split("_")
+                            r_seal = parts[1] if len(parts) > 1 else ""
+                            send_telegram("editMessageText", {
+                                "chat_id": authorized_chat,
+                                "message_id": msg_id,
+                                "text": f"❌ *DESCARGA RECHAZADA (FASE 1)*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* `{r_seal}`\n⛔ Solicitud de descarga denegada.",
+                                "parse_mode": "Markdown"
+                            })
+
+                        elif cb_data.startswith("renew_approve:") or cb_data.startswith("renew_approve_"):
+                            parts = cb_data.split(":") if ":" in cb_data else cb_data.split("_")
+                            r_seal = parts[1] if len(parts) > 1 else ""
+                            try:
+                                subprocess.run(["github-auth-broker", "renew-license", r_seal, "Telegram (@CloudSentinel)"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            except Exception:
+                                pass
+                            send_telegram("editMessageText", {
+                                "chat_id": authorized_chat,
+                                "message_id": msg_id,
+                                "text": f"✅ *RENOVACIÓN DE SUSCRIPCIÓN APROBADA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* `{r_seal}`\n⚡ Sistema reactivado por 30 días adicionales.",
+                                "parse_mode": "Markdown"
+                            })
+
+                        elif cb_data.startswith("renew_reject:") or cb_data.startswith("renew_reject_"):
+                            parts = cb_data.split(":") if ":" in cb_data else cb_data.split("_")
+                            r_seal = parts[1] if len(parts) > 1 else ""
+                            send_telegram("editMessageText", {
+                                "chat_id": authorized_chat,
+                                "message_id": msg_id,
+                                "text": f"❌ *RENOVACIÓN RECHAZADA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* `{r_seal}`\n⛔ Solicitud de renovación denegada.",
                                 "parse_mode": "Markdown"
                             })
                         continue

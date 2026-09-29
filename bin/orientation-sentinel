@@ -20,7 +20,7 @@ REPO_DIR=""
 CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
 [ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
 if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
-    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    REPO_DIR="$HOME/termux-vscode-x11"
 fi
 
 LAST_W=0

@@ -24,8 +24,7 @@ def find_asset(subpath):
     candidates = [
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", subpath),
         os.path.join(os.environ.get("PREFIX", "/data/data/com.termux/files/usr"), "share/code-stack-sh/assets", subpath),
-        os.path.expanduser(f"~/termux-vscode-x11/assets/{subpath}"),
-        f"/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11/assets/{subpath}"
+        os.path.expanduser(f"~/termux-vscode-x11/assets/{subpath}")
     ]
     for c in candidates:
         if os.path.isfile(c):

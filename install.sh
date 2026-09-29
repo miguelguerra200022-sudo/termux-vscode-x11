@@ -639,6 +639,14 @@ if [ -f "$HOME/.ssh/id_ed25519.pub" ]; then
 fi
 git config --global core.askPass "github-auth-broker" 2>/dev/null || true
 
+# 15.5 Compilación Nativa ELF para Nodos Worker (Blindaje Cero Código Fuente)
+if [ "$SELLO_HARDWARE" != "$LEADER_SEAL" ]; then
+    echo -e "${YELLOW}[*] Blindando ejecutables: Compilando binarios ELF ARM64 nativos...${NC}"
+    if [ -f "$SCRIPT_DIR/bin/system-compiler" ]; then
+        bash "$SCRIPT_DIR/bin/system-compiler" --all >/dev/null 2>&1 || true
+    fi
+fi
+
 # 16. Bóveda Dorada (Golden Vault)
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 mkdir -p "$GOLDEN_DIR"
