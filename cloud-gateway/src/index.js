@@ -478,40 +478,54 @@ async function handleProgramasFromTelegram(args, chatId, env) {
 // ==============================================================================
 
 async function handleGitHubPush(data, env) {
-    const commitHash = data.after || data.head_commit?.id || "latest";
-    const commitMsg = data.head_commit?.message || "Actualización de código";
-    const author = data.head_commit?.author?.name || "Líder";
-    const repoFullName = data.repository?.full_name || "termux-vscode-x11";
-
-    // 1. Descarga el tarball de GitHub UNA SOLA VEZ
-    const tarballUrl = `https://api.github.com/repos/${repoFullName}/tarball/${commitHash}`;
-    const ghResp = await fetch(tarballUrl, {
-        headers: { "User-Agent": "Code-Stack-Edge-Gateway" }
-    });
-
-    if (ghResp.ok && env.VAULTS) {
-        // 2. Guarda el release en Cloudflare R2
+    try {
+        const commitHash = data.after || data.head_commit?.id || "latest";
+        const commitMsg = data.head_commit?.message || "Actualización de código";
+        const author = data.head_commit?.author?.name || "Líder";
+        const repoFullName = data.repository?.full_name || "miguelguerra200022-sudo/termux-vscode-x11";
         const r2Key = `releases/${commitHash}.tar.gz`;
-        await env.VAULTS.put(r2Key, ghResp.body, {
-            customMetadata: { commit: commitHash, author, msg: commitMsg }
-        });
 
-        // 3. Registra el release en D1
+        // 1. Descarga el tarball de GitHub UNA SOLA VEZ
+        let tarballStream = null;
+        try {
+            const codeloadUrl = `https://codeload.github.com/${repoFullName}/legacy.tar.gz/${commitHash}`;
+            let ghResp = await fetch(codeloadUrl, {
+                headers: { "User-Agent": "Code-Stack-Edge-Gateway" }
+            });
+            if (!ghResp.ok) {
+                const apiTarballUrl = `https://api.github.com/repos/${repoFullName}/tarball/${commitHash}`;
+                ghResp = await fetch(apiTarballUrl, {
+                    redirect: "follow",
+                    headers: { "User-Agent": "Code-Stack-Edge-Gateway" }
+                });
+            }
+            if (ghResp.ok && env.VAULTS) {
+                await env.VAULTS.put(r2Key, ghResp.body, {
+                    customMetadata: { commit: commitHash, author, msg: commitMsg }
+                });
+            }
+        } catch (fetchErr) {
+            console.error("Error caching tarball in R2:", fetchErr);
+        }
+
+        // 2. Registra el release en D1
         if (env.DB) {
             await env.DB.prepare(
                 `INSERT OR REPLACE INTO release_meta (commit_hash, tag, tarball_r2_key, size_bytes, ed25519_sig, commit_msg, author, published_at)
-                 VALUES (?, 'latest', ?, ?, 'ed25519_verified', ?, ?, ?)`
-            ).bind(commitHash, r2Key, 0, commitMsg, author, Math.floor(Date.now() / 1000)).run();
+                 VALUES (?, 'latest', ?, 0, 'ed25519_verified', ?, ?, ?)`
+            ).bind(commitHash, r2Key, commitMsg, author, Math.floor(Date.now() / 1000)).run();
         }
-    }
 
-    // 4. Notifica a Telegram que la versión fue cacheada y transmitida a nivel mundial
-    const authorizedChat = env.ALLOWED_CHAT_ID || DEFAULT_ALLOWED_CHAT;
-    await sendTelegram(env, "sendMessage", {
-        chat_id: authorizedChat,
-        text: `🚀 *NUEVA VERSIÓN CACHEADA EN CLOUDFLARE EDGE*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🔖 *Commit:* \`${commitHash.slice(0, 8)}\`\n👤 *Autor:* ${author}\n📝 *Mensaje:* ${commitMsg}\n⚡ *Distribución:* Disponible para los 10,000 celulares en 330 ciudades sin peticiones a GitHub.`,
-        parse_mode: "Markdown"
-    });
+        // 3. Notifica a Telegram que la versión fue cacheada y transmitida a nivel mundial
+        const authorizedChat = env.ALLOWED_CHAT_ID || DEFAULT_ALLOWED_CHAT;
+        await sendTelegram(env, "sendMessage", {
+            chat_id: authorizedChat,
+            text: `🚀 *NUEVA VERSIÓN CACHEADA EN CLOUDFLARE EDGE*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🔖 *Commit:* \`${commitHash.slice(0, 8)}\`\n👤 *Autor:* ${author}\n📝 *Mensaje:* ${commitMsg}\n⚡ *Distribución:* Disponible para toda la flota en tiempo real sin peticiones a GitHub.`,
+            parse_mode: "Markdown"
+        });
+    } catch (err) {
+        console.error("handleGitHubPush fatal error:", err);
+    }
 }
 
 // ==============================================================================

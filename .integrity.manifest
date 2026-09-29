@@ -169,7 +169,7 @@ e68e15a745e2037c9de93947b1a17270269a5dc91683b6c80e42e203cc8429b9  ./cloud-gatewa
 c3584f9a17a7e09dd670d86bac8330a4257f3dea0b25b46be606001bc5c5b733  ./cloud-gateway/deploy.sh
 acbf251b928dbac17125abf5f977e2709e37d72e1a4e7111875d229fc5c3e727  ./cloud-gateway/deploy_api.py
 201917c96589aeefa216359496722cf7d12f7ac2fbbadc11e48c87e1ef5b6c3b  ./cloud-gateway/schema.sql
-04e76b47019f5907e130b8e36daf21d9f990d7c9181632fbd431f30c48b6c2e2  ./cloud-gateway/src/index.js
+2cf5c2f3918d296215fc825c15a6ecaa38db680d4188a3e07c55fcfaf14b193c  ./cloud-gateway/src/index.js
 5cbec1e75c528b37b22ee775e5014147501e1f9f391c95d74a6891a21b841d42  ./cloud-gateway/wrangler.toml
 cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./config/argv.json
 924602195c7c2027b02f5c008aadd59dad00d6a96754535d5ac39da28f65d146  ./config/desktop-items-0.conf
