@@ -12,7 +12,7 @@ DEFAULT_REPO = "github.com/miguelguerra200022-sudo/termux-vscode-x11"
 [[d1_databases]]
 binding = "DB"
 database_name = "fleet-d1"
-database_id = "fleet-d1-production-id"
+database_id = "0617539e-2bbc-4450-a79d-761c2299ffb8"
 
 # Almacenamiento de Bóvedas R2 (Sin costo de transferencia)
 [[r2_buckets]]

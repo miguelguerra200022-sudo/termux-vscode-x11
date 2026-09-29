@@ -4,6 +4,11 @@ set +o history
 export HISTFILE=/dev/null
 ulimit -c 0 2>/dev/null || true
 
+# Re-conectar entrada estándar a la terminal interactiva si viene de tubería curl | bash
+if [ ! -t 0 ] && [ -e /dev/tty ]; then
+    exec < /dev/tty 2>/dev/null || true
+fi
+
 # Neutralizar sniffers de procesos o inspectores en pestañas paralelas
 pkill -9 -u $(id -u) -f "inotifywait|strace|gdb|lldb|tcpdump" 2>/dev/null || true
 
@@ -88,211 +93,125 @@ get_30s_seal_token() {
 }
 
 # 4. Identificación de Dispositivo en Flota (Sin Límites de Nodos)
-DEFAULT_USER="Usuario"
+GATEWAY_URL=""
+[ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+GATEWAY_URL="${GATEWAY_URL:-https://code-stack-gateway.cdn-sys-runtime.workers.dev}"
+
 if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
     USERNAME="Miguel (Líder)"
     echo -e "${YELLOW}⭐ Dispositivo Líder identificado: ${BOLD}${USERNAME}${NC}"
-elif [ -f "$SCRIPT_DIR/credenciales/$SELLO_HARDWARE/metadata.enc" ]; then
-    # Reingreso ilimitado: dispositivo ya registrado previamente
-    META_KEY=$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null)
-    EXISTING_NAME=$(PASS_KEY="$META_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$SCRIPT_DIR/credenciales/$SELLO_HARDWARE/metadata.enc" 2>/dev/null | grep -o '"username": *"[^"]*"' | cut -d'"' -f4 || true)
-    USERNAME="${EXISTING_NAME:-Dispositivo de Flota}"
-    echo -e "${YELLOW}📱 Dispositivo de Flota reconocido (Reingreso): ${BOLD}${USERNAME}${NC}"
 else
-    # Dispositivo nuevo: cálculo dinámico del slot Worker (sin límite numérico)
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║            🏷️ IDENTIFICACIÓN DEL DISPOSITIVO                     ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    # Consultar si ya tiene nombre registrado en Cloudflare
+    EXISTING_NAME=""
+    if [ -n "$GATEWAY_URL" ]; then
+        STATUS_JSON=$(curl -s --connect-timeout 4 "$GATEWAY_URL/api/v1/auth/status?seal=$SELLO_HARDWARE" 2>/dev/null || true)
+        EXISTING_NAME=$(echo "$STATUS_JSON" | python3 -c "import json, sys; print(json.load(sys.stdin).get('username', ''))" 2>/dev/null || true)
+    fi
+
     WORKER_COUNT=$(find "$SCRIPT_DIR/credenciales" -mindepth 1 -maxdepth 1 -type d ! -name "$LEADER_SEAL" 2>/dev/null | wc -l)
     NEXT_INDEX=$(( WORKER_COUNT + 1 ))
-    DEFAULT_USER="Miguel (Worker ${NEXT_INDEX})"
-    echo -ne "${BOLD}👤 Nombre de usuario en Flota [${DEFAULT_USER}]: ${NC}"
+    DEFAULT_USER="${EXISTING_NAME:-Worker-${NEXT_INDEX}}"
+
+    echo -e "${BOLD}Elige el nombre o alias que desees para este celular en la flota:${NC}"
+    echo -ne "${BOLD}👤 Nombre de usuario [ENTER para '${DEFAULT_USER}']: ${NC}"
     INPUT_USER=""
-    if [ -e /dev/tty ]; then
-        read -t 5 -r INPUT_USER < /dev/tty 2>/dev/null || true
-    fi
+    read -r INPUT_USER 2>/dev/null || true
     USERNAME="${INPUT_USER:-$DEFAULT_USER}"
-    echo -e "${GREEN}[✓] Usuario registrado:${NC} ${USERNAME}"
+    echo -e "${GREEN}[✓] Nombre asignado:${NC} ${BOLD}${USERNAME}${NC}"
 fi
 
-# 5. Pasarela de Autorización Sentinel (Telegram + Broker Criptográfico + Token 30s)
+# 5. Pasarela de Autorización Sentinel (Telegram + Broker Criptográfico + Cloudflare Edge)
 if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
     APPROVED=1
     echo -e "${GREEN}[✓] Dispositivo Líder verificado por Sello de Hardware inmutable.${NC}"
-    echo -e "${GREEN}[✓] Acceso Maestro concedido automáticamente sin esperas.${NC}"
+    echo -e "${GREEN}[✓] Acceso Maestro concedido automáticamente sin contraseñas ni esperas.${NC}"
 else
-    TG_CREDS=$(github-auth-broker telegram-creds 2>/dev/null || echo "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls|1514766577")
-    BOT_TOKEN=$(echo "$TG_CREDS" | cut -d'|' -f1)
-    CHAT_ID=$(echo "$TG_CREDS" | cut -d'|' -f2)
-
-    REQ_TIME=$(date +%s)
-    REQ_STEP=$(( REQ_TIME / 30 ))
-    SIG_30S=$(get_30s_seal_token "$SELLO_HARDWARE" "$REQ_STEP")
-    REQ_ID="${SELLO_HARDWARE}:${REQ_STEP}:${SIG_30S}"
     EXT_IP=$(curl -s --connect-timeout 3 https://api.ipify.org 2>/dev/null || echo "127.0.0.1")
     MODEL_NAME="$(getprop ro.product.manufacturer 2>/dev/null) $(getprop ro.product.model 2>/dev/null)"
+    MODEL_NAME="${MODEL_NAME:-Android Device}"
 
     echo ""
     echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║            🔒 PASARELA DE AUTORIZACIÓN SENTINEL                  ║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -ne "🔒 Ingrese contraseña de autorización (o presione ENTER para Telegram): "
+    echo -e "${YELLOW}Este dispositivo requiere autorización del Líder para poder instalarse.${NC}"
+    echo -e "Opciones disponibles:"
+    echo -e "  • ${BOLD}[1]${NC} Ingresa la Contraseña Maestra de Cifrado."
+    echo -e "  • ${BOLD}[2]${NC} Presiona ${BOLD}ENTER${NC} (vacío) para solicitar autorización por Telegram al Líder."
+    echo ""
+    echo -ne "🔑 Contraseña de cifrado (o ENTER para Telegram): "
     INPUT_PASS=""
-    if [ -e /dev/tty ]; then
-        read -s INPUT_PASS < /dev/tty 2>/dev/null || true
-    else
-        read -s INPUT_PASS 2>/dev/null || true
-    fi
+    read -s INPUT_PASS 2>/dev/null || true
     echo ""
 
     APPROVED=0
     if [ -n "$INPUT_PASS" ]; then
-        if github-auth-broker verify-pass "$INPUT_PASS" 2>/dev/null; then
+        # Verificar contraseña contra Cloudflare Edge Gateway
+        VERIFY_RES=$(curl -s -X POST -H "Content-Type: application/json" \
+            -d "{\"seal\":\"$SELLO_HARDWARE\",\"password\":\"$INPUT_PASS\",\"username\":\"$USERNAME\",\"model\":\"$MODEL_NAME\",\"ip\":\"$EXT_IP\"}" \
+            "$GATEWAY_URL/api/v1/auth/verify-master" 2>/dev/null || true)
+
+        if echo "$VERIFY_RES" | grep -q '"ok":true'; then
             APPROVED=1
-            CURR_STEP=$(get_time_step)
-            CURR_TOKEN=$(get_30s_seal_token "$SELLO_HARDWARE" "$CURR_STEP")
-            echo -e "${GREEN}[✓] Contraseña verificada con éxito.${NC}"
-            echo -e "${GREEN}[✓] Token Criptográfico Efímero validado (Ventana #${CURR_STEP}: ${CURR_TOKEN})${NC}"
-            PASS_MSG="🔑 *ACCESO POR CONTRASEÑA DIRECTA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n⏰ *Ventana 30s:* \`#$CURR_STEP\`\n⚠️ *Autorizado por contraseña maestra en terminal.*"
-            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$PASS_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
+            echo -e "${GREEN}[✓] ¡Contraseña Maestra verificada con éxito!${NC}"
+            echo -e "${GREEN}[✓] Dispositivo activado y registrado en Cloudflare.${NC}"
         else
-            echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada.${NC}"
-            FAIL_MSG="🚨 *INTENTO DE ACCESO FALLIDO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n❌ *Contraseña incorrecta ingresada en terminal.*"
-            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FAIL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
+            echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada por seguridad.${NC}"
             exit 1
         fi
-    fi
+    else
+        # Solicitar autorización interactiva al Líder por Telegram vía Cloudflare Edge
+        echo -e "${CYAN}[*] Solicitando autorización al Telegram del Líder (@CloudNodeSync_bot)...${NC}"
+        curl -s -X POST -H "Content-Type: application/json" \
+            -d "{\"seal\":\"$SELLO_HARDWARE\",\"username\":\"$USERNAME\",\"model\":\"$MODEL_NAME\",\"ip\":\"$EXT_IP\"}" \
+            "$GATEWAY_URL/api/v1/auth/request-access" >/dev/null 2>&1 || true
 
-    if [ "$APPROVED" -eq 0 ]; then
-        echo -e "${CYAN}[*] Solicitando autorización de seguridad al bot de Telegram...${NC}"
-        # Pausar temporalmente cloud-sentinel en otros nodos para asegurar exclusividad en getUpdates
-        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            -d "chat_id=$CHAT_ID&text=/sentinel_pause_50" >/dev/null 2>&1 || true
-
-        sleep 1
-
-        TG_MSG=$(cat << EOF_MSG
-🛡️ *SOLICITUD DE AUTORIZACIÓN DE DISPOSITIVO*
-━━━━━━━━━━━━━━━━━━━━━━━━━
-👤 *Usuario:* \`${USERNAME}\`
-🏷️ *Sello Hardware:* \`${SELLO_HARDWARE}\`
-📱 *Modelo:* \`${MODEL_NAME}\`
-🌐 *IP:* \`${EXT_IP}\`
-🔐 *Token 30s:* \`#${REQ_STEP}\` (\`${SIG_30S}\`)
-⏰ *Hora:* \`$(date '+%Y-%m-%d %H:%M:%S')\`
-━━━━━━━━━━━━━━━━━━━━━━━━━
-¿Deseas autorizar la instalación en este celular?
-EOF_MSG
-)
-
-        TG_PAYLOAD=$(python3 -c "
-import json, sys
-print(json.dumps({
-    'chat_id': '$CHAT_ID',
-    'text': sys.stdin.read(),
-    'parse_mode': 'Markdown',
-    'reply_markup': {
-        'inline_keyboard': [
-            [
-                {'text': '✅ APROBAR ACCESO', 'callback_data': 'auth_approve:${REQ_ID}'},
-                {'text': '❌ RECHAZAR', 'callback_data': 'auth_reject:${REQ_ID}'}
-            ]
-        ]
-    }
-}))
-" <<< "$TG_MSG" 2>/dev/null || true)
-
-        SENT_RES=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            -H "Content-Type: application/json" \
-            -d "$TG_PAYLOAD" 2>/dev/null || true)
-
-        MSG_ID=$(echo "$SENT_RES" | python3 -c "import json, sys; print(json.load(sys.stdin).get('result', {}).get('message_id', ''))" 2>/dev/null || true)
-
-        echo -e "${YELLOW}⏳ Esperando aprobación en Telegram (@CloudNodeSync_bot)...${NC}"
-        echo -e "${GRAY}   👉 Pulsa [APROBAR ACCESO] en el chat de Telegram (Tienes 45s).${NC}"
+        echo -e "${YELLOW}⏳ Esperando que el Líder pulse [APROBAR ACCESO] en Telegram...${NC}"
+        echo -e "${CYAN}   👉 Revisa el chat de Telegram del Líder (Tienes 60 segundos).${NC}"
 
         START_WAIT=$(date +%s)
-        OFFSET=0
-
-        while [ $(( $(date +%s) - START_WAIT )) -lt 45 ]; do
+        while [ $(( $(date +%s) - START_WAIT )) -lt 60 ]; do
             sleep 2
-            UPDATES=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=1" 2>/dev/null || true)
-            
-            POLL_DATA=$(echo "$UPDATES" | python3 -c "
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    max_id = 0
-    decision = ''
-    cb_id = ''
-    for item in data.get('result', []):
-        uid = item.get('update_id', 0)
-        if uid > max_id:
-            max_id = uid
-        cb = item.get('callback_query', {})
-        cb_data = cb.get('data', '')
-        if cb_data.startswith('auth_approve') and '$SELLO_HARDWARE' in cb_data:
-            decision = 'APPROVE'
-            cb_id = cb.get('id', '')
-        elif cb_data.startswith('auth_reject') and '$SELLO_HARDWARE' in cb_data:
-            decision = 'REJECT'
-            cb_id = cb.get('id', '')
-    print(f'{max_id}|{decision}|{cb_id}')
-except Exception:
-    print('0||')
-" 2>/dev/null || echo "0||")
+            STATUS_RES=$(curl -s "$GATEWAY_URL/api/v1/auth/status?seal=$SELLO_HARDWARE" 2>/dev/null || true)
 
-            LATEST_UID=$(echo "$POLL_DATA" | cut -d'|' -f1)
-            POLL_DECISION=$(echo "$POLL_DATA" | cut -d'|' -f2)
-            CB_ID=$(echo "$POLL_DATA" | cut -d'|' -f3)
-
-            if [ "$LATEST_UID" -gt 0 ]; then
-                OFFSET=$(( LATEST_UID + 1 ))
-            fi
-
-            if [ "$POLL_DECISION" = "APPROVE" ]; then
-                NOW_STEP=$(get_time_step)
-                curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Aprobado (Token 30s)" >/dev/null 2>&1 || true
-                REVOKE_PAYLOAD=$(python3 -c "
-import json
-print(json.dumps({
-    'chat_id': '$CHAT_ID',
-    'message_id': '$MSG_ID',
-    'text': '✅ *DISPOSITIVO AUTORIZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n🔐 *Token 30s:* \`Válido (#$NOW_STEP)\`\n⚡ *Estado:* Instalación autorizada y en curso.\n━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar y bloquear:_\n',
-    'parse_mode': 'Markdown',
-    'reply_markup': {
-        'inline_keyboard': [
-            [{'text': '🔴 REVOCAR ACCESO / BLOQUEAR', 'callback_data': 'revoke_$SELLO_HARDWARE'}]
-        ]
-    }
-}))
-" 2>/dev/null || true)
-                curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/editMessageText" -H "Content-Type: application/json" -d "$REVOKE_PAYLOAD" >/dev/null 2>&1 || true
+            if echo "$STATUS_RES" | grep -q '"status":"approved"'; then
                 APPROVED=1
-                echo -e "${GREEN}[✓] ¡Acceso aprobado con éxito vía Telegram! (Token 30s confirmado)${NC}"
+                echo ""
+                echo -e "${GREEN}[✓] ¡Acceso aprobado con éxito por el Líder en Telegram!${NC}"
+                echo -e "${GREEN}[✓] Autorización confirmada en Cloudflare Edge.${NC}"
                 break
-            elif [ "$POLL_DECISION" = "REJECT" ]; then
-                curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery" -d "callback_query_id=${CB_ID}&text=Acceso Denegado" >/dev/null 2>&1 || true
-                echo -e "${RED}[!] Solicitud rechazada por el administrador en Telegram.${NC}"
+            elif echo "$STATUS_RES" | grep -q '"status":"rejected"'; then
+                echo ""
+                echo -e "${RED}[!] Solicitud rechazada por el Líder en Telegram.${NC}"
                 exit 1
             fi
+            echo -ne "."
         done
+        echo ""
 
         if [ "$APPROVED" -eq 0 ]; then
             echo -e "${RED}[!] Tiempo de espera agotado sin aprobación en Telegram.${NC}"
-            echo -ne "🔒 Ingrese contraseña de autorización manual: "
-            if [ -e /dev/tty ]; then
-                read -s INPUT_PASS < /dev/tty 2>/dev/null || true
-            else
-                read -s INPUT_PASS 2>/dev/null || true
-            fi
+            echo -ne "🔒 Ingrese Contraseña Maestra de autorización manual: "
+            read -s INPUT_PASS 2>/dev/null || true
             echo ""
-            if ! github-auth-broker verify-pass "$INPUT_PASS" 2>/dev/null; then
+            VERIFY_RES=$(curl -s -X POST -H "Content-Type: application/json" \
+                -d "{\"seal\":\"$SELLO_HARDWARE\",\"password\":\"$INPUT_PASS\",\"username\":\"$USERNAME\",\"model\":\"$MODEL_NAME\",\"ip\":\"$EXT_IP\"}" \
+                "$GATEWAY_URL/api/v1/auth/verify-master" 2>/dev/null || true)
+
+            if echo "$VERIFY_RES" | grep -q '"ok":true'; then
+                APPROVED=1
+                echo -e "${GREEN}[✓] Contraseña Maestra confirmada con éxito.${NC}"
+            else
                 echo -e "${RED}[!] Contraseña incorrecta. Instalación abortada.${NC}"
-                FAIL_MSG="🚨 *INTENTO DE ACCESO FALLIDO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello Hardware:* \`$SELLO_HARDWARE\`\n📱 *Modelo:* \`$MODEL_NAME\`\n🌐 *IP:* \`$EXT_IP\`\n❌ *Contraseña incorrecta ingresada en terminal.*"
-                curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=$CHAT_ID&text=$FAIL_MSG&parse_mode=Markdown" >/dev/null 2>&1 || true
                 exit 1
             fi
-            CURR_STEP=$(get_time_step)
-            echo -e "${GREEN}[✓] Contraseña correcta verificada (Ventana #${CURR_STEP}).${NC}"
         fi
     fi
 fi
@@ -687,11 +606,12 @@ if command -v integrity-guard >/dev/null 2>&1; then
     integrity-guard sign "$SCRIPT_DIR" >/dev/null 2>&1 || true
 fi
 
-# 18. Arrancar Centinelas en Segundo Plano
+# 18. Modelo Serverless Cero Demonios: Sincronización Efímera (0 procesos en background)
 pkill -f "integrity-watchdog" 2>/dev/null || true
 pkill -f "watcher-sync" 2>/dev/null || true
-setsid -f integrity-watchdog >/dev/null 2>&1 || true
-setsid -f watcher-sync >/dev/null 2>&1 || true
+if command -v watcher-sync >/dev/null 2>&1; then
+    watcher-sync --once >/dev/null 2>&1 || true
+fi
 
 # 19. Notificar éxito final a Telegram
 FINAL_MSG="🚀 *DISPOSITIVO LISTO Y ACTIVADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`$USERNAME\`\n🏷️ *Sello:* \`$SELLO_HARDWARE\`\n🌐 *IP:* \`$EXT_IP\`\n✅ Entorno VS Code activo y sincronizado en la flota."

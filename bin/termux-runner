@@ -354,6 +354,15 @@ def execute_job(job_path):
     except Exception:
         pass
 
+    # Si el log es extenso, enviarlo automáticamente como documento adjunto a Telegram para no saturar caracteres
+    if os.path.isfile(build_log) and os.path.getsize(build_log) > 300:
+        try:
+            caption = f"📄 Registro completo de ejecución del Job {job_id} ({job_name})"
+            subprocess.run(["cloud-sentinel", "send-doc", build_log, caption],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
     # Limpiar sandbox de trabajo
     shutil.rmtree(sandbox_dir, ignore_errors=True)
 
@@ -367,6 +376,39 @@ def poll_and_run_queue(once=False):
     repo_dir = get_repo_dir()
     pending_dir = os.path.join(repo_dir, "build-farm", "queue", "pending")
     os.makedirs(pending_dir, exist_ok=True)
+
+    # 1. Consultar tareas remotas en Cloudflare Edge Gateway si está configurado
+    gw_url = ""
+    gw_file = os.path.expanduser("~/.config/termux-vscode/gateway_url")
+    if os.path.isfile(gw_file):
+        try:
+            with open(gw_file, "r") as f:
+                gw_url = f.read().strip()
+        except Exception:
+            pass
+    if os.environ.get("GATEWAY_URL"):
+        gw_url = os.environ.get("GATEWAY_URL").strip()
+
+    my_seal = get_current_seal()
+
+    if gw_url:
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                f"{gw_url}/api/v1/tasks/poll?seal={my_seal}",
+                headers={"X-Device-Seal": my_seal, "User-Agent": "Termux-Runner"}
+            )
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                data = json.loads(resp.read().decode())
+                tasks = data.get("tasks", [])
+                for t in tasks:
+                    j_id = t.get("job_id")
+                    j_file = os.path.join(pending_dir, f"{j_id}.json")
+                    with open(j_file, "w", encoding="utf-8") as jf:
+                        json.dump(t, jf, indent=2)
+                    execute_job(j_file)
+        except Exception:
+            pass
 
     while True:
         pending_files = sorted(glob.glob(os.path.join(pending_dir, "*.json")))

@@ -229,6 +229,30 @@ for wdir in watch_dirs:
             except Exception:
                 continue
 
+spool_dir = os.path.expanduser("~/.config/termux-vscode/.spool")
+os.makedirs(spool_dir, exist_ok=True)
+
+# 1. Vaciar cualquier delta acumulado en el búfer offline (Store & Forward)
+try:
+    for sf in sorted(os.listdir(spool_dir)):
+        if sf.endswith(".json"):
+            s_path = os.path.join(spool_dir, sf)
+            try:
+                with open(s_path, "rb") as s_f:
+                    s_bytes = s_f.read()
+                s_req = urllib.request.Request(
+                    f"{gw}/api/v1/vault/sync-delta",
+                    data=s_bytes,
+                    headers={"Content-Type": "application/json", "X-Device-Seal": seal, "User-Agent": "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0"}
+                )
+                with urllib.request.urlopen(s_req, timeout=3) as s_resp:
+                    if s_resp.status == 200:
+                        os.remove(s_path)
+            except Exception:
+                break
+except Exception:
+    pass
+
 if not changed_files:
     sys.exit(0)
 
@@ -237,6 +261,7 @@ try:
 except Exception:
     pass_key = "vault_key"
 
+# 2. Procesar y transmitir o encolar cambios locales
 for fpath, rel, h in changed_files[:10]:
     try:
         env = os.environ.copy()
@@ -251,9 +276,28 @@ for fpath, rel, h in changed_files[:10]:
             "delta_enc": enc_payload
         }).encode()
         
-        req = urllib.request.Request(f"{gw}/api/v1/vault/sync-delta", data=req_data, headers={"Content-Type": "application/json", "X-Device-Seal": seal})
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            pass
+        delivered = False
+        try:
+            req = urllib.request.Request(
+                f"{gw}/api/v1/vault/sync-delta",
+                data=req_data,
+                headers={"Content-Type": "application/json", "X-Device-Seal": seal, "User-Agent": "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    delivered = True
+        except Exception:
+            delivered = False
+
+        # Si no hay conexión a internet: guardar en cola cifrada offline (Store & Forward)
+        if not delivered:
+            spool_file = os.path.join(spool_dir, f"delta_{int(time.time())}_{h[:8]}.json")
+            with open(spool_file, "wb") as sf:
+                sf.write(req_data)
+            try:
+                os.chmod(spool_file, 0o600)
+            except Exception:
+                pass
     except Exception:
         continue
 
@@ -351,8 +395,22 @@ do_sync() {
             fi
         fi
     fi
+
+    # 6.7 Para celulares Workers: Comprobar y aplicar actualizaciones desde Cloudflare Edge
+    if [ "$LOCAL_SEAL" != "ums9230-sp_6300-3724801c" ]; then
+        if command -v gitops-sync >/dev/null 2>&1; then
+            gitops-sync pull --quiet >/dev/null 2>&1 || true
+        fi
+    fi
 }
 
+# Modelo Cero Demonios: Por defecto ejecuta sincronización transitoria y sale (<30ms, 0% CPU)
+if [ "$1" = "--once" ] || [ "$1" = "-1" ] || [ "$1" = "sync" ] || [ -z "$1" ]; then
+    do_sync || true
+    exit 0
+fi
+
+# Modo demonio tradicional solo si se solicita explícitamente con --daemon
 # 7. Configuración de Directorios Vigilados
 WATCH_DIRS=("$REPO_DIR")
 [ -d "$HOME/.config/Code - OSS/User" ] && WATCH_DIRS+=("$HOME/.config/Code - OSS/User")
@@ -360,7 +418,7 @@ WATCH_DIRS=("$REPO_DIR")
 
 EXCLUDE_REGEX='(\.git|\.integrity|cache2|startupCache|\.parentlock|\.lock|lock|Crash Reports|minidumps|\.log|\.tmp|\.sock|\.cpuprofile|\.heapsnapshot|checkpoints)'
 
-# 8. Bucle Principal Autónomo 24/7
+# 8. Bucle Opcional 24/7 (Solo con --daemon)
 while true; do
     self_audit_and_repair || true
 

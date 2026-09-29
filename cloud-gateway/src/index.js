@@ -71,6 +71,13 @@ export default {
 
         try {
             // ------------------------------------------------------------------
+            // 0. CARGADOR DE INSTALACIÓN DIRECTO DESDE CLOUDFLARE EDGE (/install o /i)
+            // ------------------------------------------------------------------
+            if ((path === "/install" || path === "/i") && request.method === "GET") {
+                return handleInstallBootstrap(request, env);
+            }
+
+            // ------------------------------------------------------------------
             // 1. WEBHOOK DE TELEGRAM (/telegram/webhook)
             // ------------------------------------------------------------------
             if (path === "/telegram/webhook" && request.method === "POST") {
@@ -103,6 +110,21 @@ export default {
             if (path === "/api/v1/auth/register" && request.method === "POST") {
                 const body = await request.json();
                 return await handleDeviceRegister(body, request, env);
+            }
+
+            if (path === "/api/v1/auth/request-access" && request.method === "POST") {
+                const body = await request.json();
+                return await handleAuthRequestAccess(body, request, env);
+            }
+
+            if (path === "/api/v1/auth/status" && request.method === "GET") {
+                const seal = url.searchParams.get("seal") || request.headers.get("X-Device-Seal");
+                return await handleAuthStatusCheck(seal, env);
+            }
+
+            if (path === "/api/v1/auth/verify-master" && request.method === "POST") {
+                const body = await request.json();
+                return await handleVerifyMasterPass(body, request, env);
             }
 
             if (path === "/api/v1/auth/license" && request.method === "GET") {
@@ -153,6 +175,11 @@ export default {
                 return await handleLatestRelease(request, env);
             }
 
+            if (path.startsWith("/api/v1/release/download/") && request.method === "GET") {
+                const commit = path.replace("/api/v1/release/download/", "").trim();
+                return await handleReleaseDownload(commit, env);
+            }
+
             // ------------------------------------------------------------------
             // 7. STREAM DE EVENTOS EN TIEMPO REAL (SSE)
             // ------------------------------------------------------------------
@@ -196,19 +223,34 @@ async function handleTelegramUpdate(update, env) {
         if (cbData.startsWith("auth_approve:") || cbData.startsWith("auth_approve_")) {
             const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("auth_approve_", "");
             await approveDeviceInDb(seal, env);
+            let devName = seal;
+            if (env.DB) {
+                const row = await env.DB.prepare(`SELECT username FROM devices WHERE seal = ?`).bind(seal).first();
+                if (row && row.username) devName = row.username;
+            }
             await sendTelegram(env, "editMessageText", {
                 chat_id: authorizedChat,
                 message_id: msgId,
-                text: `✅ *DISPOSITIVO AUTORIZADO (CLOUDFLARE EDGE)*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n⚡ Aprobación instantánea propagada a nivel mundial.`,
-                parse_mode: "Markdown"
+                text: `✅ *DISPOSITIVO AUTORIZADO (CLOUDFLARE EDGE)*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⚡ Aprobación concedida por el Líder.\n━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar:_`,
+                parse_mode: "Markdown",
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "🔴 REVOCAR ACCESO", callback_data: `auth_reject:${seal}` }]
+                    ]
+                }
             });
         } else if (cbData.startsWith("auth_reject:") || cbData.startsWith("auth_reject_")) {
             const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("auth_reject_", "");
             await revokeDeviceInDb(seal, env);
+            let devName = seal;
+            if (env.DB) {
+                const row = await env.DB.prepare(`SELECT username FROM devices WHERE seal = ?`).bind(seal).first();
+                if (row && row.username) devName = row.username;
+            }
             await sendTelegram(env, "editMessageText", {
                 chat_id: authorizedChat,
                 message_id: msgId,
-                text: `❌ *ACCESO RECHAZADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n⛔ Solicitud denegada permanentemente.`,
+                text: `❌ *ACCESO RECHAZADO / BLOQUEADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⛔ Solicitud denegada permanentemente por el Líder.`,
                 parse_mode: "Markdown"
             });
         } else if (cbData.startsWith("renew_approve:") || cbData.startsWith("renew_approve_")) {
@@ -396,13 +438,23 @@ async function handleDeviceRegister(body, request, env) {
 
     if (env.DB) {
         await env.DB.prepare(
-            `INSERT OR IGNORE INTO devices (seal, role, username, device_model, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
-             VALUES (?, ?, ?, ?, 'active', ?, ?, 1, 0, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO devices (seal, role, username, device_model, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
+             VALUES (?, ?, ?, ?, 'active', ?, ?, 1, 0, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(seal) DO UPDATE SET 
+                username = excluded.username,
+                role = excluded.role,
+                device_model = excluded.device_model,
+                status = 'active',
+                ip_address = excluded.ip_address,
+                last_seen_at = excluded.last_seen_at`
         ).bind(seal, role, username, model, initialHash, salt, nowTs, nowIso, nowIso, Date.now(), nowTs, ip).run();
 
         await env.DB.prepare(
-            `INSERT OR IGNORE INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
-             VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)`
+            `INSERT INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
+             VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)
+             ON CONFLICT(seal) DO UPDATE SET 
+                status = 'active',
+                last_verified_ts = excluded.last_verified_ts`
         ).bind(seal, nowIso, nowIso, nowTs, expIso, expTs, nowTs).run();
 
         await env.DB.prepare(
@@ -544,14 +596,163 @@ async function renewSubscriptionInDb(seal, approvedBy, env) {
 
 async function approveDeviceInDb(seal, env) {
     if (!env.DB) return;
+    const nowTs = Math.floor(Date.now() / 1000);
+    const nowIso = new Date(nowTs * 1000).toISOString();
+    const expTs = nowTs + (30 * 86400);
+    const expIso = new Date(expTs * 1000).toISOString();
+
     await env.DB.prepare(`UPDATE devices SET status = 'active' WHERE seal = ?`).bind(seal).run();
-    await env.DB.prepare(`UPDATE subscriptions SET status = 'active' WHERE seal = ?`).bind(seal).run();
+    await env.DB.prepare(
+        `INSERT INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
+         VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)
+         ON CONFLICT(seal) DO UPDATE SET 
+            status = 'active',
+            current_cycle_expires = excluded.current_cycle_expires,
+            current_cycle_expires_ts = excluded.current_cycle_expires_ts,
+            last_verified_ts = excluded.last_verified_ts`
+    ).bind(seal, nowIso, nowIso, nowTs, expIso, expTs, nowTs).run();
 }
 
 async function revokeDeviceInDb(seal, env) {
     if (!env.DB) return;
-    await env.DB.prepare(`UPDATE devices SET status = 'revoked', current_hash = 'REVOKED_DEAD_HASH' WHERE seal = ?`).bind(seal).run();
+    await env.DB.prepare(`UPDATE devices SET status = 'rejected', current_hash = 'REVOKED_DEAD_HASH' WHERE seal = ?`).bind(seal).run();
     await env.DB.prepare(`UPDATE subscriptions SET status = 'revoked' WHERE seal = ?`).bind(seal).run();
+}
+
+async function handleAuthRequestAccess(body, request, env) {
+    const seal = body.seal;
+    const username = body.username || `Worker_${seal?.slice(0, 6)}`;
+    const model = body.model || "Android";
+    const ip = request.headers.get("CF-Connecting-IP") || body.ip || "";
+
+    if (!seal) return jsonResponse({ error: "Missing seal" }, 400);
+
+    // Si es el Líder, acceso inmediato automático sin preguntas
+    if (seal === LEADER_SEAL) {
+        return jsonResponse({ ok: true, status: "approved", is_leader: true, username: "Miguel (Líder)" });
+    }
+
+    const nowTs = Math.floor(Date.now() / 1000);
+    const nowIso = new Date(nowTs * 1000).toISOString();
+    const initialHash = "hash_" + crypto.randomUUID().replace(/-/g, "");
+    const salt = crypto.randomUUID().slice(0, 16);
+
+    if (env.DB) {
+        await env.DB.prepare(
+            `INSERT INTO devices (seal, role, username, device_model, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
+             VALUES (?, 'Worker', ?, ?, 'pending_approval', ?, ?, 1, 0, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(seal) DO UPDATE SET 
+                username = excluded.username,
+                device_model = excluded.device_model,
+                status = 'pending_approval',
+                ip_address = excluded.ip_address,
+                last_seen_at = excluded.last_seen_at`
+        ).bind(seal, username, model, initialHash, salt, nowTs, nowIso, nowIso, Date.now(), nowTs, ip).run();
+    }
+
+    const authorizedChat = env.ALLOWED_CHAT_ID || DEFAULT_ALLOWED_CHAT;
+    await sendTelegram(env, "sendMessage", {
+        chat_id: authorizedChat,
+        text: `🛡️ *SOLICITUD DE AUTORIZACIÓN DE DISPOSITIVO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${username}\`\n🏷️ *Sello Hardware:* \`${seal}\`\n📱 *Modelo:* \`${model}\`\n🌐 *IP:* \`${ip}\`\n⏰ *Hora:* \`${nowIso}\`\n━━━━━━━━━━━━━━━━━━━━━━━━━\n¿Deseas autorizar la instalación en este celular?`,
+        parse_mode: "Markdown",
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: "✅ APROBAR ACCESO", callback_data: `auth_approve:${seal}` },
+                    { text: "❌ RECHAZAR", callback_data: `auth_reject:${seal}` }
+                ]
+            ]
+        }
+    });
+
+    return jsonResponse({ ok: true, status: "pending", seal, username });
+}
+
+async function handleAuthStatusCheck(seal, env) {
+    if (!seal) return jsonResponse({ error: "Missing seal" }, 400);
+    if (seal === LEADER_SEAL) {
+        return jsonResponse({ status: "approved", is_leader: true, username: "Miguel (Líder)" });
+    }
+    if (!env.DB) return jsonResponse({ status: "unknown" });
+
+    const dev = await env.DB.prepare(`SELECT status, username, role FROM devices WHERE seal = ?`).bind(seal).first();
+    if (!dev) {
+        return jsonResponse({ status: "not_found" });
+    }
+
+    if (dev.status === "active") {
+        return jsonResponse({ status: "approved", username: dev.username, role: dev.role });
+    } else if (dev.status === "rejected" || dev.status === "revoked") {
+        return jsonResponse({ status: "rejected", username: dev.username });
+    } else {
+        return jsonResponse({ status: "pending", username: dev.username });
+    }
+}
+
+async function handleVerifyMasterPass(body, request, env) {
+    const seal = body.seal;
+    const password = (body.password || "").trim();
+    const username = body.username || `Worker_${seal?.slice(0, 6)}`;
+    const model = body.model || "Android";
+    const ip = request.headers.get("CF-Connecting-IP") || body.ip || "";
+
+    if (!seal || !password) return jsonResponse({ error: "Missing seal or password" }, 400);
+
+    const encoder = new TextEncoder();
+    const passData = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", passData);
+    const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+    const HASH_BASE = "8b8aba3300315db216e0e9050522d4952881e67273687b00caff2a78cf958315";
+    const authorizedChat = env.ALLOWED_CHAT_ID || DEFAULT_ALLOWED_CHAT;
+
+    if (hashHex !== HASH_BASE) {
+        await sendTelegram(env, "sendMessage", {
+            chat_id: authorizedChat,
+            text: `🚨 *INTENTO DE ACCESO FALLIDO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario intentado:* \`${username}\`\n🏷️ *Sello Hardware:* \`${seal}\`\n📱 *Modelo:* \`${model}\`\n🌐 *IP:* \`${ip}\`\n❌ *Contraseña incorrecta ingresada en terminal.*`,
+            parse_mode: "Markdown"
+        });
+        return jsonResponse({ ok: false, status: "invalid_password", error: "Contraseña incorrecta" }, 401);
+    }
+
+    // Contraseña correcta: activar dispositivo y suscripción
+    const nowTs = Math.floor(Date.now() / 1000);
+    const nowIso = new Date(nowTs * 1000).toISOString();
+    const expTs = nowTs + (30 * 86400);
+    const expIso = new Date(expTs * 1000).toISOString();
+    const initialHash = "hash_" + crypto.randomUUID().replace(/-/g, "");
+    const salt = crypto.randomUUID().slice(0, 16);
+
+    if (env.DB) {
+        await env.DB.prepare(
+            `INSERT INTO devices (seal, role, username, device_model, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
+             VALUES (?, 'Worker', ?, ?, 'active', ?, ?, 1, 0, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(seal) DO UPDATE SET 
+                username = excluded.username,
+                device_model = excluded.device_model,
+                status = 'active',
+                ip_address = excluded.ip_address,
+                last_seen_at = excluded.last_seen_at`
+        ).bind(seal, username, model, initialHash, salt, nowTs, nowIso, nowIso, Date.now(), nowTs, ip).run();
+
+        await env.DB.prepare(
+            `INSERT INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
+             VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)
+             ON CONFLICT(seal) DO UPDATE SET 
+                status = 'active',
+                current_cycle_expires = excluded.current_cycle_expires,
+                current_cycle_expires_ts = excluded.current_cycle_expires_ts,
+                last_verified_ts = excluded.last_verified_ts`
+        ).bind(seal, nowIso, nowIso, nowTs, expIso, expTs, nowTs).run();
+    }
+
+    await sendTelegram(env, "sendMessage", {
+        chat_id: authorizedChat,
+        text: `🔑 *ACCESO POR CONTRASEÑA DIRECTA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${username}\`\n🏷️ *Sello:* \`${seal}\`\n📱 *Modelo:* \`${model}\`\n🌐 *IP:* \`${ip}\`\n✅ *Autorizado con éxito mediante Contraseña Maestra.*`,
+        parse_mode: "Markdown"
+    });
+
+    return jsonResponse({ ok: true, status: "approved", username, role: "Worker" });
 }
 
 // ==============================================================================
@@ -562,16 +763,23 @@ async function handleVaultDeltaSync(body, env) {
     const seal = body.seal;
     const fileRel = body.file_rel;
     const deltaPayload = body.delta_enc;
-    const hash = body.hash || "";
+    const hash = body.file_hash || body.hash || "";
 
     if (!seal || !fileRel || !deltaPayload) {
         return jsonResponse({ error: "Missing required delta parameters" }, 400);
     }
 
     const nowTs = Math.floor(Date.now() / 1000);
+    const nowIso = new Date(nowTs * 1000).toISOString();
     const sizeBytes = deltaPayload.length;
 
     if (env.DB) {
+        // Asegurar existencia en devices para respetar la integridad referencial de SQLite
+        await env.DB.prepare(
+            `INSERT OR IGNORE INTO devices (seal, role, username, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
+             VALUES (?, ?, ?, 'active', 'hash_init', 'salt_init', 1, 0, ?, ?, ?, ?, ?, '')`
+        ).bind(seal, seal === LEADER_SEAL ? 'Líder' : 'Worker', seal === LEADER_SEAL ? 'Líder Maestro' : 'Dispositivo', nowTs, nowIso, nowIso, nowTs * 1000, nowTs).run();
+
         await env.DB.prepare(
             `INSERT INTO vault_deltas (seal, file_rel, file_hash, delta_payload, size_bytes, timestamp)
              VALUES (?, ?, ?, ?, ?, ?)`
@@ -694,6 +902,22 @@ async function handleLatestRelease(request, env) {
     }, 200, { "ETag": etag, "Cache-Control": "public, max-age=60" });
 }
 
+async function handleReleaseDownload(commit, env) {
+    if (!env.VAULTS) return jsonResponse({ error: "Storage R2 not bound" }, 500);
+    const r2Key = `releases/${commit}.tar.gz`;
+    const obj = await env.VAULTS.get(r2Key);
+    if (!obj) {
+        return jsonResponse({ error: "Release not found in Edge cache" }, 404);
+    }
+    return new Response(obj.body, {
+        headers: {
+            "Content-Type": "application/gzip",
+            "Content-Disposition": `attachment; filename="release_${commit.slice(0, 8)}.tar.gz"`,
+            "Cache-Control": "public, max-age=31536000, immutable"
+        }
+    });
+}
+
 // Stream SSE para eventos push en tiempo real
 function handleEventStream(request, env) {
     const { readable, writable } = new TransformStream();
@@ -708,6 +932,49 @@ function handleEventStream(request, env) {
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Access-Control-Allow-Origin": "*"
+        }
+    });
+}
+
+function handleInstallBootstrap(request, env) {
+    const origin = new URL(request.url).origin;
+    const defaultRepo = env.DEFAULT_REPO || "github.com/miguelguerra200022-sudo/termux-vscode-x11";
+
+    const bootstrapScript = `#!/data/data/com.termux/files/usr/bin/bash
+set -e
+export DEBIAN_FRONTEND=noninteractive
+export GATEWAY_URL="${origin}"
+
+# Re-conectar entrada estándar a la terminal interactiva si viene de tubería curl | bash
+if [ ! -t 0 ] && [ -e /dev/tty ]; then
+    exec < /dev/tty 2>/dev/null || true
+fi
+
+# 1. Configurar URL del Gateway Edge de forma permanente
+mkdir -p "$HOME/.config/termux-vscode"
+echo -n "${origin}" > "$HOME/.config/termux-vscode/gateway_url"
+chmod 600 "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null || true
+
+# 2. Descargar e iniciar el instalador oficial
+TMP_INSTALL="\${TMPDIR:-/data/data/com.termux/files/usr/tmp}/install_$$.sh"
+trap 'rm -f "$TMP_INSTALL"' EXIT
+
+if command -v curl >/dev/null 2>&1; then
+    curl -sL "https://raw.githubusercontent.com/${defaultRepo.replace('github.com/', '')}/main/install.sh" -o "$TMP_INSTALL"
+elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$TMP_INSTALL" "https://raw.githubusercontent.com/${defaultRepo.replace('github.com/', '')}/main/install.sh"
+fi
+
+if [ -f "$TMP_INSTALL" ]; then
+    bash "$TMP_INSTALL" "$@"
+fi
+`;
+
+    return new Response(bootstrapScript, {
+        status: 200,
+        headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-store, must-revalidate"
         }
     });
 }

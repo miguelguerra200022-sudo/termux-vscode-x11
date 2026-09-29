@@ -65,14 +65,14 @@ rm -rf "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.X11-unix/X*" /data/data/
     history -w 2>/dev/null || true
 ) >/dev/null 2>&1 &
 
-# 7. Asegurar que los centinelas de integridad sigan vigilando 24/7 en segundo plano
+# 7. Modelo Serverless Cero Demonios: Asegurar que NO quede ningún proceso residente
+pkill -9 -f "watcher-sync" 2>/dev/null || true
+pkill -9 -f "integrity-watchdog" 2>/dev/null || true
+pkill -9 -f "cloud-sentinel" 2>/dev/null || true
+
+# 8. Sincronización efímera final: vaciar búfer cifrado si hay red
 if command -v watcher-sync >/dev/null 2>&1; then
-    if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then
-        setsid -f watcher-sync >/dev/null 2>&1 || true
-    fi
+    watcher-sync --once >/dev/null 2>&1 || true
 fi
-if command -v integrity-watchdog >/dev/null 2>&1; then
-    if ! pgrep -f "integrity-watchdog" >/dev/null 2>&1; then
-        setsid -f integrity-watchdog >/dev/null 2>&1 || true
-    fi
-fi
+
+echo -e "\n[✓] Entorno apagado con éxito. Batería: 0% consumo (Cero demonios residentes)."
