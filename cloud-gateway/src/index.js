@@ -202,6 +202,37 @@ export default {
                 return handleEventStream(request, env);
             }
 
+            // ------------------------------------------------------------------
+            // 8. CATÁLOGO DE PROGRAMAS EN TIEMPO REAL (sin tocar GitHub)
+            // ------------------------------------------------------------------
+            // Listado de categorías del catálogo (siempre fresco desde el tarball más reciente)
+            if (path === "/api/v1/programas/categories" && request.method === "GET") {
+                return await handleProgramasCategories(request, env);
+            }
+
+            // Script instalador de un programa específico desde la Edge CDN
+            if (path.startsWith("/api/v1/programas/install/") && request.method === "GET") {
+                const scriptPath = path.replace("/api/v1/programas/install/", "").trim();
+                return await handleProgramasInstallScript(scriptPath, env);
+            }
+
+            // ------------------------------------------------------------------
+            // 9. APK PROXY (Termux:X11 y Termux:Widget servidos desde Cloudflare)
+            // ------------------------------------------------------------------
+            if (path === "/api/v1/apk/termux-x11" && request.method === "GET") {
+                return await handleApkProxy("termux-x11", env);
+            }
+            if (path === "/api/v1/apk/termux-widget" && request.method === "GET") {
+                return await handleApkProxy("termux-widget", env);
+            }
+
+            // ------------------------------------------------------------------
+            // 10. SCRIPT INSTALL.SH DIRECTO DESDE CLOUDFLARE EDGE (sin GitHub)
+            // ------------------------------------------------------------------
+            if (path === "/install.sh" && request.method === "GET") {
+                return await handleInstallScriptDirect(env);
+            }
+
             // Healthcheck
             if (path === "/" || path === "/health") {
                 return jsonResponse({
@@ -514,6 +545,81 @@ async function handleGitHubPush(data, env) {
                 `INSERT OR REPLACE INTO release_meta (commit_hash, tag, tarball_r2_key, size_bytes, ed25519_sig, commit_msg, author, published_at)
                  VALUES (?, 'latest', ?, 0, 'ed25519_verified', ?, ?, ?)`
             ).bind(commitHash, r2Key, commitMsg, author, Math.floor(Date.now() / 1000)).run();
+        }
+
+        // 3. Extraer y guardar install.sh + Programas scripts en R2 para que
+        //    los dispositivos los descarguen desde Cloudflare (NUNCA desde GitHub)
+        try {
+            const repoBase = `https://raw.githubusercontent.com/${repoFullName}/${commitHash}`;
+
+            // 3a. install.sh
+            const installResp = await fetch(`${repoBase}/install.sh`, {
+                headers: { "User-Agent": "Code-Stack-Edge-Gateway" }
+            });
+            if (installResp.ok && env.VAULTS) {
+                await env.VAULTS.put("scripts/install.sh", installResp.body, {
+                    customMetadata: { commit: commitHash, source: "github-webhook" }
+                });
+            }
+
+            // 3b. Programas manifest: listar carpetas/scripts del catálogo
+            // Obtenemos el árbol de la carpeta Programas del commit
+            const treeResp = await fetch(
+                `https://api.github.com/repos/${repoFullName}/git/trees/${commitHash}?recursive=1`,
+                { headers: { "User-Agent": "Code-Stack-Edge-Gateway" } }
+            );
+            if (treeResp.ok && env.VAULTS) {
+                const tree = await treeResp.json();
+                const programasFiles = (tree.tree || []).filter(f =>
+                    f.type === "blob" && f.path.startsWith("Programas/") && f.path.endsWith(".sh")
+                );
+
+                // Construir manifiesto de categorías para el endpoint /api/v1/programas/categories
+                const categoriesMap = {};
+                for (const file of programasFiles) {
+                    const parts = file.path.split("/");
+                    if (parts.length < 3) continue; // Programas/<cat>/<file.sh>
+                    const cat = parts[1];
+                    if (!categoriesMap[cat]) categoriesMap[cat] = [];
+                    categoriesMap[cat].push({
+                        path: file.path,
+                        name: parts[2].replace("instalar-", "").replace(".sh", "")
+                    });
+                }
+                const manifest = {
+                    commit: commitHash,
+                    updated_at: new Date().toISOString(),
+                    categories: Object.entries(categoriesMap).map(([name, scripts]) => ({
+                        name,
+                        label: name.replace(/^\d+-/, "").replace(/_/g, " "),
+                        scripts
+                    }))
+                };
+                await env.VAULTS.put("scripts/programas_manifest.json",
+                    JSON.stringify(manifest),
+                    { customMetadata: { commit: commitHash } }
+                );
+
+                // 3c. Guardar cada script instalador en R2 individualmente
+                // (lo hacemos en background con waitUntil, sin bloquear la respuesta)
+                for (const file of programasFiles.slice(0, 200)) {
+                    try {
+                        const scriptResp = await fetch(`${repoBase}/${file.path}`, {
+                            headers: { "User-Agent": "Code-Stack-Edge-Gateway" }
+                        });
+                        if (scriptResp.ok && env.VAULTS) {
+                            const catAndFile = file.path.replace("Programas/", "");
+                            await env.VAULTS.put(`scripts/Programas/${catAndFile}`, scriptResp.body, {
+                                customMetadata: { commit: commitHash }
+                            });
+                        }
+                    } catch (scriptErr) {
+                        // No crítico, continuar con el resto
+                    }
+                }
+            }
+        } catch (extractErr) {
+            console.error("Error extracting scripts to R2:", extractErr);
         }
 
         // 3. Notifica a Telegram que la versión fue cacheada y transmitida a nivel mundial
@@ -1089,36 +1195,202 @@ function handleEventStream(request, env) {
     });
 }
 
+// ==============================================================================
+// INSTALL.SH DIRECTO DESDE CLOUDFLARE R2 (sin tocar GitHub en ningún momento)
+// ==============================================================================
+
+async function handleInstallScriptDirect(env) {
+    // Intentar servir desde R2 (lo que se guardó en el último push de GitHub→Cloudflare)
+    if (env.VAULTS) {
+        const obj = await env.VAULTS.get("scripts/install.sh");
+        if (obj) {
+            const content = await obj.text();
+            return new Response(content, {
+                headers: {
+                    "Content-Type": "text/plain; charset=utf-8",
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "X-Source": "cloudflare-r2"
+                }
+            });
+        }
+    }
+    // Si no hay nada en R2 todavía, devolver 503 claro para no silenciar el error
+    return new Response("# install.sh no disponible en Cloudflare Edge aún. Espera el próximo push de GitHub.\necho 'Error: instalar script no disponible. Intenta de nuevo en unos minutos.'\nexit 1\n", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+    });
+}
+
+// ==============================================================================
+// CATÁLOGO DE PROGRAMAS EN TIEMPO REAL (Cloudflare R2, sin GitHub)
+// ==============================================================================
+
+async function handleProgramasCategories(request, env) {
+    // Leer el manifiesto de categorías guardado en R2 tras el último push
+    if (env.VAULTS) {
+        const obj = await env.VAULTS.get("scripts/programas_manifest.json");
+        if (obj) {
+            const data = await obj.json();
+            const etag = `"${data.commit || 'v1'}"`;
+            if (request.headers.get("If-None-Match") === etag) {
+                return new Response(null, { status: 304, headers: { "ETag": etag } });
+            }
+            return new Response(JSON.stringify(data), {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Cache-Control": "public, max-age=30, stale-while-revalidate=60",
+                    "ETag": etag,
+                    "Access-Control-Allow-Origin": "*"
+                }
+            });
+        }
+    }
+    return jsonResponse({ ok: false, error: "Manifest not cached yet in Cloudflare Edge" }, 404);
+}
+
+async function handleProgramasInstallScript(scriptPath, env) {
+    // scriptPath = e.g. "01-Editores_e_IA/instalar-vscode.sh"
+    if (!scriptPath || scriptPath.includes("..") || !scriptPath.endsWith(".sh")) {
+        return new Response("Invalid path", { status: 400 });
+    }
+    if (env.VAULTS) {
+        const r2Key = `scripts/Programas/${scriptPath}`;
+        const obj = await env.VAULTS.get(r2Key);
+        if (obj) {
+            const content = await obj.text();
+            return new Response(content, {
+                headers: {
+                    "Content-Type": "text/plain; charset=utf-8",
+                    "Cache-Control": "public, max-age=60"
+                }
+            });
+        }
+    }
+    return new Response(`# Script no disponible: ${scriptPath}\nexit 1\n`, { status: 404, headers: { "Content-Type": "text/plain" } });
+}
+
+// ==============================================================================
+// APK PROXY (Termux:X11 y Termux:Widget servidos desde Cloudflare R2)
+// ==============================================================================
+
+async function handleApkProxy(apkName, env) {
+    const APK_URLS = {
+        "termux-x11": "https://github.com/termux/termux-x11/releases/download/nightly/termux-x11-universal-debug.apk",
+        "termux-widget": "https://github.com/termux/termux-widget/releases/download/v0.15.0/termux-widget-app_v0.15.0%2Bgithub.debug.apk"
+    };
+
+    const r2Key = `apks/${apkName}.apk`;
+
+    // Intentar servir desde caché R2 primero
+    if (env.VAULTS) {
+        const cached = await env.VAULTS.get(r2Key);
+        if (cached) {
+            return new Response(cached.body, {
+                headers: {
+                    "Content-Type": "application/vnd.android.package-archive",
+                    "Content-Disposition": `attachment; filename="${apkName}.apk"`,
+                    "Cache-Control": "public, max-age=86400",
+                    "X-Source": "cloudflare-r2-cache"
+                }
+            });
+        }
+    }
+
+    // No en caché: hacer proxy desde GitHub UNA sola vez y guardar en R2
+    const apkUrl = APK_URLS[apkName];
+    if (!apkUrl) return jsonResponse({ error: "Unknown APK" }, 400);
+
+    try {
+        const ghResp = await fetch(apkUrl, {
+            redirect: "follow",
+            headers: { "User-Agent": "Code-Stack-Edge-Gateway" }
+        });
+        if (ghResp.ok && env.VAULTS) {
+            const body = await ghResp.arrayBuffer();
+            await env.VAULTS.put(r2Key, body, {
+                customMetadata: { source: apkUrl, cached_at: new Date().toISOString() }
+            });
+            return new Response(body, {
+                headers: {
+                    "Content-Type": "application/vnd.android.package-archive",
+                    "Content-Disposition": `attachment; filename="${apkName}.apk"`,
+                    "Cache-Control": "public, max-age=86400",
+                    "X-Source": "github-proxy-then-cached"
+                }
+            });
+        }
+        return jsonResponse({ error: "Failed to fetch APK from upstream" }, 502);
+    } catch (e) {
+        return jsonResponse({ error: e.message }, 500);
+    }
+}
+
+// ==============================================================================
+// BOOTSTRAP DE INSTALACIÓN: 100% CLOUDFLARE EDGE (SIN GITHUB DESDE DISPOSITIVOS)
+// ==============================================================================
+
 function handleInstallBootstrap(request, env) {
     const origin = new URL(request.url).origin;
-    const defaultRepo = env.DEFAULT_REPO || "github.com/miguelguerra200022-sudo/termux-vscode-x11";
 
     const bootstrapScript = `#!/data/data/com.termux/files/usr/bin/bash
+# ============================================================
+# Code Stack Sh - Cargador Bootstrap Cloudflare Edge Only
+# Todos los recursos vienen de: ${origin}
+# Los dispositivos NUNCA tocan GitHub directamente.
+# ============================================================
 set -e
 export DEBIAN_FRONTEND=noninteractive
 export GATEWAY_URL="${origin}"
 
-# 1. Configurar URL del Gateway Edge de forma permanente
-mkdir -p "$HOME/.config/termux-vscode"
-echo -n "${origin}" > "$HOME/.config/termux-vscode/gateway_url"
-chmod 600 "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null || true
-
-# 2. Descargar e iniciar el instalador oficial con terminal interactiva
-TMP_INSTALL="\${TMPDIR:-/data/data/com.termux/files/usr/tmp}/install_$$.sh"
-trap 'rm -f "$TMP_INSTALL"' EXIT
-
-if command -v curl >/dev/null 2>&1; then
-    curl -sL "https://raw.githubusercontent.com/${defaultRepo.replace('github.com/', '')}/main/install.sh" -o "$TMP_INSTALL"
-elif command -v wget >/dev/null 2>&1; then
-    wget -qO "$TMP_INSTALL" "https://raw.githubusercontent.com/${defaultRepo.replace('github.com/', '')}/main/install.sh"
+# 0. Reconectar stdin al teclado físico (evita que pipe | bash bloquee reads)
+if [ -e /dev/tty ]; then
+    exec < /dev/tty
 fi
 
-if [ -f "$TMP_INSTALL" ]; then
-    if [ -e /dev/tty ]; then
-        bash "$TMP_INSTALL" "$@" < /dev/tty
-    else
-        bash "$TMP_INSTALL" "$@"
-    fi
+# 1. Guardar la URL del Gateway de forma permanente
+mkdir -p "\$HOME/.config/termux-vscode"
+echo -n "${origin}" > "\$HOME/.config/termux-vscode/gateway_url"
+chmod 600 "\$HOME/.config/termux-vscode/gateway_url" 2>/dev/null || true
+
+echo ""
+echo "  🚀 Code Stack Sh — Cargador Bootstrap (Cloudflare Edge)"
+echo "  🌐 Gateway: ${origin}"
+echo ""
+
+# 2. Asegurar curl disponible ANTES de descargar el instalador
+if ! command -v curl >/dev/null 2>&1; then
+    echo "[*] Instalando curl desde repositorios de Termux..."
+    pkg install -y curl 2>/dev/null || apt-get install -y curl 2>/dev/null || true
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+    echo "[!] Error: curl no disponible. Instala Termux actualizado e inténtalo de nuevo."
+    exit 1
+fi
+
+# 3. Descargar install.sh directamente desde Cloudflare Edge (NUNCA desde GitHub)
+TMP_INSTALL="\${TMPDIR:-/data/data/com.termux/files/usr/tmp}/install_\$\$.sh"
+trap 'rm -f "\$TMP_INSTALL"' EXIT
+
+echo "[*] Descargando instalador desde Cloudflare Edge..."
+HTTP_CODE=\$(curl -sL --connect-timeout 15 --retry 3 --retry-delay 2 \\
+    -w "%{http_code}" -o "\$TMP_INSTALL" \\
+    "${origin}/install.sh" 2>/dev/null || echo "000")
+
+if [ "\$HTTP_CODE" != "200" ] || [ ! -s "\$TMP_INSTALL" ]; then
+    echo "[!] Error: No se pudo descargar el instalador (HTTP \$HTTP_CODE)."
+    echo "    Verifica tu conexión a internet e intenta de nuevo."
+    exit 1
+fi
+
+echo "[✓] Instalador descargado exitosamente desde Cloudflare Edge."
+echo ""
+
+# 4. Ejecutar el instalador con TTY conectado
+if [ -e /dev/tty ]; then
+    bash "\$TMP_INSTALL" "\$@" < /dev/tty
+else
+    bash "\$TMP_INSTALL" "\$@"
 fi
 `;
 

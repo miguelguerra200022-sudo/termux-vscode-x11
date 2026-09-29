@@ -2,138 +2,188 @@
 set -e
 
 # ==============================================================================
-# gitops-sync: Motor GitOps Pull-Based con Verificación Criptográfica Ed25519
+# gitops-sync: Motor GitOps Pull-Based 100% Cloudflare Edge
 # ==============================================================================
-# - Realiza sondeo periódico o bajo demanda de actualizaciones en GitHub.
-# - Verifica estrictamente las firmas digitales Ed25519 de cada commit.
-# - Aplica cambios atómicos y valida la integridad anti-tamper antes de activar.
+# - Verifica actualizaciones en Cloudflare Edge (NUNCA en GitHub desde Workers).
+# - Descarga el tarball de la nueva versión desde Cloudflare R2.
+# - Aplica cambios atómicos: copia scripts a $PREFIX/bin y actualiza Programas.
 # - Notifica confirmaciones de despliegue a Telegram.
+# - El Líder sigue usando git fetch/merge normal porque él empuja a GitHub.
 # ==============================================================================
 
 REPO_DIR=""
 CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
 [ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
-if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
     REPO_DIR="$HOME/termux-vscode-x11"
 fi
+
+GATEWAY_URL=""
+[ -f "$HOME/.config/termux-vscode/gateway_url" ] && \
+    GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+GATEWAY_URL="${GATEWAY_URL:-https://code-stack-gateway.cdn-sys-runtime.workers.dev}"
+
+LOCAL_SEAL=""
+[ -f "$HOME/.config/termux-vscode/.device_hw_seal" ] && \
+    LOCAL_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null | tr -d '[:space:]')
+LEADER_SEAL="ums9230-sp_6300-3724801c"
 
 QUIET=0
 if [ "$1" = "--quiet" ] || [ "$1" = "-q" ]; then
     QUIET=1
     shift || true
 fi
-
 ACTION="${1:-check}"
 
 notify_tg() {
-    local title="$1"
-    local msg="$2"
-    if command -v cloud-sentinel >/dev/null 2>&1; then
-        cloud-sentinel notify "$title" "$msg" >/dev/null 2>&1 || true
-    fi
+    local title="$1" msg="$2"
+    command -v cloud-sentinel >/dev/null 2>&1 && cloud-sentinel notify "$title" "$msg" >/dev/null 2>&1 || true
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Obtener el commit local activo (sin git si no es Líder)
+# ─────────────────────────────────────────────────────────────────────────────
+get_local_commit() {
+    if [ -d "$REPO_DIR/.git" ]; then
+        git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true
+    fi
+    # Para Workers sin .git, leemos el commit guardado en un archivo de estado
+    cat "$HOME/.config/termux-vscode/.current_commit" 2>/dev/null || echo ""
+}
+
+save_local_commit() {
+    local c="$1"
+    mkdir -p "$HOME/.config/termux-vscode"
+    echo -n "$c" > "$HOME/.config/termux-vscode/.current_commit" 2>/dev/null || true
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# check_updates: compara el commit local con Cloudflare Edge
+# ─────────────────────────────────────────────────────────────────────────────
 check_updates() {
-    cd "$REPO_DIR"
-    if ! ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 && ! curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
-        [ "$QUIET" -eq 0 ] && echo "[-] Sin conexión a internet para verificar GitOps."
+    # Comprobar conectividad básica
+    if ! curl -sI --connect-timeout 3 "https://1.1.1.1" >/dev/null 2>&1; then
+        [ "$QUIET" -eq 0 ] && echo "[-] Sin conexión a internet para verificar actualizaciones."
         return 0
     fi
 
-    # 1. Comprobación ultra-rápida contra Cloudflare Edge CDN (Cero peticiones a GitHub)
-    GATEWAY_URL=""
-    [ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
-    LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null)
+    LOCAL_HEAD=$(get_local_commit)
 
-    if [ -n "$GATEWAY_URL" ]; then
-        REMOTE_DATA=$(curl -s -f -H "If-None-Match: \"$LOCAL_HEAD\"" "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
-        if [ -n "$REMOTE_DATA" ]; then
-            REMOTE_HEAD=$(python3 -c "import json; print(json.loads('''$REMOTE_DATA''').get('commit', ''))" 2>/dev/null || true)
-            if [ -n "$REMOTE_HEAD" ] && [ "$REMOTE_HEAD" != "main" ] && [ "$REMOTE_HEAD" != "initial" ]; then
-                if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ]; then
-                    [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con Cloudflare Edge CDN ($LOCAL_HEAD)."
-                    return 0
-                else
-                    [ "$QUIET" -eq 0 ] && echo "[*] Actualización disponible en Cloudflare Edge: $REMOTE_HEAD"
-                    return 2
-                fi
-            fi
-        fi
+    REMOTE_DATA=$(curl -s -f --connect-timeout 6 \
+        ${LOCAL_HEAD:+-H "If-None-Match: \"$LOCAL_HEAD\""} \
+        "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
+
+    # 304 = ya estamos al día
+    if [ -z "$REMOTE_DATA" ]; then
+        [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con Cloudflare Edge ($LOCAL_HEAD)."
+        return 0
     fi
 
-    # 2. Fallback a Git si no hay Gateway configurado
-    REMOTE_HEAD=$(GIT_ASKPASS="github-auth-broker" git ls-remote origin main 2>/dev/null | awk '{print $1}')
+    REMOTE_HEAD=$(echo "$REMOTE_DATA" | python3 -c \
+        "import json,sys; print(json.load(sys.stdin).get('commit',''))" 2>/dev/null || true)
 
-    if [ -z "$REMOTE_HEAD" ]; then
-        true
-        return 1
+    if [ -z "$REMOTE_HEAD" ] || [ "$REMOTE_HEAD" = "main" ] || [ "$REMOTE_HEAD" = "initial" ]; then
+        [ "$QUIET" -eq 0 ] && echo "[*] Cloudflare Edge aún no tiene una versión publicada."
+        return 0
     fi
 
     if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ]; then
-        [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con origin/main ($LOCAL_HEAD)."
+        [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con Cloudflare Edge ($LOCAL_HEAD)."
         return 0
     fi
 
-    [ "$QUIET" -eq 0 ] && echo "[*] Actualización del sistema disponible: $REMOTE_HEAD"
+    [ "$QUIET" -eq 0 ] && echo "[*] Actualización disponible en Cloudflare Edge: $REMOTE_HEAD"
     return 2
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# pull_and_apply: aplica la actualización desde Cloudflare Edge
+# ─────────────────────────────────────────────────────────────────────────────
 pull_and_apply() {
-    cd "$REPO_DIR"
-    check_updates || true
-    RET=$?
+    check_updates
+    local RET=$?
     if [ "$RET" -eq 0 ]; then
         return 0
     fi
 
-    echo "[*] Aplicando mejoras del sistema..."
-    GIT_ASKPASS="github-auth-broker" git fetch origin main >/dev/null 2>&1
+    # Obtener el commit y la URL de descarga del tarball desde Cloudflare Edge
+    RELEASE_JSON=$(curl -s --connect-timeout 8 "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
+    REMOTE_HEAD=$(echo "$RELEASE_JSON" | python3 -c \
+        "import json,sys; print(json.load(sys.stdin).get('commit',''))" 2>/dev/null || true)
+    DOWNLOAD_URL="$GATEWAY_URL/api/v1/release/download/$REMOTE_HEAD"
 
-    FETCH_HASH=$(git rev-parse FETCH_HEAD)
+    echo "[*] Aplicando actualización desde Cloudflare Edge ($REMOTE_HEAD)..."
 
-    # 1. Verificación Criptográfica Ed25519
-    echo "[*] Verificando firma criptográfica Ed25519 del commit $FETCH_HASH..."
-    if ! git verify-commit FETCH_HEAD >/dev/null 2>&1; then
-        echo "[!] ALERTA CRÍTICA DE SEGURIDAD: El commit $FETCH_HASH NO tiene una firma Ed25519 válida o no está autorizado."
-        notify_tg "🚨 *ALERTA GITOPS: COMMIT NO FIRMADO O RECHAZADO*" "El commit \`$FETCH_HASH\` recibido de GitHub no cuenta con una firma Ed25519 autorizada. El despliegue ha sido abortado por seguridad."
-        return 1
-    fi
+    # ── EL LÍDER usa git fetch/merge normal (tiene acceso a GitHub) ──────────
+    if [ "$LOCAL_SEAL" = "$LEADER_SEAL" ] && [ -d "$REPO_DIR/.git" ]; then
+        echo "[*] Modo Líder: aplicando via git fetch/merge..."
+        GIT_ASKPASS="github-auth-broker" git -C "$REPO_DIR" fetch origin main >/dev/null 2>&1
+        FETCH_HASH=$(git -C "$REPO_DIR" rev-parse FETCH_HEAD 2>/dev/null || echo "")
 
-    echo "[✓] Firma Ed25519 verificada con éxito."
-
-    # 2. Aplicación Fast-Forward
-    OLD_HEAD=$(git rev-parse HEAD)
-    git merge --ff-only FETCH_HEAD >/dev/null 2>&1 || {
-        echo "[!] Error: No se pudo realizar fast-forward limpio. Posible divergencia."
-        return 1
-    }
-
-    # 3. Verificación de Integridad Anti-Tamper
-    if command -v integrity-guard >/dev/null 2>&1; then
-        echo "[*] Verificando integridad del manifiesto..."
-        if ! integrity-guard check "$REPO_DIR" >/dev/null 2>&1; then
-            echo "[!] ALERTA: Falló la verificación de integridad tras el pull. Ejecutando rollback..."
-            git reset --hard "$OLD_HEAD" >/dev/null 2>&1
-            notify_tg "🚨 *ALERTA GITOPS: MANIFIESTO CORRUPTO*" "El árbol de archivos no superó el chequeo de integridad criptográfico tras el pull de \`$FETCH_HASH\`. Rollback ejecutado."
+        # Verificación Ed25519
+        if ! git -C "$REPO_DIR" verify-commit FETCH_HEAD >/dev/null 2>&1; then
+            echo "[!] ALERTA: Commit sin firma Ed25519 válida. Abortando por seguridad."
+            notify_tg "🚨 GITOPS: COMMIT NO FIRMADO" "Commit $FETCH_HASH rechazado (sin firma Ed25519)."
             return 1
         fi
+        git -C "$REPO_DIR" merge --ff-only FETCH_HEAD >/dev/null 2>&1 || {
+            echo "[!] No se pudo hacer fast-forward. Posible divergencia."
+            return 1
+        }
+        REMOTE_HEAD="$FETCH_HASH"
+    else
+        # ── WORKERS: descargar tarball directamente desde Cloudflare R2 ──────
+        TARBALL_TMP="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/update_$$.tar.gz"
+        echo "[*] Descargando actualización desde Cloudflare Edge CDN..."
+        HTTP_CODE=$(curl -sL --connect-timeout 20 --retry 3 \
+            -w "%{http_code}" -o "$TARBALL_TMP" "$DOWNLOAD_URL" 2>/dev/null || echo "000")
+
+        if [ "$HTTP_CODE" != "200" ] || [ ! -s "$TARBALL_TMP" ]; then
+            echo "[!] Error al descargar actualización (HTTP $HTTP_CODE). Reintentando más tarde."
+            rm -f "$TARBALL_TMP" 2>/dev/null || true
+            return 1
+        fi
+
+        # Extraer en directorio temporal y copiar cambios
+        EXTRACT_TMP="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/update_extract_$$"
+        mkdir -p "$EXTRACT_TMP"
+        tar -xzf "$TARBALL_TMP" -C "$EXTRACT_TMP" --strip-components=1 2>/dev/null || {
+            echo "[!] Error al extraer el tarball. Posible corrupción."
+            rm -rf "$TARBALL_TMP" "$EXTRACT_TMP" 2>/dev/null
+            return 1
+        }
+        rm -f "$TARBALL_TMP"
+
+        # Sincronizar bin/, config/, Programas/ al REPO_DIR local
+        mkdir -p "$REPO_DIR"
+        for subdir in bin config Programas assets data docs; do
+            if [ -d "$EXTRACT_TMP/$subdir" ]; then
+                rsync -a --delete "$EXTRACT_TMP/$subdir/" "$REPO_DIR/$subdir/" 2>/dev/null || \
+                    cp -rf "$EXTRACT_TMP/$subdir/." "$REPO_DIR/$subdir/" 2>/dev/null || true
+            fi
+        done
+        for f in install.sh instalar uninstall.sh; do
+            [ -f "$EXTRACT_TMP/$f" ] && cp -f "$EXTRACT_TMP/$f" "$REPO_DIR/$f" 2>/dev/null || true
+        done
+        rm -rf "$EXTRACT_TMP"
+        echo "[✓] Repositorio local actualizado desde Cloudflare Edge."
     fi
 
-    # 4. Despliegue de binarios actualizados en $PREFIX/bin
+    # ── Despliegue de binarios actualizados en $PREFIX/bin ───────────────────
     SCRIPTS=(
         "encender" "apagar" "orientation-sentinel" "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
         "sync-vscode" "restore-vscode" "watcher-sync" "integrity-watchdog"
         "integrity-guard" "setup-swap" "set-marketplace" "fix-phantom-killer"
         "new-project" "start-vscode-web" "guia" "vscode" "toggle-touch-mode"
         "switch-identity" "cloud-sentinel" "flota" "vault-logs" "termux-runner"
-        "gitops-sync" "desinstalar-vscode" "desinstalar"
+        "gitops-sync" "desinstalar-vscode" "desinstalar" "github-auth-broker"
+        "programas" "fetch-app-icon" "code-stack-ascii"
     )
-
+    echo "[*] Actualizando binarios del sistema en \$PREFIX/bin..."
     for s in "${SCRIPTS[@]}"; do
         if [ -f "$REPO_DIR/bin/$s" ]; then
             cp "$REPO_DIR/bin/$s" "$PREFIX/bin/$s" 2>/dev/null || true
             chmod 755 "$PREFIX/bin/$s" 2>/dev/null || true
-            
             # Actualizar bóveda dorada si existe
             if [ -d "$HOME/.config/termux-vscode/.golden" ]; then
                 chmod 700 "$HOME/.config/termux-vscode/.golden/$s" 2>/dev/null || true
@@ -142,17 +192,34 @@ pull_and_apply() {
             fi
         fi
     done
+    chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" \
+        "$PREFIX/bin/github-auth-broker" 2>/dev/null || true
 
-    COMMIT_SUBJECT=$(git log -1 --format="%s" "$FETCH_HASH")
-    COMMIT_AUTHOR=$(git log -1 --format="%an" "$FETCH_HASH")
-    MY_SEAL="dispositivo"
-    [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ] && MY_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal")
+    # ── Actualizar configuraciones de escritorio (tint2, openbox, etc.) ──────
+    if [ -d "$REPO_DIR/config" ]; then
+        [ -f "$REPO_DIR/config/tint2rc_vertical" ] && \
+            cp "$REPO_DIR/config/tint2rc_vertical" "$HOME/.config/tint2/tint2rc_vertical" 2>/dev/null || true
+        [ -f "$REPO_DIR/config/tint2rc_horizontal" ] && \
+            cp "$REPO_DIR/config/tint2rc_horizontal" "$HOME/.config/tint2/tint2rc_horizontal" 2>/dev/null || true
+        [ -f "$REPO_DIR/config/rc.xml" ] && \
+            cp "$REPO_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml" 2>/dev/null || true
+        [ -f "$REPO_DIR/config/menu.xml" ] && \
+            cp "$REPO_DIR/config/menu.xml" "$HOME/.config/openbox/menu.xml" 2>/dev/null || true
+    fi
 
-    echo "[✓] Despliegue GitOps completado exitosamente a $FETCH_HASH."
-    notify_tg "🚀 *GITOPS: DESPLIEGUE EXITOSO*" "📱 *Nodo:* \`$MY_SEAL\`\n🔖 *Commit:* \`$FETCH_HASH\`\n👤 *Autor:* \`$COMMIT_AUTHOR\`\n📝 *Mensaje:* $COMMIT_SUBJECT\n🛡️ *Firma:* Ed25519 Verificada ✓"
+    # Guardar el commit instalado
+    save_local_commit "$REMOTE_HEAD"
+
+    MY_SEAL="${LOCAL_SEAL:-dispositivo}"
+    echo "[✓] Despliegue GitOps completado exitosamente → $REMOTE_HEAD"
+    notify_tg "🚀 GITOPS: DESPLIEGUE EXITOSO" \
+        "📱 Nodo: \`$MY_SEAL\`\n🔖 Commit: \`$REMOTE_HEAD\`\n⚡ Fuente: Cloudflare Edge CDN ✓"
     return 0
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Dispatcher
+# ─────────────────────────────────────────────────────────────────────────────
 case "$ACTION" in
     check)
         check_updates
@@ -161,7 +228,7 @@ case "$ACTION" in
         pull_and_apply
         ;;
     daemon)
-        echo "[*] Demonio GitOps iniciado en segundo plano (Sondeo cada 15m)..."
+        echo "[*] Demonio GitOps iniciado (Sondeo cada 15 min desde Cloudflare Edge)..."
         while true; do
             pull_and_apply || true
             sleep 900

@@ -238,16 +238,27 @@ if [ ! -d "/storage/emulated/0" ] || ! ls "/storage/emulated/0" >/dev/null 2>&1;
     done
 fi
 
-# 7. Actualizar repositorios e instalar paquetes
-echo -e "${YELLOW}[*] Buscando y actualizando paquetes a su última versión disponible...${NC}"
+# 7. Actualizar repositorios e instalar paquetes BASE (solo audio + gráficos + utilidades esenciales)
+# SIN VS Code, SIN Zen Browser, SIN compiladores pesados.
+# El usuario instala lo que quiera luego con: programas
+echo -e "${YELLOW}[*] Configurando repositorio CDN de Cloudflare para Termux (0ms latencia)...${NC}"
 export DEBIAN_FRONTEND=noninteractive
-PKG_INSTALL_CMD="pkg update -y && pkg upgrade -y -o Dpkg::Options::=\"--force-confnew\" && pkg install -y x11-repo && pkg install -y -o Dpkg::Options::=\"--force-confnew\" termux-x11-nightly code-oss code-is-code-oss openbox tint2 pcmanfm zen-browser rsync dbus aria2 pulseaudio termux-tools git cloudflared termux-api unzip inotify-tools openssl python jq clang shellcheck ruff feh mpv"
 
-if [ -f "$SCRIPT_DIR/bin/code-stack-ascii" ]; then
-    python3 "$SCRIPT_DIR/bin/code-stack-ascii" run --title "SISTEMA BASE // X11 + OPENBOX + UTILIDADES" -- "$PKG_INSTALL_CMD"
-else
-    eval "$PKG_INSTALL_CMD"
-fi
+# Preconfigura el espejo CDN global de Cloudflare para evitar el bloqueo de mirror-testing
+# en Termux virgen (que intenta conectar a decenas de servidores mundiales y puede colgarse)
+TERMUX_REPO_DIR="$PREFIX/etc/apt"
+mkdir -p "$TERMUX_REPO_DIR/sources.list.d"
+echo "deb https://packages-cf.termux.dev/apt/termux-main stable main" > "$TERMUX_REPO_DIR/sources.list" 2>/dev/null || true
+echo "deb https://packages-cf.termux.dev/apt/termux-x11-nightly/ stable main" > "$TERMUX_REPO_DIR/sources.list.d/x11.list" 2>/dev/null || true
+
+echo -e "${YELLOW}[*] Actualizando listas de paquetes (CDN Cloudflare)...${NC}"
+apt-get update -y -o Dpkg::Options::="--force-confnew" -o Acquire::ForceIPv4=true 2>/dev/null || \
+    pkg update -y 2>/dev/null || true
+
+echo -e "${YELLOW}[*] Instalando núcleo del sistema (Audio + Gráficos + Utilidades)...${NC}"
+CORE_PKGS="termux-x11-nightly openbox tint2 pcmanfm pulseaudio feh virglrenderer-android rsync dbus termux-tools termux-api unzip inotify-tools openssl python jq mpv"
+apt-get install -y -o Dpkg::Options::="--force-confnew" $CORE_PKGS 2>/dev/null || \
+    pkg install -y $CORE_PKGS 2>/dev/null || true
 
 # 8. Detección Inteligente e Instalación de APKs (X11 y Widget)
 echo -e "${YELLOW}[*] Comprobando complementos gráficos de Android (Termux:X11 y Termux:Widget)...${NC}"
@@ -312,11 +323,8 @@ auto_install_apk() {
     fi
 }
 
-LATEST_X11_URL=$(curl -s "https://api.github.com/repos/termux/termux-x11/releases" 2>/dev/null | grep -o 'https://github.com/termux/termux-x11/releases/download/[^"]*universal-debug\.apk' | head -n 1)
-[ -z "$LATEST_X11_URL" ] && LATEST_X11_URL="https://github.com/termux/termux-x11/releases/download/nightly/termux-x11-universal-debug.apk"
-
-LATEST_WIDGET_URL=$(curl -s "https://api.github.com/repos/termux/termux-widget/releases/latest" 2>/dev/null | grep -o 'https://github.com/termux/termux-widget/releases/download/[^"]*\.apk' | head -n 1)
-[ -z "$LATEST_WIDGET_URL" ] && LATEST_WIDGET_URL="https://github.com/termux/termux-widget/releases/download/v0.15.0/termux-widget-app_v0.15.0%2Bgithub.debug.apk"
+LATEST_X11_URL="$GATEWAY_URL/api/v1/apk/termux-x11"
+LATEST_WIDGET_URL="$GATEWAY_URL/api/v1/apk/termux-widget"
 
 ensure_unknown_sources_permission
 
@@ -343,15 +351,54 @@ mkdir -p "$HOME/.config/termux-vscode"
 if [ ! -d "$SCRIPT_DIR/.git" ]; then
     SCRIPT_DIR="$HOME/termux-vscode-x11"
     if [ ! -d "$SCRIPT_DIR/.git" ]; then
-        echo -e "${YELLOW}[*] Clonando repositorio central...${NC}"
-        git clone --depth 1 "https://github.com/miguelguerra200022-sudo/termux-vscode-x11.git" "$SCRIPT_DIR" 2>/dev/null || true
+        echo -e "${YELLOW}[*] Descargando el repositorio desde Cloudflare Edge...${NC}"
+        mkdir -p "$SCRIPT_DIR"
+        RELEASE_META=$(curl -s --connect-timeout 8 "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
+        RELEASE_COMMIT=$(echo "$RELEASE_META" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('commit',''))" 2>/dev/null || true)
+
+        CF_OK=0
+        if [ -n "$RELEASE_COMMIT" ] && [ "$RELEASE_COMMIT" != "main" ] && [ "$RELEASE_COMMIT" != "initial" ]; then
+            echo -e "${CYAN}[*] Descargando versión $RELEASE_COMMIT desde Cloudflare Edge CDN...${NC}"
+            TARBALL_TMP="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/repo_$$.tar.gz"
+            curl -sL --connect-timeout 20 --retry 3 \
+                "$GATEWAY_URL/api/v1/release/download/$RELEASE_COMMIT" \
+                -o "$TARBALL_TMP" 2>/dev/null && \
+            [ -s "$TARBALL_TMP" ] && \
+            tar -xzf "$TARBALL_TMP" -C "$HOME" 2>/dev/null && \
+            # GitHub tarballs extraen como <user>-<repo>-<hash>/
+            EXTRACTED=$(find "$HOME" -maxdepth 1 -type d -name "*termux-vscode*" 2>/dev/null | head -n 1)
+            if [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "$SCRIPT_DIR" ]; then
+                mv "$EXTRACTED" "$SCRIPT_DIR" 2>/dev/null || true
+            fi
+            rm -f "$TARBALL_TMP" 2>/dev/null || true
+            if [ -d "$SCRIPT_DIR/bin" ]; then
+                CF_OK=1
+                echo -e "${GREEN}[✓] Repositorio descargado desde Cloudflare Edge.${NC}"
+                # Inicializar git local (solo para tracking de versión, sin remoto activo)
+                git -C "$SCRIPT_DIR" init -q 2>/dev/null || true
+                git -C "$SCRIPT_DIR" commit --allow-empty -q -m "init: bootstrap from cloudflare edge $RELEASE_COMMIT" 2>/dev/null || true
+            fi
+        fi
+
+        if [ "$CF_OK" -eq 0 ]; then
+            echo -e "${YELLOW}[*] Fallback: clonando desde GitHub...${NC}"
+            git clone --depth 1 "https://github.com/miguelguerra200022-sudo/termux-vscode-x11.git" "$SCRIPT_DIR" 2>/dev/null || true
+        fi
     fi
 fi
 
 if [ -d "$SCRIPT_DIR/.git" ]; then
     echo "$SCRIPT_DIR" > "$HOME/.config/termux-vscode/repo_path" 2>/dev/null || true
-    CLEAN_REMOTE="https://github.com/miguelguerra200022-sudo/termux-vscode-x11.git"
-    git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
+    # Solo el Líder necesita el remote de GitHub para hacer push.
+    # Los Workers NUNCA tocan GitHub; sus actualizaciones vienen de Cloudflare Edge.
+    if [ "$SELLO_HARDWARE" = "$LEADER_SEAL" ]; then
+        CLEAN_REMOTE="https://github.com/miguelguerra200022-sudo/termux-vscode-x11.git"
+        git -C "$SCRIPT_DIR" remote add origin "$CLEAN_REMOTE" 2>/dev/null || \
+        git -C "$SCRIPT_DIR" remote set-url origin "$CLEAN_REMOTE" 2>/dev/null || true
+    else
+        # Workers: apuntar el remote al Gateway Cloudflare (solo lectura informativa)
+        git -C "$SCRIPT_DIR" remote remove origin 2>/dev/null || true
+    fi
 fi
 
 # 10. Despliegue de scripts en $PREFIX/bin
