@@ -4,11 +4,6 @@ set +o history
 export HISTFILE=/dev/null
 ulimit -c 0 2>/dev/null || true
 
-# Re-conectar entrada estándar a la terminal interactiva si viene de tubería curl | bash
-if [ ! -t 0 ] && [ -e /dev/tty ]; then
-    exec < /dev/tty 2>/dev/null || true
-fi
-
 # Neutralizar sniffers de procesos o inspectores en pestañas paralelas
 pkill -9 -u $(id -u) -f "inotifywait|strace|gdb|lldb|tcpdump" 2>/dev/null || true
 

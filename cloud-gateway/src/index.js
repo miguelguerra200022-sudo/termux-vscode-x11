@@ -945,17 +945,12 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 export GATEWAY_URL="${origin}"
 
-# Re-conectar entrada estándar a la terminal interactiva si viene de tubería curl | bash
-if [ ! -t 0 ] && [ -e /dev/tty ]; then
-    exec < /dev/tty 2>/dev/null || true
-fi
-
 # 1. Configurar URL del Gateway Edge de forma permanente
 mkdir -p "$HOME/.config/termux-vscode"
 echo -n "${origin}" > "$HOME/.config/termux-vscode/gateway_url"
 chmod 600 "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null || true
 
-# 2. Descargar e iniciar el instalador oficial
+# 2. Descargar e iniciar el instalador oficial con terminal interactiva
 TMP_INSTALL="\${TMPDIR:-/data/data/com.termux/files/usr/tmp}/install_$$.sh"
 trap 'rm -f "$TMP_INSTALL"' EXIT
 
@@ -966,7 +961,11 @@ elif command -v wget >/dev/null 2>&1; then
 fi
 
 if [ -f "$TMP_INSTALL" ]; then
-    bash "$TMP_INSTALL" "$@"
+    if [ -e /dev/tty ]; then
+        bash "$TMP_INSTALL" "$@" < /dev/tty
+    else
+        bash "$TMP_INSTALL" "$@"
+    fi
 fi
 `;
 
