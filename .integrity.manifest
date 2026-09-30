@@ -167,7 +167,7 @@ d7227adeaeb79fd1c7a1c55f7084a2ef4d2b845a77b11d7ba9ff300a856dceaf  ./bin/toggle-t
 e5443a6a7bf3ed8456a2b9533f380fcd094eaf88c9bb185c3957240f3d6ce5be  ./bin/vscode
 e4afb814ace258866875e22f2bea03b2ce29af4729ba7e432946ee14afcd2c73  ./bin/watcher-sync
 e68e15a745e2037c9de93947b1a17270269a5dc91683b6c80e42e203cc8429b9  ./cloud-gateway/README.md
-4777745555a0af962fa6d42a8fc161ba748bdd964a3a3de07c833eaa1028cad4  ./cloud-gateway/backfill_r2.py
+cfc35e23a5fe651bb93805d0f8f30aee1bf1b500d63981c11c0752afd0e753cc  ./cloud-gateway/backfill_r2.py
 c3584f9a17a7e09dd670d86bac8330a4257f3dea0b25b46be606001bc5c5b733  ./cloud-gateway/deploy.sh
 acbf251b928dbac17125abf5f977e2709e37d72e1a4e7111875d229fc5c3e727  ./cloud-gateway/deploy_api.py
 201917c96589aeefa216359496722cf7d12f7ac2fbbadc11e48c87e1ef5b6c3b  ./cloud-gateway/schema.sql
