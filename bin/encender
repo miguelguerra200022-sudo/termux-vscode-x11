@@ -49,6 +49,52 @@ def is_current_device_leader():
                 pass
     return seal == LEADER_SEAL
 
+def check_edge_updates():
+    """Verificación ultrarrápida contra Cloudflare Edge para actualizar sin reinstalar."""
+    try:
+        gitops = shutil.which("gitops-sync")
+        if not gitops:
+            return
+        import urllib.request
+        gateway_url = "https://code-stack-gateway.cdn-sys-runtime.workers.dev"
+        gw_file = os.path.expanduser("~/.config/termux-vscode/gateway_url")
+        if os.path.isfile(gw_file):
+            with open(gw_file) as f:
+                u = f.read().strip()
+                if u: gateway_url = u
+        
+        current_commit = ""
+        cc_file = os.path.expanduser("~/.config/termux-vscode/.current_commit")
+        if os.path.isfile(cc_file):
+            with open(cc_file) as f:
+                current_commit = f.read().strip()
+        if not current_commit:
+            repo_file = os.path.expanduser("~/.config/termux-vscode/repo_path")
+            repo_dir = ""
+            if os.path.isfile(repo_file):
+                with open(repo_file) as f: repo_dir = f.read().strip()
+            if not repo_dir or not os.path.isdir(os.path.join(repo_dir, ".git")):
+                repo_dir = "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+            if os.path.isdir(os.path.join(repo_dir, ".git")):
+                try:
+                    current_commit = subprocess.check_output(["git", "-C", repo_dir, "rev-parse", "HEAD"], stderr=subprocess.DEVNULL).decode().strip()
+                except Exception:
+                    pass
+        
+        req = urllib.request.Request(f"{gateway_url}/api/v1/release/latest")
+        if current_commit:
+            req.add_header("If-None-Match", f'"{current_commit}"')
+        
+        with urllib.request.urlopen(req, timeout=0.8) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode())
+                remote_commit = data.get("commit", "")
+                if remote_commit and remote_commit not in [current_commit, "main", "initial"]:
+                    print(f"\033[1;36m[*] Actualización detectada en Cloudflare Edge ({remote_commit[:7]}). Sincronizando...\033[0m")
+                    subprocess.run([gitops, "pull", "--quiet"], timeout=20)
+    except Exception:
+        pass
+
 def get_term_cols():
     """Obtiene el ancho actual de la pantalla del terminal."""
     try:
@@ -398,6 +444,7 @@ def edit_description_dialog(target_path, item_name):
 
 def main():
     ensure_controlling_tty()
+    check_edge_updates()
     try:
         broker = shutil.which("github-auth-broker")
         if broker:

@@ -1,0 +1,239 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# vault-manager: Motor Universal de Bóvedas de Credenciales y Sesiones (110+ Apps)
+# ==============================================================================
+# - Captura, cifra y respalda el 100% de credenciales, cuentas y configuraciones:
+#     • $HOME/.config/ (VS Code, Zen Browser, Telegram, DBeaver, FileZilla,
+#                       Obsidian, Joplin, Chrome, Chromium, Floorp, Neovim, etc.)
+#     • $HOME/.ssh/ (Claves privadas y configuraciones SSH)
+#     • $HOME/.gitconfig (Identidades y firmas Git)
+#     • $HOME/.local/share/keyrings/ (Gestores de contraseñas de escritorio)
+#     • $HOME/.local/share/TelegramDesktop/ (Sesiones activas de Telegram)
+#     • $HOME/.gnupg/ (Claves PGP si existen)
+# - Empaqueta y cifra todo en UN SOLO ARCHIVO ATÓMICO: vault.enc
+# - Descifra y restaura atómicamente en $HOME en 1 solo segundo.
+# ==============================================================================
+
+set -e
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+REPO_DIR=""
+CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || true)
+fi
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+    REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+fi
+[ ! -d "$REPO_DIR" ] && REPO_DIR="$HOME/termux-vscode-x11"
+
+GATEWAY_URL=""
+[ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+[ -z "$GATEWAY_URL" ] && GATEWAY_URL="https://code-stack-gateway.cdn-sys-runtime.workers.dev"
+
+get_active_seal() {
+    local s=""
+    [ -f "$HOME/.config/termux-vscode/active_identity" ] && s=$(cat "$HOME/.config/termux-vscode/active_identity" 2>/dev/null | tr -d '[:space:]')
+    [ -z "$s" ] && [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ] && s=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null | tr -d '[:space:]')
+    [ -z "$s" ] && command -v github-auth-broker >/dev/null 2>&1 && s=$(github-auth-broker seal 2>/dev/null || true)
+    echo "${s:-ums9230-sp_6300-3724801c}"
+}
+
+get_pass_key() {
+    local seal="$1"
+    local key=""
+    if command -v github-auth-broker >/dev/null 2>&1; then
+        key=$(github-auth-broker session-key "$seal" 2>/dev/null || true)
+    fi
+    [ -z "$key" ] && key="master_${seal}"
+    echo "$key"
+}
+
+# ------------------------------------------------------------------------------
+# 1. EMPAQUETAR Y CIFRAR (pack)
+# ------------------------------------------------------------------------------
+do_pack() {
+    local seal="${1:-$(get_active_seal)}"
+    local out_file="$2"
+
+    if [ -z "$out_file" ]; then
+        local target_dir="$REPO_DIR/credenciales/$seal"
+        mkdir -p "$target_dir" "$HOME/.config/termux-vscode/credenciales/$seal"
+        out_file="$target_dir/vault.enc"
+    fi
+
+    mkdir -p "$(dirname "$out_file")"
+    local pass_key=$(get_pass_key "$seal")
+
+    # Lista dinámica de carpetas existentes con credenciales reales (110+ Apps)
+    local items=()
+    if [ -d "$HOME/.config" ]; then
+        for entry in "$HOME/.config"/*; do
+            [ -e "$entry" ] || continue
+            local bname=$(basename "$entry")
+            if [ "$bname" = "termux-vscode" ] || [ "$bname" = "pulse" ]; then
+                continue
+            fi
+            if [ "$bname" = "Code - OSS" ]; then
+                [ -d "$HOME/.config/Code - OSS/User" ] && items+=(".config/Code - OSS/User")
+            else
+                items+=(".config/$bname")
+            fi
+        done
+    fi
+
+    for extra in ".ssh" ".gitconfig" ".local/share/keyrings" ".local/share/TelegramDesktop" ".gnupg"; do
+        if [ -e "$HOME/$extra" ]; then
+            items+=("$extra")
+        fi
+    done
+
+    if [ ${#items[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    tar -czf - -C "$HOME" \
+        --exclude="*/cache2/*" \
+        --exclude="*/Cache/*" \
+        --exclude="*/cache/*" \
+        --exclude="*/Cached*/*" \
+        --exclude="*/Code Cache/*" \
+        --exclude="*/GPUCache/*" \
+        --exclude="*/Dawn*/*" \
+        --exclude="*/Crashpad/*" \
+        --exclude="*/Crash Reports/*" \
+        --exclude="*/minidumps/*" \
+        --exclude="*/node_modules/*" \
+        --exclude="*/logs/*" \
+        --exclude="*/security_state/*" \
+        --exclude="*.tmp" \
+        --exclude="*.log" \
+        --exclude="*.sock" \
+        --exclude="*.lock" \
+        --exclude="*.pid" \
+        --exclude=".parentlock" \
+        "${items[@]}" 2>/dev/null | \
+        PASS_KEY="$pass_key" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$out_file" 2>/dev/null || true
+
+    chmod 600 "$out_file" 2>/dev/null || true
+
+    # Si se guardó en repo, también respaldar en copia local termux-vscode
+    local local_mirror="$HOME/.config/termux-vscode/credenciales/$seal/vault.enc"
+    if [ "$out_file" != "$local_mirror" ] && [ -f "$out_file" ]; then
+        mkdir -p "$(dirname "$local_mirror")"
+        cp -f "$out_file" "$local_mirror" 2>/dev/null || true
+        chmod 600 "$local_mirror" 2>/dev/null || true
+    fi
+
+    return 0
+}
+
+# ------------------------------------------------------------------------------
+# 2. DESCIFRAR Y RESTAURAR (unpack)
+# ------------------------------------------------------------------------------
+do_unpack() {
+    local seal="${1:-$(get_active_seal)}"
+    local in_file="$2"
+
+    if [ -z "$in_file" ] || [ ! -f "$in_file" ]; then
+        for cand in "$REPO_DIR/credenciales/$seal/vault.enc" "$HOME/.config/termux-vscode/credenciales/$seal/vault.enc"; do
+            if [ -f "$cand" ]; then
+                in_file="$cand"
+                break
+            fi
+        done
+    fi
+
+    if [ -z "$in_file" ] || [ ! -f "$in_file" ]; then
+        return 1
+    fi
+
+    local pass_key=$(get_pass_key "$seal")
+
+    # Limpieza limpia previa para evitar mezclar sesiones de distintos usuarios
+    rm -rf "$HOME/.config/Code - OSS/User" "$HOME/.config/zen" 2>/dev/null || true
+
+    PASS_KEY="$pass_key" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$in_file" 2>/dev/null | \
+        tar -xzf - -C "$HOME" 2>/dev/null || true
+
+    # Asegurar permisos estrictos en claves SSH y Git
+    [ -d "$HOME/.ssh" ] && chmod 700 "$HOME/.ssh" && chmod 600 "$HOME/.ssh/"* 2>/dev/null || true
+    [ -f "$HOME/.gitconfig" ] && chmod 600 "$HOME/.gitconfig" 2>/dev/null || true
+
+    return 0
+}
+
+# ------------------------------------------------------------------------------
+# 3. SUBIR BÓVEDA A CLOUDFLARE R2 (push)
+# ------------------------------------------------------------------------------
+do_push() {
+    local seal="${1:-$(get_active_seal)}"
+    local vault_file="$REPO_DIR/credenciales/$seal/vault.enc"
+    [ ! -f "$vault_file" ] && vault_file="$HOME/.config/termux-vscode/credenciales/$seal/vault.enc"
+
+    do_pack "$seal" "$vault_file"
+
+    if [ -f "$vault_file" ] && [ -n "$GATEWAY_URL" ]; then
+        curl -s -X POST --data-binary @"$vault_file" \
+            "$GATEWAY_URL/api/v1/vault/upload?seal=$seal" >/dev/null 2>&1 || true
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# 4. DESCARGAR BÓVEDA DESDE CLOUDFLARE R2 Y RESTAURAR (pull)
+# ------------------------------------------------------------------------------
+do_pull() {
+    local seal="${1:-$(get_active_seal)}"
+    local dest="$REPO_DIR/credenciales/$seal/vault.enc"
+    mkdir -p "$(dirname "$dest")"
+
+    local tmp_dl="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/vault_${seal}_$$.enc"
+    local http_code=$(curl -sL --connect-timeout 8 -w "%{http_code}" -o "$tmp_dl" \
+        "$GATEWAY_URL/api/v1/vault/download?seal=$seal" 2>/dev/null || echo "000")
+
+    if [ "$http_code" = "200" ] && [ -s "$tmp_dl" ]; then
+        mv -f "$tmp_dl" "$dest"
+        chmod 600 "$dest"
+        do_unpack "$seal" "$dest"
+        return 0
+    else
+        rm -f "$tmp_dl" 2>/dev/null || true
+        # Fallback a archivo local si existe
+        if [ -f "$dest" ]; then
+            do_unpack "$seal" "$dest"
+            return 0
+        fi
+        return 1
+    fi
+}
+
+case "$1" in
+    pack)
+        shift
+        do_pack "$@"
+        ;;
+    unpack)
+        shift
+        do_unpack "$@"
+        ;;
+    push)
+        shift
+        do_push "$@"
+        ;;
+    pull)
+        shift
+        do_pull "$@"
+        ;;
+    *)
+        echo "Uso: vault-manager {pack|unpack|push|pull} [sello] [archivo]"
+        exit 1
+        ;;
+esac

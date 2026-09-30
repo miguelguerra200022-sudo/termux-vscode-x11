@@ -123,7 +123,7 @@ def main():
     # 4. Subir scripts de bin/ críticos
     bin_dir = os.path.join(repo_dir, "bin")
     bin_scripts = ["encender", "apagar", "start-vscode", "stop-vscode", "gpu-optimizer",
-                   "programas", "gitops-sync", "watcher-sync", "cloud-sentinel",
+                   "vault-manager", "programas", "gitops-sync", "watcher-sync", "cloud-sentinel",
                    "desinstalar", "desinstalar-vscode"]
     uploaded_bins = 0
     for b in bin_scripts:

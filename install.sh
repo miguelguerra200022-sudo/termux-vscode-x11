@@ -459,6 +459,7 @@ SCRIPTS=(
     "code-stack-ascii"
     "github-auth-broker"
     "gpu-optimizer"
+    "vault-manager"
 )
 
 for s in "${SCRIPTS[@]}"; do
@@ -557,11 +558,13 @@ ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 echo "${SELLO_HARDWARE}" > "$ACTIVE_FILE"
 
 # Si ya existe vault.enc para este mismo dispositivo (reingreso), se restaura
-if [ -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
-    echo -e "${CYAN}[*] Bóveda cifrada propia detectada. Restaurando configuración...${NC}"
-    PASS_KEY="${AUTH_PASSWORD}_${SELLO_HARDWARE}" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY \
-        -in "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null | \
-        tar -xzf - -C "$HOME/.config" 2>/dev/null || true
+if [ -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ] || [ -f "$HOME/.config/termux-vscode/credenciales/$SELLO_HARDWARE/vault.enc" ]; then
+    echo -e "${CYAN}[*] Bóveda cifrada universal detectada. Restaurando configuración (110+ programas)...${NC}"
+    if [ -f "$SCRIPT_DIR/bin/vault-manager" ]; then
+        bash "$SCRIPT_DIR/bin/vault-manager" unpack "$SELLO_HARDWARE" "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc"
+    elif command -v vault-manager >/dev/null 2>&1; then
+        vault-manager unpack "$SELLO_HARDWARE" "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc"
+    fi
     echo -e "${GREEN}[✓] Cuentas y perfiles propios restaurados exitosamente en RAM.${NC}"
 fi
 
@@ -599,21 +602,12 @@ fi
 
 # Generar vault.enc propio si no existe (SIN copiar plantilla del Líder)
 if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
-    mkdir -p "$HOME/.config/Code - OSS/User" "$HOME/.config/zen"
-    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null || true)"
-    PASS_KEY="${PASS_KEY:-master_${SELLO_HARDWARE}}"
-    tar -czf - \
-        --exclude="cache2" \
-        --exclude="startupCache" \
-        --exclude="lock" \
-        --exclude=".parentlock" \
-        --exclude="Crash Reports" \
-        --exclude="minidumps" \
-        --exclude="*.tmp" \
-        --exclude="*.log" \
-        --exclude="*.sock" \
-        -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-        PASS_KEY="$PASS_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" 2>/dev/null || true
+    echo -e "${CYAN}[*] Inicializando bóveda universal de credenciales cifradas (110+ programas)...${NC}"
+    if [ -f "$SCRIPT_DIR/bin/vault-manager" ]; then
+        bash "$SCRIPT_DIR/bin/vault-manager" pack "$SELLO_HARDWARE" "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc"
+    elif command -v vault-manager >/dev/null 2>&1; then
+        vault-manager pack "$SELLO_HARDWARE" "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc"
+    fi
 fi
 
 # Sincronizar credenciales cifradas hacia el directorio de configuración persistente
@@ -717,7 +711,7 @@ echo "$SCRIPT_DIR" > "$HOME/.config/termux-vscode/repo_path" 2>/dev/null || true
 # 16. Bóveda Dorada (Golden Vault)
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 mkdir -p "$GOLDEN_DIR"
-for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota" "github-auth-broker" "gitops-sync" "vault-logs" "gpu-optimizer"; do
+for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota" "github-auth-broker" "gitops-sync" "vault-logs" "gpu-optimizer" "vault-manager"; do
     if [ -f "$PREFIX/bin/$bin_name" ]; then
         rm -f "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
         cp -f "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true

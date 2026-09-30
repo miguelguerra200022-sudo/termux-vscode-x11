@@ -200,21 +200,13 @@ echo -e "${YELLOW}==============================================================
 CURRENT_VAULT_DIR="$CREDS_DIR/$CURRENT_ACTIVE"
 mkdir -p "$CURRENT_VAULT_DIR"
 
-if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
-    echo -e "${CYAN}[*] Empaquetando perfiles y credenciales de '${CURRENT_ACTIVE}' con llave efímera...${NC}"
-    PASS_KEY="$(github-auth-broker session-key "$CURRENT_ACTIVE" 2>/dev/null)"
-    tar -czf - \
-        --exclude="cache2" \
-        --exclude="startupCache" \
-        --exclude="lock" \
-        --exclude=".parentlock" \
-        --exclude="Crash Reports" \
-        --exclude="minidumps" \
-        --exclude="*.tmp" \
-        --exclude="*.log" \
-        --exclude="*.sock" \
-        -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-        PASS_KEY="$PASS_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$CURRENT_VAULT_DIR/vault.enc" 2>/dev/null || true
+if [ -d "$HOME/.config" ]; then
+    echo -e "${CYAN}[*] Empaquetando perfiles y credenciales de '${CURRENT_ACTIVE}' (110+ programas)...${NC}"
+    if command -v vault-manager >/dev/null 2>&1; then
+        vault-manager pack "$CURRENT_ACTIVE" "$CURRENT_VAULT_DIR/vault.enc"
+    elif [ -f "$REPO_DIR/bin/vault-manager" ]; then
+        bash "$REPO_DIR/bin/vault-manager" pack "$CURRENT_ACTIVE" "$CURRENT_VAULT_DIR/vault.enc"
+    fi
 
     if [ -f "$CURRENT_VAULT_DIR/vault.enc" ]; then
         echo -e "${CYAN}[*] Subiendo 'vault.enc' a Cloudflare R2...${NC}"
@@ -292,13 +284,17 @@ fi
 
 if [ -f "$TARGET_DIR/vault.enc" ]; then
     echo -e "${CYAN}[*] Descifrando bóveda con la llave maestra dinámica del Líder...${NC}"
-    TARGET_PASS_KEY="$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null)"
-    
-    rm -rf "$HOME/.config/Code - OSS/User" "$HOME/.config/zen" 2>/dev/null || true
-    mkdir -p "$HOME/.config"
-
-    PASS_KEY="$TARGET_PASS_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$TARGET_DIR/vault.enc" 2>/dev/null | \
-        tar -xzf - -C "$HOME/.config" 2>/dev/null || true
+    if command -v vault-manager >/dev/null 2>&1; then
+        vault-manager unpack "$TARGET_SEAL" "$TARGET_DIR/vault.enc"
+    elif [ -f "$REPO_DIR/bin/vault-manager" ]; then
+        bash "$REPO_DIR/bin/vault-manager" unpack "$TARGET_SEAL" "$TARGET_DIR/vault.enc"
+    else
+        TARGET_PASS_KEY="$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null)"
+        rm -rf "$HOME/.config/Code - OSS/User" "$HOME/.config/zen" 2>/dev/null || true
+        PASS_KEY="$TARGET_PASS_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$TARGET_DIR/vault.enc" 2>/dev/null | \
+            tar -xzf - -C "$HOME" 2>/dev/null || true
+    fi
+    echo -e "${GREEN}[✓] Bóveda y credenciales universales restauradas exitosamente.${NC}"
 fi
 
 echo "$TARGET_SEAL" > "$ACTIVE_FILE"

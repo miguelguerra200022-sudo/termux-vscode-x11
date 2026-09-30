@@ -266,6 +266,8 @@ async function handleTelegramUpdate(update, env) {
 
         await sendTelegram(env, "answerCallbackQuery", { callback_query_id: cbId });
 
+        const targetChatId = cb.message?.chat?.id || authorizedChat;
+
         if (cbData.startsWith("auth_approve:") || cbData.startsWith("auth_approve_")) {
             const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("auth_approve_", "");
             await approveDeviceInDb(seal, env);
@@ -275,7 +277,7 @@ async function handleTelegramUpdate(update, env) {
                 if (row && row.username) devName = row.username;
             }
             await sendTelegram(env, "editMessageText", {
-                chat_id: authorizedChat,
+                chat_id: targetChatId,
                 message_id: msgId,
                 text: `✅ *DISPOSITIVO AUTORIZADO (CLOUDFLARE EDGE)*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⚡ Aprobación concedida por el Líder.\n━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar:_`,
                 parse_mode: "Markdown",
@@ -294,7 +296,7 @@ async function handleTelegramUpdate(update, env) {
                 if (row && row.username) devName = row.username;
             }
             await sendTelegram(env, "editMessageText", {
-                chat_id: authorizedChat,
+                chat_id: targetChatId,
                 message_id: msgId,
                 text: `❌ *ACCESO RECHAZADO / BLOQUEADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⛔ Solicitud denegada permanentemente por el Líder.`,
                 parse_mode: "Markdown"
@@ -303,9 +305,18 @@ async function handleTelegramUpdate(update, env) {
             const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("renew_approve_", "");
             await renewSubscriptionInDb(seal, "Telegram (@CloudSentinel)", env);
             await sendTelegram(env, "editMessageText", {
-                chat_id: authorizedChat,
+                chat_id: targetChatId,
                 message_id: msgId,
                 text: `✅ *SUSCRIPCIÓN RENOVADA POR 30 DÍAS*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n⚡ Sistema reactivado y ciclo contable extendido.`,
+                parse_mode: "Markdown"
+            });
+        } else if (cbData.startsWith("renew_reject:") || cbData.startsWith("renew_reject_")) {
+            const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("renew_reject_", "");
+            await revokeDeviceInDb(seal, env);
+            await sendTelegram(env, "editMessageText", {
+                chat_id: targetChatId,
+                message_id: msgId,
+                text: `❌ *RENOVACIÓN RECHAZADA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n⛔ Licencia no renovada. El dispositivo permanece congelado.`,
                 parse_mode: "Markdown"
             });
         }
@@ -820,7 +831,11 @@ async function approveDeviceInDb(seal, env) {
     const expIso = new Date(expTs * 1000).toISOString();
     const freshHash = "hash_" + crypto.randomUUID().replace(/-/g, "");
 
-    await env.DB.prepare(`UPDATE devices SET status = 'active', current_hash = ? WHERE seal = ?`).bind(freshHash, seal).run();
+    await env.DB.prepare(
+        `INSERT INTO devices (seal, username, role, model, current_hash, registered_at, status)
+         VALUES (?, 'Worker', 'Worker', 'Android', ?, ?, 'active')
+         ON CONFLICT(seal) DO UPDATE SET status = 'active', current_hash = excluded.current_hash`
+    ).bind(seal, freshHash, nowIso).run();
     await env.DB.prepare(
         `INSERT INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
          VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)
