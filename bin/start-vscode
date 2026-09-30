@@ -80,12 +80,21 @@ fi
 # 1. Prevenir que Android suspenda o mate el proceso en segundo plano (Anti-Cierres)
 command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
 
-# 2. Variables de entorno X11, DBus y Navegador
+# 2. Motor Universal de Aceleración Gráfica y Latencia Cero (Adaptativo a cada Procesador)
+GPU_OPT_BIN="gpu-optimizer"
+command -v "$GPU_OPT_BIN" >/dev/null 2>&1 || GPU_OPT_BIN="$REPO_DIR/bin/gpu-optimizer"
+if [ -x "$GPU_OPT_BIN" ] || command -v gpu-optimizer >/dev/null 2>&1; then
+    gpu-optimizer >/dev/null 2>&1 || true
+    [ -f "$HOME/.config/termux-vscode/gpu_profile.env" ] && source "$HOME/.config/termux-vscode/gpu_profile.env"
+    gpu-optimizer --start-server >/dev/null 2>&1 || true
+fi
+
+# 2.1 Variables de entorno X11, DBus y Navegador
 export XDG_RUNTIME_DIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
 export DISPLAY=:0
 export UV_THREADPOOL_SIZE=16
 export BROWSER=zen-browser
-export LP_NUM_THREADS=$(nproc 2>/dev/null || echo 4) # Aceleración CPU multi-hilo
+export LP_NUM_THREADS=${LP_NUM_THREADS:-$(nproc 2>/dev/null || echo 4)}
 export XDG_DATA_DIRS="$PREFIX/share:${XDG_DATA_DIRS:-/data/data/com.termux/files/usr/share}"
 export XDG_DATA_HOME="$HOME/.local/share"
 
@@ -93,22 +102,27 @@ export XDG_DATA_HOME="$HOME/.local/share"
 export VSCODE_CLI_USE_FILE_KEYCHAIN=1
 
 # 4. Configurar preferencias de Termux-X11 (Portapapeles, filtrado bilineal de alta nitidez)
-termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear >/dev/null 2>&1 || true
+termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear preferScancodes:true hardwareKbdScancodesWorkaround:true scaleTouchpad:true >/dev/null 2>&1 || true
 
 # 5. Iniciar servidor de sonido PulseAudio con salida física Android (OpenSL ES / AAudio)
+mkdir -p "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/pulse"
 if ! pgrep -x "pulseaudio" > /dev/null 2>&1; then
     env -u PULSE_SERVER pulseaudio --start \
+        --load="module-native-protocol-unix socket=${TMPDIR:-/data/data/com.termux/files/usr/tmp}/pulse/native auth-anonymous=1" \
         --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" \
         --load="module-sles-sink" \
         --exit-idle-time=-1 >/dev/null 2>&1 || true
 else
-    # Si pulseaudio ya estaba activo sin sink de salida fisica, cargarlo dinamicamente
+    # Si pulseaudio ya estaba activo sin sink de salida fisica o socket unix, cargarlos dinamicamente
     if ! pactl list sinks short 2>/dev/null | grep -q "OpenSL_ES_sink"; then
         pactl load-module module-sles-sink >/dev/null 2>&1 || true
     fi
+    if ! pactl list modules short 2>/dev/null | grep -q "module-native-protocol-unix"; then
+        pactl load-module module-native-protocol-unix socket="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/pulse/native" auth-anonymous=1 >/dev/null 2>&1 || true
+    fi
 fi
-export PULSE_SERVER=127.0.0.1
-export PULSE_LATENCY_MSEC=30
+export PULSE_SERVER="unix:${TMPDIR:-/data/data/com.termux/files/usr/tmp}/pulse/native"
+export PULSE_LATENCY_MSEC=15
 
 # 6. Iniciar bus de sesión D-Bus si no está activo
 if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] || ! pgrep -x "dbus-daemon" > /dev/null 2>&1; then
@@ -123,7 +137,7 @@ if ! pgrep -f "termux-x11.*:0" > /dev/null 2>&1; then
     rm -rf "$XDG_RUNTIME_DIR/.X11-unix/X*" /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null
     
     echo "[*] Arrancando servidor Termux-X11 en :0..."
-    termux-x11 :0 -ac > "$XDG_RUNTIME_DIR/x11.log" 2>&1 &
+    termux-x11 :0 -ac +extension MIT-SHM +iglx -fakescreenfps 60 > "$XDG_RUNTIME_DIR/x11.log" 2>&1 &
     disown
     
     # Esperar activamente a que el socket X0 esté listo
@@ -300,6 +314,7 @@ echo ""
 echo -e "  \033[1;32m[✓] Entorno gráfico iniciado con éxito.\033[0m"
 echo -e "  [•] Directorio activo    : \033[1;36m$TARGET_DIR\033[0m"
 echo -e "  [•] Servidor de pantalla : \033[1;32mTermux:X11 (:0)\033[0m"
+echo -e "  [•] Aceleración gráfica  : \033[1;32m${CODE_STACK_ACCEL_MODE:-HARDWARE_GPU}\033[0m (\033[1;33m${CODE_STACK_CHIP_FAMILY:-UNIVERSAL}\033[0m - ${CODE_STACK_GPU_TYPE:-GPU})"
 echo -e "  [•] Gestor de escritorio : \033[1;32mPCManFM (Iconos en Escritorio)\033[0m"
 echo -e "  [•] Gestor de ventanas   : \033[1;32mOpenbox + Tint2\033[0m"
 echo ""

@@ -26,10 +26,12 @@ pkill -9 -x "tint2" 2>/dev/null || true
 pkill -9 -x "openbox" 2>/dev/null || true
 pkill -9 -f "pcmanfm" 2>/dev/null || true
 pkill -9 -f "termux-x11" 2>/dev/null || true
+pkill -9 -f "virgl_test_server_android" 2>/dev/null || true
 pulseaudio --kill 2>/dev/null || true
 
 # 5. Limpiar sockets temporales
 rm -rf "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.X11-unix/X*" /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null || true
+rm -rf "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/pulse" "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.virgl*" 2>/dev/null || true
 
 # 6. Guardado de estado local y aseguramiento silencioso en segundo plano
 (

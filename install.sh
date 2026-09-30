@@ -458,6 +458,7 @@ SCRIPTS=(
     "fetch-app-icon"
     "code-stack-ascii"
     "github-auth-broker"
+    "gpu-optimizer"
 )
 
 for s in "${SCRIPTS[@]}"; do
@@ -468,6 +469,12 @@ for s in "${SCRIPTS[@]}"; do
     chmod +x "$PREFIX/bin/$s" 2>/dev/null || true
 done
 chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" "$PREFIX/bin/github-auth-broker" 2>/dev/null || true
+
+# 10.1 Calibración Automática Universal de Hardware y Latencia Cero
+if [ -f "$PREFIX/bin/gpu-optimizer" ]; then
+    echo -e "${YELLOW}[*] Calibrando acelerador universal de hardware y perfil de latencia cero...${NC}"
+    "$PREFIX/bin/gpu-optimizer" >/dev/null 2>&1 || true
+fi
 
 # Copiar activos multimedia y de animación ASCII
 if [ -d "$SCRIPT_DIR/assets" ]; then
@@ -710,7 +717,7 @@ echo "$SCRIPT_DIR" > "$HOME/.config/termux-vscode/repo_path" 2>/dev/null || true
 # 16. Bóveda Dorada (Golden Vault)
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
 mkdir -p "$GOLDEN_DIR"
-for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota" "github-auth-broker" "gitops-sync" "vault-logs"; do
+for bin_name in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota" "github-auth-broker" "gitops-sync" "vault-logs" "gpu-optimizer"; do
     if [ -f "$PREFIX/bin/$bin_name" ]; then
         rm -f "$GOLDEN_DIR/$bin_name" 2>/dev/null || true
         cp -f "$PREFIX/bin/$bin_name" "$GOLDEN_DIR/$bin_name" 2>/dev/null || true

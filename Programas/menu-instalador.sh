@@ -836,6 +836,7 @@ run_main_menu() {
         echo -e "${GRAY}------------------------------------------------------${NC}"
         echo -e "  [${YELLOW}D${NC}] 🗑️ ${BOLD}Desinstalar programas${NC} (${GREEN}$inst_count instalados${NC})"
         echo -e "  [${YELLOW}B${NC}] 🔍 ${BOLD}Buscar programa${NC} (+110 apps)"
+        echo -e "  [${YELLOW}G${NC}] ⚡ ${BOLD}Calibrar GPU y Aceleración Hardware${NC}"
         echo -e "  [${YELLOW}0${NC}] 🚪 Salir ${GRAY}(o pulsa borrar)${NC}"
         echo -e "${GRAY}------------------------------------------------------${NC}"
         echo ""
@@ -859,6 +860,17 @@ run_main_menu() {
 
         if [ "$opt_cat" = "b" ] || [ "$opt_cat" = "B" ]; then
             menu_buscar
+            continue
+        fi
+
+        if [ "$opt_cat" = "g" ] || [ "$opt_cat" = "G" ]; then
+            if command -v gpu-optimizer >/dev/null 2>&1; then
+                gpu-optimizer --reprobe
+            elif [ -f "$REPO_DIR/bin/gpu-optimizer" ]; then
+                "$REPO_DIR/bin/gpu-optimizer" --reprobe
+            fi
+            echo -ne "${BOLD}Presiona ENTER para continuar...${NC}" >&2
+            read_menu_input "" >/dev/null
             continue
         fi
 
