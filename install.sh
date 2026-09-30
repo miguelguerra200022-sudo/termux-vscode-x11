@@ -255,7 +255,10 @@ apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--fo
 
 # 7b. Entorno gráfico y audio (Termux-X11, Openbox, Tint2, PulseAudio)
 echo -e "${YELLOW}[*] Instalando entorno gráfico y audio (X11, Openbox, Tint2, PulseAudio)...${NC}"
-GRAPHICS_BASE="termux-x11-nightly openbox tint2 pcmanfm pulseaudio feh virglrenderer-android mpv"
+# Reparar paquetes rotos de dpkg previos si los hubiere
+dpkg --configure -a 2>/dev/null || true
+dpkg --remove --force-remove-reinstreq mpv ffmpeg 2>/dev/null || true
+GRAPHICS_BASE="termux-x11-nightly openbox tint2 pcmanfm pulseaudio feh virglrenderer-android"
 apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $GRAPHICS_BASE 2>/dev/null || \
     pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $GRAPHICS_BASE 2>/dev/null || true
 
@@ -701,14 +704,8 @@ if [ -f "$HOME/.ssh/id_ed25519.pub" ]; then
 fi
 git config --global core.askPass "github-auth-broker" 2>/dev/null || true
 
-# 15.5 Compilación Nativa ELF para Nodos Worker (Blindaje Cero Código Fuente)
-if [ "$SELLO_HARDWARE" != "$LEADER_SEAL" ]; then
-    echo -e "${YELLOW}[*] Blindando ejecutables: Compilando binarios ELF ARM64 nativos...${NC}"
-    if [ -f "$SCRIPT_DIR/bin/system-compiler" ]; then
-        bash "$SCRIPT_DIR/bin/system-compiler" --all >/dev/null 2>&1 || true
-    fi
-    echo "$HOME/.config/termux-vscode" > "$HOME/.config/termux-vscode/repo_path" 2>/dev/null || true
-fi
+# 15.5 Asegurar ruta del repositorio central
+echo "$SCRIPT_DIR" > "$HOME/.config/termux-vscode/repo_path" 2>/dev/null || true
 
 # 16. Bóveda Dorada (Golden Vault)
 GOLDEN_DIR="$HOME/.config/termux-vscode/.golden"
