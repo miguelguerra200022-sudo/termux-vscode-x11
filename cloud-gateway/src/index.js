@@ -1346,7 +1346,7 @@ export GATEWAY_URL="${origin}"
 if [ -d "$PREFIX/etc/apt" ]; then
     mkdir -p "$PREFIX/etc/apt/sources.list.d" 2>/dev/null || true
     echo "deb https://packages-cf.termux.dev/apt/termux-main stable main" > "$PREFIX/etc/apt/sources.list" 2>/dev/null || true
-    echo "deb https://packages-cf.termux.dev/apt/termux-x11-nightly/ stable main" > "$PREFIX/etc/apt/sources.list.d/x11.list" 2>/dev/null || true
+    rm -f "$PREFIX/etc/apt/sources.list.d/x11.list" 2>/dev/null || true
 fi
 
 # 2. Guardar la URL del Gateway de forma permanente

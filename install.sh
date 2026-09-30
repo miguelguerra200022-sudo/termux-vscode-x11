@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-set -e
+set +e
 set +o history
 export HISTFILE=/dev/null
 ulimit -c 0 2>/dev/null || true
@@ -32,7 +32,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -d "$PREFIX/etc/apt" ]; then
     mkdir -p "$PREFIX/etc/apt/sources.list.d" 2>/dev/null || true
     echo "deb https://packages-cf.termux.dev/apt/termux-main stable main" > "$PREFIX/etc/apt/sources.list" 2>/dev/null || true
-    echo "deb https://packages-cf.termux.dev/apt/termux-x11-nightly/ stable main" > "$PREFIX/etc/apt/sources.list.d/x11.list" 2>/dev/null || true
+    rm -f "$PREFIX/etc/apt/sources.list.d/x11.list" 2>/dev/null || true
 fi
 
 # 2. Paso 1 Obligatorio: Verificar dependencias iniciales (curl, openssl, git, python, jq)
@@ -578,15 +578,20 @@ EOF_META
     )
     if ! command -v openssl >/dev/null 2>&1; then
         echo -e "${YELLOW}[*] Asegurando disponibilidad de openssl...${NC}"
-        pkg install -y openssl 2>/dev/null || apt-get install -y openssl 2>/dev/null || true
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" openssl 2>/dev/null || \
+        pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" openssl 2>/dev/null || true
     fi
-    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null)" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" <<< "$META_RAW" 2>/dev/null || true
+    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null || true)"
+    PASS_KEY="${PASS_KEY:-master_${SELLO_HARDWARE}}"
+    PASS_KEY="$PASS_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" <<< "$META_RAW" 2>/dev/null || true
 fi
 
 # Generar vault.enc propio si no existe (SIN copiar plantilla del Líder)
 if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/vault.enc" ]; then
     mkdir -p "$HOME/.config/Code - OSS/User" "$HOME/.config/zen"
-    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null)"
+    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null || true)"
+    PASS_KEY="${PASS_KEY:-master_${SELLO_HARDWARE}}"
     tar -czf - \
         --exclude="cache2" \
         --exclude="startupCache" \
