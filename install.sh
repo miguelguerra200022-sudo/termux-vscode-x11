@@ -35,22 +35,12 @@ if [ -d "$PREFIX/etc/apt" ]; then
     echo "deb https://packages-cf.termux.dev/apt/termux-x11-nightly/ stable main" > "$PREFIX/etc/apt/sources.list.d/x11.list" 2>/dev/null || true
 fi
 
-# 2. Paso 1 Obligatorio: Verificar dependencias iniciales (curl, openssl, git, python)
-NEED_PKG=""
-for p in curl git openssl python; do
-    case "$p" in
-        python) command -v python3 >/dev/null 2>&1 || NEED_PKG="$NEED_PKG python" ;;
-        *) command -v "$p" >/dev/null 2>&1 || NEED_PKG="$NEED_PKG $p" ;;
-    esac
-done
-
-if [ -n "$NEED_PKG" ]; then
-    echo -e "${YELLOW}[*] Instalando herramientas requeridas:${NEED_PKG}...${NC}"
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get update -y -o Dpkg::Options::="--force-confnew" -o Acquire::ForceIPv4=true 2>/dev/null || true
-    apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $NEED_PKG 2>/dev/null || \
-    pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $NEED_PKG 2>/dev/null || true
-fi
+# 2. Paso 1 Obligatorio: Verificar dependencias iniciales (curl, openssl, git, python, jq)
+echo -e "${YELLOW}[*] Verificando e instalando utilidades de red y cifrado (curl, git, openssl, python)...${NC}"
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y -o Dpkg::Options::="--force-confnew" -o Acquire::ForceIPv4=true 2>/dev/null || true
+pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" curl git openssl python jq x11-repo 2>/dev/null || \
+apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" curl git openssl python jq x11-repo 2>/dev/null || true
 
 # 2.1 Lanzar animación cinemática 3D de Code Stack Sh (saltable con cualquier tecla)
 if [ -f "$SCRIPT_DIR/bin/code-stack-ascii" ]; then
@@ -250,24 +240,24 @@ fi
 # 7. Actualizar repositorios e instalar paquetes BASE (solo audio + gráficos + utilidades esenciales)
 # SIN VS Code, SIN Zen Browser, SIN compiladores pesados.
 # El usuario instala lo que quiera luego con: programas
-echo -e "${YELLOW}[*] Configurando repositorio CDN de Cloudflare para Termux (0ms latencia)...${NC}"
+echo -e "${YELLOW}[*] Configurando repositorio CDN de Cloudflare para Termux...${NC}"
 export DEBIAN_FRONTEND=noninteractive
 
-# Preconfigura el espejo CDN global de Cloudflare para evitar el bloqueo de mirror-testing
-# en Termux virgen (que intenta conectar a decenas de servidores mundiales y puede colgarse)
-TERMUX_REPO_DIR="$PREFIX/etc/apt"
-mkdir -p "$TERMUX_REPO_DIR/sources.list.d"
-echo "deb https://packages-cf.termux.dev/apt/termux-main stable main" > "$TERMUX_REPO_DIR/sources.list" 2>/dev/null || true
-echo "deb https://packages-cf.termux.dev/apt/termux-x11-nightly/ stable main" > "$TERMUX_REPO_DIR/sources.list.d/x11.list" 2>/dev/null || true
+# Asegurar x11-repo instalado y fuentes actualizadas
+pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" x11-repo 2>/dev/null || apt-get install -y x11-repo 2>/dev/null || true
+apt-get update -y -o Dpkg::Options::="--force-confnew" -o Acquire::ForceIPv4=true 2>/dev/null || pkg update -y 2>/dev/null || true
 
-echo -e "${YELLOW}[*] Actualizando listas de paquetes (CDN Cloudflare)...${NC}"
-apt-get update -y -o Dpkg::Options::="--force-confnew" -o Acquire::ForceIPv4=true 2>/dev/null || \
-    pkg update -y 2>/dev/null || true
+# 7a. Herramientas críticas del sistema (cifrado, runtime, scripts)
+echo -e "${YELLOW}[*] Instalando utilidades base del sistema (openssl, python, jq, herramientas)...${NC}"
+SYSTEM_BASE="openssl python jq rsync dbus termux-tools termux-api unzip inotify-tools"
+apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $SYSTEM_BASE 2>/dev/null || \
+    pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $SYSTEM_BASE 2>/dev/null || true
 
-echo -e "${YELLOW}[*] Instalando núcleo del sistema (Audio + Gráficos + Utilidades)...${NC}"
-CORE_PKGS="termux-x11-nightly openbox tint2 pcmanfm pulseaudio feh virglrenderer-android rsync dbus termux-tools termux-api unzip inotify-tools openssl python jq mpv"
-apt-get install -y -o Dpkg::Options::="--force-confnew" $CORE_PKGS 2>/dev/null || \
-    pkg install -y $CORE_PKGS 2>/dev/null || true
+# 7b. Entorno gráfico y audio (Termux-X11, Openbox, Tint2, PulseAudio)
+echo -e "${YELLOW}[*] Instalando entorno gráfico y audio (X11, Openbox, Tint2, PulseAudio)...${NC}"
+GRAPHICS_BASE="termux-x11-nightly openbox tint2 pcmanfm pulseaudio feh virglrenderer-android mpv"
+apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $GRAPHICS_BASE 2>/dev/null || \
+    pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $GRAPHICS_BASE 2>/dev/null || true
 
 # 8. Detección Inteligente e Instalación de APKs (X11 y Widget)
 echo -e "${YELLOW}[*] Comprobando complementos gráficos de Android (Termux:X11 y Termux:Widget)...${NC}"
@@ -300,12 +290,23 @@ ensure_unknown_sources_permission() {
     if [ -f "$UNKNOWN_SOURCES_FLAG" ]; then
         return 0
     fi
-    echo -e "${YELLOW}[!] Android requiere autorizar a Termux para instalar aplicaciones desconocidas.${NC}"
+    echo ""
+    echo -e "${YELLOW}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║   ⚠️  PERMISO DE INSTALACIÓN REQUERIDO POR ANDROID            ║${NC}"
+    echo -e "${YELLOW}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo -e "${CYAN}[*] Abriendo Ajustes de Android para Termux...${NC}"
-    echo -e "${YELLOW}[i] Activa la casilla 'Permitir desde esta fuente' y regresa a Termux.${NC}"
+    echo -e "${GREEN}[1] Activa la casilla: 'Permitir desde esta fuente'.${NC}"
+    echo -e "${GREEN}[2] Presiona el botón Volver para regresar a Termux.${NC}"
     am start -a android.settings.MANAGE_UNKNOWN_APP_SOURCES -d "package:com.termux" >/dev/null 2>&1 || true
     touch "$UNKNOWN_SOURCES_FLAG"
-    sleep 3
+    echo ""
+    echo -ne "${BOLD}${YELLOW}>> Cuando hayas activado el permiso, presiona ENTER para continuar... ${NC}"
+    if [ -e /dev/tty ]; then
+        read -r _ < /dev/tty 2>/dev/null || sleep 4
+    else
+        sleep 4
+    fi
+    echo ""
 }
 
 auto_install_apk() {
@@ -319,7 +320,7 @@ auto_install_apk() {
     fi
 
     if [ -f "$file" ]; then
-        echo -e "${GREEN}[+] Iniciando instalación de ${name}...${NC}"
+        echo -e "${GREEN}[+] Abriendo instalador de ${name}...${NC}"
         if command -v su >/dev/null 2>&1 && su -c "id" >/dev/null 2>&1; then
             su -c "pm install -r \"$file\"" >/dev/null 2>&1 || true
         elif command -v rish >/dev/null 2>&1; then
@@ -327,8 +328,15 @@ auto_install_apk() {
         else
             termux-open --content-type "application/vnd.android.package-archive" --view "$file" >/dev/null 2>&1 || \
             termux-open "$file" >/dev/null 2>&1 || true
+            echo -e "${CYAN}[i] Pulsa 'Instalar' en la ventana emergente de Android.${NC}"
+            echo -ne "${BOLD}${YELLOW}>> Cuando termine la instalación, presiona ENTER aquí para seguir... ${NC}"
+            if [ -e /dev/tty ]; then
+                read -r _ < /dev/tty 2>/dev/null || sleep 4
+            else
+                sleep 4
+            fi
+            echo ""
         fi
-        sleep 2
     fi
 }
 
@@ -338,7 +346,7 @@ LATEST_WIDGET_URL="$GATEWAY_URL/api/v1/apk/termux-widget"
 ensure_unknown_sources_permission
 
 if ! is_package_installed "com.termux.x11"; then
-    echo -e "${CYAN}[*] Descargando Termux:X11 APK...${NC}"
+    echo -e "${CYAN}[*] Descargando Termux:X11 APK desde Cloudflare Edge...${NC}"
     curl -sSL "$LATEST_X11_URL" -o "$APK_X11_PATH" 2>/dev/null || true
     auto_install_apk "$APK_X11_PATH" "Termux:X11" "com.termux.x11"
 else
@@ -346,7 +354,7 @@ else
 fi
 
 if ! is_package_installed "com.termux.widget"; then
-    echo -e "${CYAN}[*] Descargando Termux:Widget APK...${NC}"
+    echo -e "${CYAN}[*] Descargando Termux:Widget APK desde Cloudflare Edge...${NC}"
     curl -sSL "$LATEST_WIDGET_URL" -o "$APK_WIDGET_PATH" 2>/dev/null || true
     auto_install_apk "$APK_WIDGET_PATH" "Termux:Widget" "com.termux.widget"
 else
@@ -568,7 +576,11 @@ if [ ! -f "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" ]; then
 }
 EOF_META
     )
-    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null)" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" <<< "$META_RAW"
+    if ! command -v openssl >/dev/null 2>&1; then
+        echo -e "${YELLOW}[*] Asegurando disponibilidad de openssl...${NC}"
+        pkg install -y openssl 2>/dev/null || apt-get install -y openssl 2>/dev/null || true
+    fi
+    PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null)" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" <<< "$META_RAW" 2>/dev/null || true
 fi
 
 # Generar vault.enc propio si no existe (SIN copiar plantilla del Líder)
