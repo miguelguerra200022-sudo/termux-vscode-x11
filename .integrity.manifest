@@ -155,24 +155,24 @@ f838b9fbc9e50efe331313f6124a00b4ed8cd288967e1dac52336a6a2ea51b00  ./bin/notify-d
 1635285a530df5072f7064df69a967f05b73c03e7f8b5cdaad93fa2e23846b63  ./bin/set-marketplace
 380dd6868632733647fd172129f6d42d44d5faee983092e74c23b5677fa0bff1  ./bin/setup-swap
 97066022f0c06adda0e96231cba5b0f850d94f98ac3c9bfb028a1ceb1459f0a5  ./bin/share-port
-648c9ab9184e550994e58bab42fa941ee14a9fb70dff99cfb2fd5a047fbee016  ./bin/start-vscode
+2b9c61f5790a2a3584ceebff422fb27cacebb337cd2ed30976be6b4ca2a97655  ./bin/start-vscode
 603014ef31aab72eb28776431330fb59615b31f417aa86b3eb2c64ad6cca5005  ./bin/start-vscode-web
 6b6ed869e7093484d70a8cc8302032c17e5f795615654f3ed61bd6a1725de40e  ./bin/stop-vscode
 a5ec38fe47d41c566705954230f1f0bd500fa0cceabb61a38db75f485ce0bf2a  ./bin/switch-identity
-db8d4edc35877c69d2b85c857f1788c17366185bf1bb8092fbf66663aefa2556  ./bin/sync-vscode
+2e77f12720da5563cd35c421111a282a8febfa2fcab477a1206bf16ed8782a8b  ./bin/sync-vscode
 1b4150d0a0826b20e686da47735eb46cba1f5823ff0afb750229b724fb88226d  ./bin/system-compiler
 692edac86d2f8547d217035596d7c75e3faeab8534723bbe4ceecadc1fc9c529  ./bin/termux-runner
 d7227adeaeb79fd1c7a1c55f7084a2ef4d2b845a77b11d7ba9ff300a856dceaf  ./bin/toggle-touch-mode
 0573aca240e0d27281bf2409c892462cdb9dafebe4f866f06ac63e7ff46f1386  ./bin/vault-logs
-3923727c63a76cad157a008aced199e403e33e433f060de0d5c2d38ffca0065e  ./bin/vault-manager
+e23b46331347cb8e7c3a9630de626ec913f0f631a8f4fef598bdd18caef16104  ./bin/vault-manager
 e5443a6a7bf3ed8456a2b9533f380fcd094eaf88c9bb185c3957240f3d6ce5be  ./bin/vscode
-5549fd70f175963a0959128d346ddc35d20a47feeeae1835dfc08af827d562ff  ./bin/watcher-sync
+b7303edd8d2454ed050662ef0bcda275158ce0abe6e002ec70aa9b7422e35a85  ./bin/watcher-sync
 e68e15a745e2037c9de93947b1a17270269a5dc91683b6c80e42e203cc8429b9  ./cloud-gateway/README.md
 1e7cbb12ca805e47ffe62db8e1723c5464119ef29c1a6c68425f3a5ddcd98d82  ./cloud-gateway/backfill_r2.py
 c3584f9a17a7e09dd670d86bac8330a4257f3dea0b25b46be606001bc5c5b733  ./cloud-gateway/deploy.sh
-acbf251b928dbac17125abf5f977e2709e37d72e1a4e7111875d229fc5c3e727  ./cloud-gateway/deploy_api.py
+0b92acc497d2fd77a791d47ca6e5743d283b82b5186e7c92956f7c2d0c94f5dc  ./cloud-gateway/deploy_api.py
 201917c96589aeefa216359496722cf7d12f7ac2fbbadc11e48c87e1ef5b6c3b  ./cloud-gateway/schema.sql
-21b5b13601936b941ffb3ee60b967d3cf773f7ddb8812b4c0b66cb43636dde4d  ./cloud-gateway/src/index.js
+8261502b6e6a8d3243a1315e8aff7b982fa6e3040da1b4fd0465f9ceaa5de132  ./cloud-gateway/src/index.js
 5cbec1e75c528b37b22ee775e5014147501e1f9f391c95d74a6891a21b841d42  ./cloud-gateway/wrangler.toml
 cb01aeb8c72d140dd615b9102203ea7025c0261d6540adae2e2ee0072edddbd9  ./config/argv.json
 924602195c7c2027b02f5c008aadd59dad00d6a96754535d5ac39da28f65d146  ./config/desktop-items-0.conf
@@ -635,5 +635,5 @@ abd9e49638060c228777916f8be20de7f79e389419fae6e4275293935ed26b08  ./data/zen/qql
 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a  ./data/zen/qqlfient.Default (release)/zen-themes.json
 a39ca57624ff36ea946acb2aaf721eafbaf1e2b3cefa55dd7d6ab67733a0f23f  ./docs/GUIA_RAPIDA.md
 b48446381eee60692600cb35ac250ac63a126be28924b45781ee9e4e9d7565a6  ./instalar
-33f2c18e4685ad351c39cab55153d6ad8271d881cb6f5cb365a6e0c0a6f45fe4  ./install.sh
+b8b383c165b2746cb099774211748f6ccb64da59cfc665f9143b3137977077de  ./install.sh
 a18dea5410b968f9d54202db54ba502e1cf16457b28aa89cb7ca1d50985f3cd6  ./uninstall.sh

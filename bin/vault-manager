@@ -52,8 +52,13 @@ get_pass_key() {
     local key=""
     if command -v github-auth-broker >/dev/null 2>&1; then
         key=$(github-auth-broker session-key "$seal" 2>/dev/null || true)
+    elif [ -f "$REPO_DIR/bin/github-auth-broker" ]; then
+        key=$(python3 "$REPO_DIR/bin/github-auth-broker" session-key "$seal" 2>/dev/null || true)
     fi
-    [ -z "$key" ] && key="master_${seal}"
+    if [ -z "$key" ]; then
+        echo -e "${RED}[!] Error criptográfico: No se pudo obtener la llave de sesión para ${seal}.${NC}" >&2
+        return 1
+    fi
     echo "$key"
 }
 

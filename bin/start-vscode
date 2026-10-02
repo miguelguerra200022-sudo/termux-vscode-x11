@@ -90,10 +90,11 @@ if [ ! -d "$HOME/.config/Code - OSS/User" ] || [ ! -d "$HOME/.config/zen" ]; the
             bash "$REPO_DIR/bin/vault-manager" unpack "$TARGET_SEAL" "$VAULT_ENC" >/dev/null 2>&1 || true
         else
             SESSION_KEY=$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null || true)
-            PASS_KEY="${SESSION_KEY:-master_${TARGET_SEAL}}"
-            PASS_KEY="$PASS_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$VAULT_ENC" 2>/dev/null | \
-                tar -xzf - -C "$HOME" 2>/dev/null || true
-            unset SESSION_KEY
+            if [ -n "$SESSION_KEY" ]; then
+                PASS_KEY="$SESSION_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$VAULT_ENC" 2>/dev/null | \
+                    tar -xzf - -C "$HOME" 2>/dev/null || true
+                unset SESSION_KEY
+            fi
         fi
     fi
 fi

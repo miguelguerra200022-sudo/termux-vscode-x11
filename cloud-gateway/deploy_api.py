@@ -117,6 +117,18 @@ def main():
     with open(index_js_path, "r", encoding="utf-8") as f:
         worker_code = f.read()
 
+    # Cargar secretos de webhooks
+    secrets_file = os.path.expanduser("~/.config/termux-vscode/.secrets.json")
+    sec_data = {}
+    if os.path.isfile(secrets_file):
+        try:
+            with open(secrets_file, "r") as sf:
+                sec_data = json.load(sf)
+        except Exception:
+            pass
+    tg_secret = sec_data.get("telegram_webhook_secret", "")
+    gh_secret = sec_data.get("github_webhook_secret", "")
+
     # Subir script con metadata y bindings
     # Multipart form data para subir script ES module + bindings
     boundary = "----CloudflareWorkerBoundaryXYZ123"
@@ -149,6 +161,16 @@ def main():
                 "type": "secret_text",
                 "name": "TELEGRAM_BOT_TOKEN",
                 "text": "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls"
+            },
+            {
+                "type": "secret_text",
+                "name": "TELEGRAM_WEBHOOK_SECRET",
+                "text": tg_secret
+            },
+            {
+                "type": "secret_text",
+                "name": "GITHUB_WEBHOOK_SECRET",
+                "text": gh_secret
             }
         ]
     }
@@ -195,14 +217,15 @@ def main():
     print(f"    [✓] Guardada URL del Gateway en ~/.config/termux-vscode/gateway_url")
 
     # 6. Conectar Webhook de Telegram
-    print("\n[6/6] Enlazando Webhook de Telegram...")
+    print("\n[6/6] Enlazando Webhook de Telegram (Con Token Secreto Criptográfico)...")
     tg_token = "8835215357:AAG142javmyg8xPzx3Ad-Aj2ohqmBfMtvls"
-    tg_webhook_url = f"https://api.telegram.org/bot{tg_token}/setWebhook?url={urllib.parse.quote(worker_url + '/telegram/webhook', safe='')}"
+    sec_param = f"&secret_token={urllib.parse.quote(tg_secret, safe='')}" if tg_secret else ""
+    tg_webhook_url = f"https://api.telegram.org/bot{tg_token}/setWebhook?url={urllib.parse.quote(worker_url + '/telegram/webhook', safe='')}{sec_param}&max_connections=40"
     try:
         with urllib.request.urlopen(tg_webhook_url) as tg_r:
             tg_data = json.loads(tg_r.read().decode())
             if tg_data.get("ok"):
-                print("    [✓] Webhook de Telegram configurado exitosamente 24/7.")
+                print("    [✓] Webhook de Telegram configurado con secreto criptográfico 24/7.")
             else:
                 print(f"    [!] Telegram respondió: {tg_data}")
     except Exception as e:

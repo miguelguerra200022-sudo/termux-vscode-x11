@@ -37,20 +37,29 @@ async function sendTelegram(env, method, payload) {
     }
 }
 
-// Verificación HMAC SHA-256 de firmas de GitHub Webhook
+// Verificación HMAC SHA-256 criptográfica estricta (Fail-Closed) de firmas de GitHub Webhook
 async function verifyGitHubSignature(secret, headerSig, payloadText) {
-    if (!secret || !headerSig) return true; // Si no hay secreto configurado, permitir
+    if (!secret || typeof secret !== "string" || secret.length === 0) return false;
+    if (!headerSig || typeof headerSig !== "string" || !headerSig.startsWith("sha256=")) return false;
+
+    const expectedHex = headerSig.slice(7).trim().toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(expectedHex)) return false;
+
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
         "raw",
         encoder.encode(secret),
         { name: "HMAC", hash: "SHA-256" },
         false,
-        ["sign"]
+        ["verify"]
     );
-    const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payloadText));
-    const hexSig = "sha256=" + Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, "0")).join("");
-    return hexSig === headerSig;
+
+    const sigBytes = new Uint8Array(
+        expectedHex.match(/../g).map(hex => parseInt(hex, 16))
+    );
+
+    const rawBytes = typeof payloadText === "string" ? encoder.encode(payloadText) : payloadText;
+    return await crypto.subtle.verify("HMAC", key, sigBytes, rawBytes);
 }
 
 export default {
@@ -81,6 +90,11 @@ export default {
             // 1. WEBHOOK DE TELEGRAM (/telegram/webhook)
             // ------------------------------------------------------------------
             if (path === "/telegram/webhook" && request.method === "POST") {
+                const tgHeaderSecret = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
+                const expectedTgSecret = env.TELEGRAM_WEBHOOK_SECRET;
+                if (expectedTgSecret && tgHeaderSecret !== expectedTgSecret) {
+                    return jsonResponse({ error: "Unauthorized Telegram webhook caller" }, 401);
+                }
                 const update = await request.json();
                 ctx.waitUntil(handleTelegramUpdate(update, env));
                 return jsonResponse({ ok: true });
@@ -96,7 +110,11 @@ export default {
                 
                 const isValid = await verifyGitHubSignature(secret, sig, payloadText);
                 if (!isValid) {
-                    return jsonResponse({ error: "Invalid signature" }, 401);
+                    return jsonResponse({ error: "Unauthorized: Invalid or missing GitHub signature" }, 401);
+                }
+
+                if (request.headers.get("X-GitHub-Event") !== "push") {
+                    return jsonResponse({ ok: true, status: "Ignored non-push event" });
                 }
 
                 const data = JSON.parse(payloadText);
@@ -1050,6 +1068,16 @@ async function handleVaultDeltaSync(body, env) {
 async function handleVaultDownload(seal, env) {
     if (!seal) return jsonResponse({ error: "Missing seal" }, 400);
 
+    if (env.DB) {
+        const dev = await env.DB.prepare(`SELECT status, role FROM devices WHERE seal = ?`).bind(seal).first();
+        if (!dev) {
+            return jsonResponse({ error: "Device not registered in fleet" }, 403);
+        }
+        if (dev.status !== "active") {
+            return jsonResponse({ error: `Device status is '${dev.status}': Access denied` }, 403);
+        }
+    }
+
     if (env.VAULTS) {
         const obj = await env.VAULTS.get(`vaults/${seal}.enc`);
         if (obj) {
@@ -1066,6 +1094,16 @@ async function handleVaultDownload(seal, env) {
 
 async function handleVaultUpload(seal, request, env) {
     if (!seal) return jsonResponse({ error: "Missing seal" }, 400);
+
+    if (env.DB) {
+        const dev = await env.DB.prepare(`SELECT status, role FROM devices WHERE seal = ?`).bind(seal).first();
+        if (!dev) {
+            return jsonResponse({ error: "Device not registered in fleet" }, 403);
+        }
+        if (dev.status !== "active") {
+            return jsonResponse({ error: `Device status is '${dev.status}': Upload denied` }, 403);
+        }
+    }
 
     if (env.VAULTS) {
         await env.VAULTS.put(`vaults/${seal}.enc`, request.body);

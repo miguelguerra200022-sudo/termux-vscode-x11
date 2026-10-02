@@ -596,7 +596,14 @@ EOF_META
         pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" openssl 2>/dev/null || true
     fi
     PASS_KEY="$(github-auth-broker session-key "$SELLO_HARDWARE" 2>/dev/null || true)"
-    PASS_KEY="${PASS_KEY:-master_${SELLO_HARDWARE}}"
+    if [ -z "$PASS_KEY" ] && [ -f "$SCRIPT_DIR/bin/github-auth-broker" ]; then
+        PASS_KEY="$(python3 "$SCRIPT_DIR/bin/github-auth-broker" session-key "$SELLO_HARDWARE" 2>/dev/null || true)"
+    fi
+    if [ -z "$PASS_KEY" ]; then
+        echo -e "${RED}[!] Error de seguridad: No se pudo derivar la llave de sesión criptográfica para $SELLO_HARDWARE.${NC}"
+        echo -e "${RED}[!] Abortando para evitar cifrado con claves predecibles.${NC}"
+        exit 1
+    fi
     PASS_KEY="$PASS_KEY" openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -out "$SCRIPT_DIR/$TARGET_FOLDER/metadata.enc" <<< "$META_RAW" 2>/dev/null || true
 fi
 
