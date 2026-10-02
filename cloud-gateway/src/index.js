@@ -268,57 +268,68 @@ async function handleTelegramUpdate(update, env) {
 
         const targetChatId = cb.message?.chat?.id || authorizedChat;
 
-        if (cbData.startsWith("auth_approve:") || cbData.startsWith("auth_approve_")) {
-            const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("auth_approve_", "");
-            await approveDeviceInDb(seal, env);
-            let devName = seal;
-            if (env.DB) {
-                const row = await env.DB.prepare(`SELECT username FROM devices WHERE seal = ?`).bind(seal).first();
-                if (row && row.username) devName = row.username;
-            }
-            await sendTelegram(env, "editMessageText", {
-                chat_id: targetChatId,
-                message_id: msgId,
-                text: `✅ *DISPOSITIVO AUTORIZADO (CLOUDFLARE EDGE)*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⚡ Aprobación concedida por el Líder.\n━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar:_`,
-                parse_mode: "Markdown",
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: "🔴 REVOCAR ACCESO", callback_data: `auth_reject:${seal}` }]
-                    ]
+        try {
+            if (cbData.startsWith("auth_approve:") || cbData.startsWith("auth_approve_")) {
+                const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("auth_approve_", "");
+                await approveDeviceInDb(seal, env);
+                let devName = seal;
+                if (env.DB) {
+                    const row = await env.DB.prepare(`SELECT username FROM devices WHERE seal = ?`).bind(seal).first();
+                    if (row && row.username) devName = row.username;
                 }
-            });
-        } else if (cbData.startsWith("auth_reject:") || cbData.startsWith("auth_reject_")) {
-            const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("auth_reject_", "");
-            await revokeDeviceInDb(seal, env);
-            let devName = seal;
-            if (env.DB) {
-                const row = await env.DB.prepare(`SELECT username FROM devices WHERE seal = ?`).bind(seal).first();
-                if (row && row.username) devName = row.username;
+                await sendTelegram(env, "editMessageText", {
+                    chat_id: targetChatId,
+                    message_id: msgId,
+                    text: `✅ *DISPOSITIVO AUTORIZADO (CLOUDFLARE EDGE)*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⚡ Aprobación concedida por el Líder.\n━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _¿Fue una aprobación accidental? Pulsa abajo para revocar:_`,
+                    parse_mode: "Markdown",
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: "🔴 REVOCAR ACCESO", callback_data: `auth_reject:${seal}` }]
+                        ]
+                    }
+                });
+            } else if (cbData.startsWith("auth_reject:") || cbData.startsWith("auth_reject_")) {
+                const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("auth_reject_", "");
+                await revokeDeviceInDb(seal, env);
+                let devName = seal;
+                if (env.DB) {
+                    const row = await env.DB.prepare(`SELECT username FROM devices WHERE seal = ?`).bind(seal).first();
+                    if (row && row.username) devName = row.username;
+                }
+                await sendTelegram(env, "editMessageText", {
+                    chat_id: targetChatId,
+                    message_id: msgId,
+                    text: `❌ *ACCESO RECHAZADO / BLOQUEADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⛔ Solicitud denegada permanentemente por el Líder.`,
+                    parse_mode: "Markdown"
+                });
+            } else if (cbData.startsWith("renew_approve:") || cbData.startsWith("renew_approve_")) {
+                const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("renew_approve_", "");
+                await renewSubscriptionInDb(seal, "Telegram (@CloudSentinel)", env);
+                await sendTelegram(env, "editMessageText", {
+                    chat_id: targetChatId,
+                    message_id: msgId,
+                    text: `✅ *SUSCRIPCIÓN RENOVADA POR 30 DÍAS*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n⚡ Sistema reactivado y ciclo contable extendido.`,
+                    parse_mode: "Markdown"
+                });
+            } else if (cbData.startsWith("renew_reject:") || cbData.startsWith("renew_reject_")) {
+                const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("renew_reject_", "");
+                await revokeDeviceInDb(seal, env);
+                await sendTelegram(env, "editMessageText", {
+                    chat_id: targetChatId,
+                    message_id: msgId,
+                    text: `❌ *RENOVACIÓN RECHAZADA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n⛔ Licencia no renovada. El dispositivo permanece congelado.`,
+                    parse_mode: "Markdown"
+                });
             }
-            await sendTelegram(env, "editMessageText", {
-                chat_id: targetChatId,
-                message_id: msgId,
-                text: `❌ *ACCESO RECHAZADO / BLOQUEADO*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Usuario:* \`${devName}\`\n🏷️ *Sello:* \`${seal}\`\n⛔ Solicitud denegada permanentemente por el Líder.`,
-                parse_mode: "Markdown"
-            });
-        } else if (cbData.startsWith("renew_approve:") || cbData.startsWith("renew_approve_")) {
-            const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("renew_approve_", "");
-            await renewSubscriptionInDb(seal, "Telegram (@CloudSentinel)", env);
-            await sendTelegram(env, "editMessageText", {
-                chat_id: targetChatId,
-                message_id: msgId,
-                text: `✅ *SUSCRIPCIÓN RENOVADA POR 30 DÍAS*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n⚡ Sistema reactivado y ciclo contable extendido.`,
-                parse_mode: "Markdown"
-            });
-        } else if (cbData.startsWith("renew_reject:") || cbData.startsWith("renew_reject_")) {
-            const seal = cbData.includes(":") ? cbData.split(":")[1] : cbData.replace("renew_reject_", "");
-            await revokeDeviceInDb(seal, env);
-            await sendTelegram(env, "editMessageText", {
-                chat_id: targetChatId,
-                message_id: msgId,
-                text: `❌ *RENOVACIÓN RECHAZADA*\n━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Sello:* \`${seal}\`\n⛔ Licencia no renovada. El dispositivo permanece congelado.`,
-                parse_mode: "Markdown"
-            });
+        } catch (cbErr) {
+            console.error("Error in callback query handling:", cbErr);
+            try {
+                await sendTelegram(env, "sendMessage", {
+                    chat_id: targetChatId,
+                    text: `⚠️ *Error procesando botón:* \`${cbErr.message || cbErr}\``,
+                    parse_mode: "Markdown"
+                });
+            } catch (e) {}
         }
         return;
     }
@@ -830,12 +841,20 @@ async function approveDeviceInDb(seal, env) {
     const expTs = nowTs + (30 * 86400);
     const expIso = new Date(expTs * 1000).toISOString();
     const freshHash = "hash_" + crypto.randomUUID().replace(/-/g, "");
+    const salt = crypto.randomUUID().slice(0, 16);
 
-    await env.DB.prepare(
-        `INSERT INTO devices (seal, username, role, model, current_hash, registered_at, status)
-         VALUES (?, 'Worker', 'Worker', 'Android', ?, ?, 'active')
-         ON CONFLICT(seal) DO UPDATE SET status = 'active', current_hash = excluded.current_hash`
-    ).bind(seal, freshHash, nowIso).run();
+    const updateRes = await env.DB.prepare(
+        `UPDATE devices SET status = 'active', current_hash = ?, last_seen_at = ? WHERE seal = ?`
+    ).bind(freshHash, nowTs, seal).run();
+
+    if (!updateRes?.meta?.changes || updateRes.meta.changes === 0) {
+        await env.DB.prepare(
+            `INSERT INTO devices (seal, role, username, device_model, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
+             VALUES (?, 'Worker', 'Worker', 'Android', 'active', ?, ?, 1, 0, ?, ?, ?, ?, ?, '')
+             ON CONFLICT(seal) DO UPDATE SET status = 'active', current_hash = excluded.current_hash`
+        ).bind(seal, freshHash, salt, nowTs, nowIso, nowIso, Date.now(), nowTs).run();
+    }
+
     await env.DB.prepare(
         `INSERT INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
          VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)
