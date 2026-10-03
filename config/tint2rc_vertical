@@ -121,11 +121,6 @@ launcher_icon_theme_override = 1
 launcher_icon_theme = hicolor
 startup_notifications = 0
 launcher_tooltip = 1
-launcher_item_app = /data/data/com.termux/files/usr/share/applications/code-oss.desktop
-launcher_item_app = /data/data/com.termux/files/usr/share/applications/zen-browser.desktop
-launcher_item_app = /data/data/com.termux/files/usr/share/applications/xfce4-terminal.desktop
-launcher_item_app = /data/data/com.termux/files/usr/share/applications/juegos.desktop
-launcher_item_app = /data/data/com.termux/files/usr/share/applications/programas.desktop
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/teclado.desktop
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/touch-toggle.desktop
 
@@ -143,7 +138,7 @@ taskbar_hide_different_monitor = 0
 taskbar_hide_different_desktop = 0
 taskbar_always_show_all_desktop_tasks = 1
 taskbar_distribute_size = 0
-taskbar_sort_order = none
+taskbar_sort_order = application
 task_align = left
 
 # ------------------------------------------------------------------------------
