@@ -21,11 +21,12 @@ echo -e "${GREEN}  📦 Instalando ScummVM${NC}"
 echo -e "${CYAN}  (Motor para revivir las mejores aventuras gráficas clásicas de LucasArts)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
-echo -e "${YELLOW}[*] Instalando dependencias y paquete scummvm...${NC}"
-pkg install -y x11-repo >/dev/null 2>&1 || true
-
-if ! command -v scummvm >/dev/null 2>&1; then
-    pkg install -y scummvm >/dev/null 2>&1 || apt-get install -y scummvm >/dev/null 2>&1 || true
+echo -e "${YELLOW}[*] Desplegando lanzador y soporte oficial de ScummVM...${NC}"
+REPO_DIR="$HOME/termux-vscode-x11"
+[ -d "/sdcard/Antigravity/IdeasMillonarias/termux-vscode-x11" ] && REPO_DIR="/sdcard/Antigravity/IdeasMillonarias/termux-vscode-x11"
+if [ -f "$REPO_DIR/bin/scummvm" ]; then
+    cp -f "$REPO_DIR/bin/scummvm" "$PREFIX/bin/"
+    chmod +x "$PREFIX/bin/scummvm"
 fi
 
 

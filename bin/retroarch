@@ -1,0 +1,73 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# retroarch: Lanzador Oficial de RetroArch Multi-Sistema
+# Optimizado con Controles Táctiles en Pantalla para Android ARM64
+# ==============================================================================
+
+ROM="$1"
+PKG=""
+for p in com.retroarch.aarch64 com.retroarch; do
+    if pm list packages | grep -q "$p"; then
+        PKG="$p"
+        break
+    fi
+done
+
+if [ -n "$PKG" ]; then
+    echo "[*] Iniciando RetroArch con controles táctiles nativos..."
+    if [ -n "$ROM" ] && [ -f "$ROM" ]; then
+        SHARED_DIR="/storage/emulated/0/RetroGames/retroarch"
+        mkdir -p "$SHARED_DIR" 2>/dev/null || true
+        TARGET_ROM="$ROM"
+        if [[ "$ROM" != /storage/emulated/0/* ]]; then
+            TARGET_ROM="$SHARED_DIR/$(basename "$ROM")"
+            [ ! -f "$TARGET_ROM" ] && cp -f "$ROM" "$TARGET_ROM" 2>/dev/null || true
+        fi
+        am start -n "$PKG/com.retroarch.browser.retroactivity.RetroActivityFuture" -e "ROM" "$TARGET_ROM" >/dev/null 2>&1 || \
+        am start -n "$PKG/com.retroarch.browser.retroactivity.RetroActivityFuture" >/dev/null 2>&1 || true
+    else
+        am start -n "$PKG/com.retroarch.browser.retroactivity.RetroActivityFuture" >/dev/null 2>&1 || true
+    fi
+    exit 0
+fi
+
+# Si se invocó desde la interfaz gráfica sin terminal interactiva, abrir xfce4-terminal
+if [ ! -t 0 ] && [ -n "$DISPLAY" ]; then
+    exec xfce4-terminal --title="RetroArch" --geometry=75x22 -e "$0 $*"
+fi
+
+echo ""
+echo "======================================================"
+echo "  👾 RETROARCH • Emulador Multi-Sistema Universal"
+echo "======================================================"
+echo "RetroArch incluye OVERLAY TÁCTIL RETROPAD en pantalla"
+echo "(SNES, Genesis, NES, PS1, Arcade con cruceta y botones)"
+echo "a 60 FPS con núcleos optimizados para Android."
+echo ""
+echo "Estado: No instalado en tu celular."
+echo ""
+echo "  [1] ⚡ Descargar e Instalar RetroArch 64-bit APK Oficial (1 toque)"
+echo "  [2] 📥 Abrir Google Play Store para instalar RetroArch"
+echo "  [0] ↩️ Salir"
+echo ""
+read -p "Elige una opción [1/2/0]: " opt
+case "$opt" in
+    1)
+        TMP_APK="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/retroarch.apk"
+        echo "[*] Descargando RetroArch aarch64 APK oficial..."
+        if curl -# -L --connect-timeout 15 -A "Mozilla/5.0 (Android; Termux)" "https://buildbot.libretro.com/stable/1.19.1/android/RetroArch_aarch64.apk" -o "$TMP_APK"; then
+            echo "[*] Abriendo instalador de Android..."
+            termux-open "$TMP_APK" 2>/dev/null || am start -a android.intent.action.VIEW -d "file://$TMP_APK" -t "application/vnd.android.package-archive" >/dev/null 2>&1 || true
+        else
+            echo "[!] Error al descargar. Abriendo Play Store..."
+            am start -a android.intent.action.VIEW -d "market://details?id=com.retroarch.aarch64" >/dev/null 2>&1 || true
+        fi
+        ;;
+    2)
+        am start -a android.intent.action.VIEW -d "market://details?id=com.retroarch.aarch64" >/dev/null 2>&1 || \
+        am start -a android.intent.action.VIEW -d "https://play.google.com/store/apps/details?id=com.retroarch.aarch64" >/dev/null 2>&1 || true
+        ;;
+    *)
+        exit 0
+        ;;
+esac

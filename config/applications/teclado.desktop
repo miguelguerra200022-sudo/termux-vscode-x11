@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Teclado en Pantalla
+Comment=Desplegar u ocultar teclado táctil virtual en pantalla
+Exec=/data/data/com.termux/files/usr/bin/toggle-keyboard
+Icon=/data/data/com.termux/files/usr/share/pixmaps/keyboard.png
+Terminal=false
+Type=Application
+Categories=Utility;

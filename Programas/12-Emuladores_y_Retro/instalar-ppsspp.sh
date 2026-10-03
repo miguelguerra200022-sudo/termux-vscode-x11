@@ -21,16 +21,13 @@ echo -e "${GREEN}  📦 Instalando PPSSPP${NC}"
 echo -e "${CYAN}  (El mejor emulador de PlayStation Portable (PSP) a 60 FPS con OpenGL)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
-echo -e "${YELLOW}[*] Instalando dependencias y paquete ppsspp...${NC}"
-pkg install -y x11-repo >/dev/null 2>&1 || true
-
-if ! command -v ppsspp >/dev/null 2>&1; then
-    pkg install -y ppsspp >/dev/null 2>&1 || apt-get install -y ppsspp >/dev/null 2>&1 || true
+echo -e "${YELLOW}[*] Desplegando lanzador y soporte oficial de PPSSPP...${NC}"
+REPO_DIR="$HOME/termux-vscode-x11"
+[ -d "/sdcard/Antigravity/IdeasMillonarias/termux-vscode-x11" ] && REPO_DIR="/sdcard/Antigravity/IdeasMillonarias/termux-vscode-x11"
+if [ -f "$REPO_DIR/bin/ppsspp" ]; then
+    cp -f "$REPO_DIR/bin/ppsspp" "$PREFIX/bin/"
+    chmod +x "$PREFIX/bin/ppsspp"
 fi
-    if ! command -v ppsspp >/dev/null 2>&1; then
-        echo -e "${YELLOW}[*] Probando paquete alternativo ppsspp-sdl...${NC}"
-        pkg install -y ppsspp-sdl >/dev/null 2>&1 || apt-get install -y ppsspp-sdl >/dev/null 2>&1 || true
-    fi
 
 # Asegurar directorios de soporte para juegos y emuladores
 if [ "12-Emuladores_y_Retro" = "12-Emuladores_y_Retro" ]; then

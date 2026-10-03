@@ -208,6 +208,14 @@ fi
 mkdir -p "$HOME/.local/share/applications" "$HOME/.icons" "$HOME/.local/share/icons" "$HOME/Desktop"
 [ -f "$PREFIX/bin/xfce4-terminal" ] && [ ! -f "$PREFIX/bin/x-terminal-emulator" ] && ln -sf "$PREFIX/bin/xfce4-terminal" "$PREFIX/bin/x-terminal-emulator" 2>/dev/null || true
 
+# Sincronizar ejecutables de soporte desde bin del repositorio
+for tool_bin in duckstation-qt duckstation ppsspp retroarch scummvm toggle-touch-mode juegos programas actualizar gitops-sync fetch-app-icon; do
+    if [ -f "$REPO_DIR/bin/$tool_bin" ]; then
+        cp -f "$REPO_DIR/bin/$tool_bin" "$PREFIX/bin/" 2>/dev/null || true
+        chmod +x "$PREFIX/bin/$tool_bin" 2>/dev/null || true
+    fi
+done
+
 # Sincronizar pixmaps desde assets del repositorio
 if [ -d "$REPO_DIR/assets/pixmaps" ]; then
     mkdir -p "/data/data/com.termux/files/usr/share/pixmaps"

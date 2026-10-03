@@ -126,6 +126,7 @@ launcher_item_app = /data/data/com.termux/files/usr/share/applications/zen-brows
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/xfce4-terminal.desktop
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/juegos.desktop
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/programas.desktop
+launcher_item_app = /data/data/com.termux/files/usr/share/applications/teclado.desktop
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/touch-toggle.desktop
 
 # ------------------------------------------------------------------------------

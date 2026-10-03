@@ -1,0 +1,10 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# toggle-keyboard: Desplegar/Ocultar Teclado Virtual en Pantalla (Matchbox)
+# ==============================================================================
+
+if pgrep -f "matchbox-keyboard" >/dev/null 2>&1; then
+    pkill -f "matchbox-keyboard" 2>/dev/null || true
+else
+    DISPLAY="${DISPLAY:-:0}" matchbox-keyboard >/dev/null 2>&1 &
+fi

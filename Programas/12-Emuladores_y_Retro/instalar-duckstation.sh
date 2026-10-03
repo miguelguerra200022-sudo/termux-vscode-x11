@@ -21,16 +21,14 @@ echo -e "${GREEN}  📦 Instalando DuckStation${NC}"
 echo -e "${CYAN}  (Emulador avanzado de PlayStation 1 con escalado y filtros gráficos)${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
-echo -e "${YELLOW}[*] Instalando dependencias y paquete duckstation-qt...${NC}"
-pkg install -y x11-repo >/dev/null 2>&1 || true
-
-if ! command -v duckstation-qt >/dev/null 2>&1; then
-    pkg install -y duckstation-qt >/dev/null 2>&1 || apt-get install -y duckstation-qt >/dev/null 2>&1 || true
+echo -e "${YELLOW}[*] Desplegando lanzador y soporte oficial de DuckStation...${NC}"
+REPO_DIR="$HOME/termux-vscode-x11"
+[ -d "/sdcard/Antigravity/IdeasMillonarias/termux-vscode-x11" ] && REPO_DIR="/sdcard/Antigravity/IdeasMillonarias/termux-vscode-x11"
+if [ -f "$REPO_DIR/bin/duckstation-qt" ]; then
+    cp -f "$REPO_DIR/bin/duckstation-qt" "$PREFIX/bin/"
+    chmod +x "$PREFIX/bin/duckstation-qt"
+    ln -sf "$PREFIX/bin/duckstation-qt" "$PREFIX/bin/duckstation" 2>/dev/null || true
 fi
-    if ! command -v duckstation-qt >/dev/null 2>&1; then
-        echo -e "${YELLOW}[*] Probando paquete alternativo duckstation...${NC}"
-        pkg install -y duckstation >/dev/null 2>&1 || apt-get install -y duckstation >/dev/null 2>&1 || true
-    fi
 
 # Asegurar directorios de soporte para juegos y emuladores
 if [ "12-Emuladores_y_Retro" = "12-Emuladores_y_Retro" ]; then

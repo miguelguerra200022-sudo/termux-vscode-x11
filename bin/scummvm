@@ -1,0 +1,55 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# scummvm: Lanzador Oficial de ScummVM (Aventuras Gráficas Clásicas)
+# Optimizado con Controles Táctiles y Puntero Directo para Android ARM64
+# ==============================================================================
+
+ROM="$1"
+PKG="org.scummvm.scummvm"
+
+if pm list packages | grep -q "$PKG"; then
+    echo "[*] Iniciando ScummVM con controles táctiles nativos..."
+    am start -n "$PKG/.ScummVMActivity" >/dev/null 2>&1 || true
+    exit 0
+fi
+
+# Si se invocó desde la interfaz gráfica sin terminal interactiva, abrir xfce4-terminal
+if [ ! -t 0 ] && [ -n "$DISPLAY" ]; then
+    exec xfce4-terminal --title="ScummVM" --geometry=75x22 -e "$0 $*"
+fi
+
+echo ""
+echo "======================================================"
+echo "  🏝️ SCUMMVM • Aventuras Gráficas Point & Click"
+echo "======================================================"
+echo "ScummVM permite jugar aventuras como Monkey Island o"
+echo "Maniac Mansion tocando directamente la pantalla táctil"
+echo "como ratón virtual con gestos intuitivos en Android."
+echo ""
+echo "Estado: No instalado en tu celular."
+echo ""
+echo "  [1] ⚡ Descargar e Instalar ScummVM APK Oficial (1 toque)"
+echo "  [2] 📥 Abrir Google Play Store para instalar ScummVM"
+echo "  [0] ↩️ Salir"
+echo ""
+read -p "Elige una opción [1/2/0]: " opt
+case "$opt" in
+    1)
+        TMP_APK="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/scummvm.apk"
+        echo "[*] Descargando ScummVM APK oficial..."
+        if curl -# -L --connect-timeout 15 -A "Mozilla/5.0 (Android; Termux)" "https://downloads.scummvm.org/frs/scummvm/2026.3.0/scummvm-2026.3.0-android-arm64-v8a.apk" -o "$TMP_APK"; then
+            echo "[*] Abriendo instalador de Android..."
+            termux-open "$TMP_APK" 2>/dev/null || am start -a android.intent.action.VIEW -d "file://$TMP_APK" -t "application/vnd.android.package-archive" >/dev/null 2>&1 || true
+        else
+            echo "[!] Error al descargar. Abriendo Play Store..."
+            am start -a android.intent.action.VIEW -d "market://details?id=org.scummvm.scummvm" >/dev/null 2>&1 || true
+        fi
+        ;;
+    2)
+        am start -a android.intent.action.VIEW -d "market://details?id=org.scummvm.scummvm" >/dev/null 2>&1 || \
+        am start -a android.intent.action.VIEW -d "https://play.google.com/store/apps/details?id=org.scummvm.scummvm" >/dev/null 2>&1 || true
+        ;;
+    *)
+        exit 0
+        ;;
+esac

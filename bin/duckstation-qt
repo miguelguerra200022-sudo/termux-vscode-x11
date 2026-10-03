@@ -1,0 +1,62 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# duckstation-qt: Lanzador Oficial de DuckStation (PlayStation 1)
+# Optimizado con Controles Táctiles en Pantalla para Android ARM64
+# ==============================================================================
+
+ROM="$1"
+PKG="com.github.stenzek.duckstation"
+
+# Si DuckStation ya está instalado en el teléfono Android
+if pm list packages | grep -q "$PKG"; then
+    echo "[*] Iniciando DuckStation con controles táctiles nativos..."
+    if [ -n "$ROM" ] && [ -f "$ROM" ]; then
+        SHARED_DIR="/storage/emulated/0/RetroGames/duckstation"
+        mkdir -p "$SHARED_DIR" 2>/dev/null || true
+        TARGET_ROM="$ROM"
+        if [[ "$ROM" != /storage/emulated/0/* ]]; then
+            TARGET_ROM="$SHARED_DIR/$(basename "$ROM")"
+            [ ! -f "$TARGET_ROM" ] && cp -f "$ROM" "$TARGET_ROM" 2>/dev/null || true
+        fi
+        am start -n "$PKG/.MainActivity" -a android.intent.action.VIEW -d "file://$TARGET_ROM" >/dev/null 2>&1 || \
+        am start -n "$PKG/.MainActivity" >/dev/null 2>&1 || true
+    else
+        am start -n "$PKG/.MainActivity" >/dev/null 2>&1 || true
+    fi
+    exit 0
+fi
+
+# Si se invocó desde la interfaz gráfica sin terminal interactiva, abrir xfce4-terminal
+if [ ! -t 0 ] && [ -n "$DISPLAY" ]; then
+    exec xfce4-terminal --title="DuckStation" --geometry=75x22 -e "$0 $*"
+fi
+
+# Si no está instalado, guiar al usuario con menú interactivo
+echo ""
+echo "======================================================"
+echo "  🎮 DUCKSTATION • Emulador de PlayStation 1"
+echo "======================================================"
+echo "DuckStation funciona mediante su aplicación para Android"
+echo "con CONTROLES TÁCTILES COMPLETOS en pantalla a 60 FPS"
+echo "(cruceta, botones △ ◯ ✕ ◻, L1, R1, etc.),"
+echo "sin necesidad de teclado ni ratón."
+echo ""
+echo "Estado: No instalado en tu celular."
+echo ""
+echo "  [1] 📥 Abrir Google Play Store para instalar DuckStation"
+echo "  [2] 🌐 Abrir enlace de descarga directa en navegador"
+echo "  [0] ↩️ Salir"
+echo ""
+read -p "Elige una opción [1/2/0]: " opt
+case "$opt" in
+    1)
+        am start -a android.intent.action.VIEW -d "market://details?id=com.github.stenzek.duckstation" >/dev/null 2>&1 || \
+        am start -a android.intent.action.VIEW -d "https://play.google.com/store/apps/details?id=com.github.stenzek.duckstation" >/dev/null 2>&1 || true
+        ;;
+    2)
+        am start -a android.intent.action.VIEW -d "https://www.apkmirror.com/apk/stenzek/duckstation/" >/dev/null 2>&1 || true
+        ;;
+    *)
+        exit 0
+        ;;
+esac
