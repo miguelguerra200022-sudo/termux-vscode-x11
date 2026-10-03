@@ -38,6 +38,21 @@ get_sep_bar() {
     printf '%*s' "$c" '' | tr ' ' '─'
 }
 
+get_box_top() {
+    local c=$(get_ui_cols)
+    echo "╔$(printf '%*s' "$((c - 2))" '' | tr ' ' '═')╗"
+}
+
+get_box_sep() {
+    local c=$(get_ui_cols)
+    echo "╟$(printf '%*s' "$((c - 2))" '' | tr ' ' '─')╢"
+}
+
+get_box_bot() {
+    local c=$(get_ui_cols)
+    echo "╚$(printf '%*s' "$((c - 2))" '' | tr ' ' '═')╝"
+}
+
 mkdir -p "$(dirname "$INSTALLED_REGISTRY")" "$HOME/Desktop"
 
 # ------------------------------------------------------------------------------
@@ -812,25 +827,24 @@ run_main_menu() {
         done
 
         clear
-        # Mostrar banner Code Stack Sh si la terminal tiene al menos 20 líneas de alto
         local t_lines=$(tput lines 2>/dev/null || echo 24)
+        local t_cols=$(get_ui_cols)
+
+        # 1. Caja Superior: Banner CSAN2 Independiente
         if [ "$t_lines" -ge 20 ]; then
+            local max_b_rows=4
+            [ "$t_lines" -ge 28 ] && max_b_rows=6
             if command -v code-stack-ascii >/dev/null 2>&1; then
-                python3 "$(command -v code-stack-ascii)" banner "$banner_frame" 2>/dev/null || true
+                python3 "$(command -v code-stack-ascii)" banner "$banner_frame" --boxed --cols "$t_cols" --rows "$max_b_rows" 2>/dev/null || true
             elif [ -f "$REPO_DIR/bin/code-stack-ascii" ]; then
-                python3 "$REPO_DIR/bin/code-stack-ascii" banner "$banner_frame" 2>/dev/null || true
+                python3 "$REPO_DIR/bin/code-stack-ascii" banner "$banner_frame" --boxed --cols "$t_cols" --rows "$max_b_rows" 2>/dev/null || true
             fi
             ((banner_frame=(banner_frame+4)%120))
+            echo ""
         fi
-        echo -e "${BLUE}$(get_div_bar)${NC}"
-        echo -e "${GREEN}  📦 CODE STACK SH • CENTRO DE SOFTWARE OFICIAL${NC}"
-        echo -e "${CYAN}     «La libertad de programar sin necesidad de una PC»${NC}"
-        echo -e "${BLUE}$(get_div_bar)${NC}"
-        echo ""
-        echo -e "Explorar categorías para instalar:"
-        echo ""
 
         CATEGORIES=()
+        local -a CAT_ITEMS=()
         local i=1
         for d in "$SCRIPT_DIR"/*/; do
             [ -d "$d" ] || continue
@@ -844,17 +858,37 @@ run_main_menu() {
             local count=0
             [ -e "${cat_files[0]}" ] && count="${#cat_files[@]}"
 
-            echo -e "  [${YELLOW}$i${NC}] 📁 $cname_clean (${CYAN}$count programas${NC})"
+            CAT_ITEMS+=(" [${i}] 📁 ${cname_clean} (${count})")
             ((i++))
         done
 
-        echo ""
-        echo -e "${GRAY}$(get_sep_bar)${NC}"
-        echo -e "  [${YELLOW}D${NC}] 🗑️ ${BOLD}Desinstalar programas${NC} (${GREEN}$inst_count instalados${NC})"
-        echo -e "  [${YELLOW}B${NC}] 🔍 ${BOLD}Buscar programa${NC} (+110 apps)"
-        echo -e "  [${YELLOW}G${NC}] ⚡ ${BOLD}Calibrar GPU y Aceleración Hardware${NC}"
-        echo -e "  [${YELLOW}0${NC}] 🚪 Salir ${GRAY}(o pulsa borrar)${NC}"
-        echo -e "${GRAY}$(get_sep_bar)${NC}"
+        # 2. Caja Inferior: Menú de Software Independiente
+        local ascii_bin=""
+        if command -v code-stack-ascii >/dev/null 2>&1; then
+            ascii_bin="$(command -v code-stack-ascii)"
+        elif [ -f "$REPO_DIR/bin/code-stack-ascii" ]; then
+            ascii_bin="$REPO_DIR/bin/code-stack-ascii"
+        fi
+
+        if [ -n "$ascii_bin" ]; then
+            local -a menu_cmd=(python3 "$ascii_bin" menu-box --cols "$t_cols" \
+                --title "📦 CODE STACK SH • CENTRO DE SOFTWARE OFICIAL" \
+                --subtitle "«La libertad de programar sin necesidad de una PC»")
+            for item in "${CAT_ITEMS[@]}"; do
+                menu_cmd+=(--item "$item")
+            done
+            menu_cmd+=(--action " [D] 🗑️ Desinstalar ($inst_count)" \
+                       --action " [G] ⚡ Calibrar GPU" \
+                       --action " [B] 🔍 Buscar (+110 apps)" \
+                       --action " [0] 🚪 Salir")
+            "${menu_cmd[@]}"
+        else
+            echo -e "${BLUE}$(get_box_top)${NC}"
+            for item in "${CAT_ITEMS[@]}"; do
+                echo -e " $item"
+            done
+            echo -e "${BLUE}$(get_box_bot)${NC}"
+        fi
         echo ""
 
         local opt_cat

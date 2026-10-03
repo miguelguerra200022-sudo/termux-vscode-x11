@@ -340,6 +340,93 @@ def get_formatted_banner_lines(frame_index=0, max_cols=None, max_rows=None):
         for line in store.lines(frame_index)[:height]
     ]
 
+def get_boxed_banner_lines(frame_index=0, max_cols=None, max_rows=None, border_color="\033[1;34m"):
+    cols, rows = terminal_size()
+    target_w = max_cols if max_cols is not None else cols
+    target_w = max(38, min(target_w, 100))
+    inner_w = target_w - 2
+    raw_lines = get_formatted_banner_lines(frame_index, max_cols=inner_w, max_rows=max_rows)
+    if not raw_lines:
+        return []
+    border = "═" * inner_w
+    out = [f"{border_color}╔{border}╗\033[0m"]
+    for l in raw_lines:
+        w = visible_width(l)
+        pad = max(0, inner_w - w)
+        pad_l = pad // 2
+        pad_r = pad - pad_l
+        out.append(f"{border_color}║\033[0m" + (" " * pad_l) + l + (" " * pad_r) + f"{border_color}║\033[0m")
+    out.append(f"{border_color}╚{border}╝\033[0m")
+    return out
+
+def render_boxed_menu(title="", subtitle="", items=None, actions=None, cols=70, two_cols=True, border_color="\033[1;34m"):
+    if items is None:
+        items = []
+    if actions is None:
+        actions = []
+    w = max(38, min(cols, 100)) - 2
+    border_top = f"{border_color}╔{'═' * w}╗\033[0m"
+    border_sep = f"{border_color}╟{'─' * w}╢\033[0m"
+    border_bot = f"{border_color}╚{'═' * w}╝\033[0m"
+
+    out = [border_top]
+
+    def add_row(inner):
+        cur_w = visible_width(inner)
+        if cur_w > w:
+            inner = ansi_truncate(inner, w, ellipsis="...")
+            cur_w = visible_width(inner)
+        pad = " " * max(0, w - cur_w)
+        out.append(f"{border_color}║\033[0m{inner}{pad}{border_color}║\033[0m")
+
+    if title:
+        t_pad = max(0, (w - visible_width(title)) // 2)
+        add_row(" " * t_pad + f"\033[1;32m{title}\033[0m")
+    if subtitle:
+        s_pad = max(0, (w - visible_width(subtitle)) // 2)
+        add_row(" " * s_pad + f"\033[1;36m{subtitle}\033[0m")
+
+    if title or subtitle:
+        out.append(border_sep)
+
+    col_w = (w - 3) // 2
+
+    def pad_cell(s, target_w):
+        cur_w = visible_width(s)
+        if cur_w > target_w:
+            s = ansi_truncate(s, target_w, ellipsis="...")
+            cur_w = visible_width(s)
+        return s + (" " * max(0, target_w - cur_w))
+
+    if two_cols and w >= 56:
+        half = (len(items) + 1) // 2
+        for idx in range(half):
+            i1 = items[idx]
+            i2 = items[idx + half] if idx + half < len(items) else None
+            t1_p = pad_cell(i1, col_w)
+            t2_p = pad_cell(i2, col_w) if i2 else (" " * col_w)
+            add_row(t1_p + f" {border_color}│\033[0m " + t2_p)
+    else:
+        for it in items:
+            add_row(pad_cell(it, w))
+
+    if actions:
+        out.append(border_sep)
+        if two_cols and w >= 56:
+            half_a = (len(actions) + 1) // 2
+            for idx in range(half_a):
+                a1 = actions[idx]
+                a2 = actions[idx + half_a] if idx + half_a < len(actions) else None
+                a1_p = pad_cell(a1, col_w)
+                a2_p = pad_cell(a2, col_w) if a2 else (" " * col_w)
+                add_row(a1_p + f" {border_color}│\033[0m " + a2_p)
+        else:
+            for act in actions:
+                add_row(pad_cell(act, w))
+
+    out.append(border_bot)
+    return out
+
 def get_controlling_tty_fd():
     try:
         if sys.stdin.isatty():
@@ -825,6 +912,15 @@ def main():
     banner_p.add_argument("--cols", type=int)
     banner_p.add_argument("--rows", type=int)
     banner_p.add_argument("--fps", type=float)
+    banner_p.add_argument("--boxed", action="store_true", help="Imprimir banner dentro de una caja independiente con bordes")
+
+    menu_p = actions.add_parser("menu-box")
+    menu_p.add_argument("--title", default="")
+    menu_p.add_argument("--subtitle", default="")
+    menu_p.add_argument("--item", action="append", default=[], dest="items")
+    menu_p.add_argument("--action", action="append", default=[], dest="actions")
+    menu_p.add_argument("--cols", type=int)
+    menu_p.add_argument("--single-column", action="store_true")
 
     args = parser.parse_args()
 
@@ -838,10 +934,28 @@ def main():
     if args.action == "banner":
         idx = args.frame if args.frame is not None else args.index
         if idx is not None or not sys.stdout.isatty():
-            for line in get_formatted_banner_lines(idx or 0, max_cols=args.cols, max_rows=args.rows):
+            if getattr(args, "boxed", False):
+                lines = get_boxed_banner_lines(idx or 0, max_cols=args.cols, max_rows=args.rows)
+            else:
+                lines = get_formatted_banner_lines(idx or 0, max_cols=args.cols, max_rows=args.rows)
+            for line in lines:
                 print(line)
             return 0
         return play_banner_interactive(args.fps)
+
+    if args.action == "menu-box":
+        cols = args.cols or terminal_size()[0]
+        lines = render_boxed_menu(
+            title=args.title,
+            subtitle=args.subtitle,
+            items=args.items,
+            actions=args.actions,
+            cols=cols,
+            two_cols=not args.single_column
+        )
+        for line in lines:
+            print(line)
+        return 0
 
     return 1
 
