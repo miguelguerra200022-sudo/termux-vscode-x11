@@ -91,8 +91,12 @@ if [ ! -d "$HOME/.config/Code - OSS/User" ] || [ ! -d "$HOME/.config/zen" ]; the
         else
             SESSION_KEY=$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null || true)
             if [ -n "$SESSION_KEY" ]; then
-                PASS_KEY="$SESSION_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$VAULT_ENC" 2>/dev/null | \
-                    tar -xzf - -C "$HOME" 2>/dev/null || true
+                STAGE_DIR=$(mktemp -d "$HOME/.config/termux-vscode/.stage_XXXXXX" 2>/dev/null || mktemp -d "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/.stage_XXXXXX")
+                if PASS_KEY="$SESSION_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$VAULT_ENC" 2>/dev/null | \
+                    tar -xzf - -C "$STAGE_DIR" 2>/dev/null && [ -n "$(ls -A "$STAGE_DIR" 2>/dev/null)" ]; then
+                    cp -rf "$STAGE_DIR"/. "$HOME"/ 2>/dev/null || true
+                fi
+                rm -rf "$STAGE_DIR" 2>/dev/null || true
                 unset SESSION_KEY
             fi
         fi

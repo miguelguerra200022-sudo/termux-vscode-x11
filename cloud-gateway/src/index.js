@@ -92,7 +92,7 @@ export default {
             if (path === "/telegram/webhook" && request.method === "POST") {
                 const tgHeaderSecret = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
                 const expectedTgSecret = env.TELEGRAM_WEBHOOK_SECRET;
-                if (expectedTgSecret && tgHeaderSecret !== expectedTgSecret) {
+                if (!expectedTgSecret || tgHeaderSecret !== expectedTgSecret) {
                     return jsonResponse({ error: "Unauthorized Telegram webhook caller" }, 401);
                 }
                 const update = await request.json();
@@ -285,6 +285,10 @@ async function handleTelegramUpdate(update, env) {
         await sendTelegram(env, "answerCallbackQuery", { callback_query_id: cbId });
 
         const targetChatId = cb.message?.chat?.id || authorizedChat;
+        if (authorizedChat && String(targetChatId) !== String(authorizedChat)) {
+            console.error("Callback query from unauthorized chat:", targetChatId);
+            return;
+        }
 
         try {
             if (cbData.startsWith("auth_approve:") || cbData.startsWith("auth_approve_")) {
@@ -694,38 +698,48 @@ async function handleDeviceRegister(body, request, env) {
     const salt = crypto.randomUUID().slice(0, 16);
     const ip = request.headers.get("CF-Connecting-IP") || "";
 
+    let effectiveStatus = (seal === LEADER_SEAL) ? "active" : "pending_approval";
     if (env.DB) {
-        await env.DB.prepare(
-            `INSERT INTO devices (seal, role, username, device_model, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
-             VALUES (?, ?, ?, ?, 'active', ?, ?, 1, 0, ?, ?, ?, ?, ?, ?)
-             ON CONFLICT(seal) DO UPDATE SET 
-                username = excluded.username,
-                role = excluded.role,
-                device_model = excluded.device_model,
-                status = 'active',
-                ip_address = excluded.ip_address,
-                last_seen_at = excluded.last_seen_at`
-        ).bind(seal, role, username, model, initialHash, salt, nowTs, nowIso, nowIso, Date.now(), nowTs, ip).run();
+        const isLeader = (seal === LEADER_SEAL);
+        const existing = await env.DB.prepare(`SELECT status, role FROM devices WHERE seal = ?`).bind(seal).first();
 
-        await env.DB.prepare(
-            `INSERT INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
-             VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)
-             ON CONFLICT(seal) DO UPDATE SET 
-                status = 'active',
-                last_verified_ts = excluded.last_verified_ts`
-        ).bind(seal, nowIso, nowIso, nowTs, expIso, expTs, nowTs).run();
+        effectiveStatus = isLeader ? "active" : (existing ? existing.status : "pending_approval");
 
-        await env.DB.prepare(
-            `INSERT INTO cycles_history (seal, cycle, started_at, expires_at, approved_by, created_at)
-             VALUES (?, 1, ?, ?, 'Génesis de Registro Edge', ?)`
-        ).bind(seal, nowIso, expIso, nowTs).run();
+        if (existing) {
+            await env.DB.prepare(
+                `UPDATE devices SET 
+                    username = ?,
+                    role = ?,
+                    device_model = ?,
+                    ip_address = ?,
+                    last_seen_at = ?
+                 WHERE seal = ?`
+            ).bind(username, isLeader ? "Líder" : (existing.role || role), model, ip, nowTs, seal).run();
+        } else {
+            await env.DB.prepare(
+                `INSERT INTO devices (seal, role, username, device_model, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?)`
+            ).bind(seal, role, username, model, effectiveStatus, initialHash, salt, nowTs, nowIso, nowIso, Date.now(), nowTs, ip).run();
+
+            if (isLeader) {
+                await env.DB.prepare(
+                    `INSERT INTO subscriptions (seal, first_registration_at, status, total_cycles_paid, current_cycle, current_cycle_start, current_cycle_start_ts, current_cycle_expires, current_cycle_expires_ts, frozen_at, last_verified_ts)
+                     VALUES (?, ?, 'active', 1, 1, ?, ?, ?, ?, NULL, ?)`
+                ).bind(seal, nowIso, nowIso, nowTs, expIso, expTs, nowTs).run();
+
+                await env.DB.prepare(
+                    `INSERT INTO cycles_history (seal, cycle, started_at, expires_at, approved_by, created_at)
+                     VALUES (?, 1, ?, ?, 'Génesis de Registro Edge', ?)`
+                ).bind(seal, nowIso, expIso, nowTs).run();
+            }
+        }
     }
 
     return jsonResponse({
         ok: true,
         seal,
         role,
-        status: "active",
+        status: effectiveStatus,
         expires_at: seal === LEADER_SEAL ? "Ilimitado" : expIso,
         current_hash: initialHash
     });
@@ -1046,11 +1060,10 @@ async function handleVaultDeltaSync(body, env) {
     const sizeBytes = deltaPayload.length;
 
     if (env.DB) {
-        // Asegurar existencia en devices para respetar la integridad referencial de SQLite
-        await env.DB.prepare(
-            `INSERT OR IGNORE INTO devices (seal, role, username, status, current_hash, salt, sequence, burn_count, registered_at, registered_at_iso, first_registration_date, last_burn_ms, last_seen_at, ip_address)
-             VALUES (?, ?, ?, 'active', 'hash_init', 'salt_init', 1, 0, ?, ?, ?, ?, ?, '')`
-        ).bind(seal, seal === LEADER_SEAL ? 'Líder' : 'Worker', seal === LEADER_SEAL ? 'Líder Maestro' : 'Dispositivo', nowTs, nowIso, nowIso, nowTs * 1000, nowTs).run();
+        const dev = await env.DB.prepare(`SELECT status FROM devices WHERE seal = ?`).bind(seal).first();
+        if (!dev || dev.status !== 'active') {
+            return jsonResponse({ error: "Unauthorized: device not active" }, 403);
+        }
 
         await env.DB.prepare(
             `INSERT INTO vault_deltas (seal, file_rel, file_hash, delta_payload, size_bytes, timestamp)
