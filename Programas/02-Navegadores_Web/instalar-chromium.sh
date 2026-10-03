@@ -25,14 +25,20 @@ echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete chromium...${NC}"
 pkg install -y x11-repo >/dev/null 2>&1 || true
 pkg install -y chromium
 
-# Asegurar enlace ejecutable universal chromium -> chromium-browser
-if [ -f "$PREFIX/bin/chromium-browser" ]; then
+# Asegurar enlace ejecutable universal chromium / chromium-browser con flags seguros
+if [ -f "$PREFIX/bin/chromium" ] && [ ! -f "$PREFIX/bin/chromium-browser" ]; then
+    cat << 'WRAP_EOF' > "$PREFIX/bin/chromium-browser"
+#!/data/data/com.termux/files/usr/bin/bash
+exec "$PREFIX/bin/chromium" --no-sandbox --test-type "$@"
+WRAP_EOF
+    chmod +x "$PREFIX/bin/chromium-browser" 2>/dev/null || true
+elif [ -f "$PREFIX/bin/chromium-browser" ] && [ ! -f "$PREFIX/bin/chromium" ]; then
     ln -sf "$PREFIX/bin/chromium-browser" "$PREFIX/bin/chromium" 2>/dev/null || true
 fi
 
 # Registrar lanzador de escritorio .desktop para Openbox y tint2
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
-mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
+mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications" "$HOME/Desktop"
 
 command -v fetch-app-icon >/dev/null 2>&1 && fetch-app-icon "chromium" >/dev/null 2>&1 || true
 DESKTOP_FILE="$PREFIX/share/applications/chromium.desktop"
@@ -40,7 +46,7 @@ cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Chromium (Termux:X11)
 Comment=Navegador web de código abierto con aceleración y motor Blink.
-Exec=chromium-browser
+Exec=chromium-browser --no-sandbox --test-type %U
 Icon=/data/data/com.termux/files/usr/share/pixmaps/chromium.png
 Terminal=false
 Type=Application

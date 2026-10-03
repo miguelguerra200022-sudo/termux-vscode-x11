@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <openbox_menu xmlns="http://openbox.org/3.4/menu">
-  <menu id="root-menu" label="Entorno de Desarrollo">
-    <separator label="Aplicaciones" />
+  <menu id="root-menu" label="Code Stack Sh">
+    <separator label="Estación Principal" />
     <item label="🚀 Visual Studio Code">
       <action name="Execute">
         <command>code-oss --no-sandbox --disable-gpu --password-store=basic</command>
@@ -12,14 +12,175 @@
         <command>zen-browser</command>
       </action>
     </item>
-    <item label="📦 Centro de Programas (+100 Apps)">
+    <item label="💻 Terminal (XFCE)">
       <action name="Execute">
-        <command>programas</command>
+        <command>xfce4-terminal</command>
       </action>
     </item>
-    <separator label="Sesión y Sistema" />
+    <item label="🕹️ Biblioteca de Juegos (Descargar y Jugar)">
+      <action name="Execute">
+        <command>xfce4-terminal --title="Biblioteca de Juegos" --geometry=95x28 -e "juegos"</command>
+      </action>
+    </item>
+    <item label="📦 Centro de Programas (+138 Apps)">
+      <action name="Execute">
+        <command>xfce4-terminal --title="Centro de Programas" --geometry=95x28 -e "programas"</command>
+      </action>
+    </item>
+
+    <separator label="Categorías de Software" />
+    <menu id="cat-01" label="📝 01 • Editores e Inteligencia Artificial">
+      <item label="Visual Studio Code"><action name="Execute"><command>code-oss --no-sandbox --disable-gpu --password-store=basic</command></action></item>
+      <item label="Google Antigravity (CLI)"><action name="Execute"><command>xfce4-terminal -e "agy"</command></action></item>
+      <item label="Neovim"><action name="Execute"><command>xfce4-terminal -e "nvim"</command></action></item>
+      <item label="Helix Editor"><action name="Execute"><command>xfce4-terminal -e "helix"</command></action></item>
+      <item label="Micro"><action name="Execute"><command>xfce4-terminal -e "micro"</command></action></item>
+      <item label="Emacs"><action name="Execute"><command>emacs</command></action></item>
+    </menu>
+
+    <menu id="cat-02" label="🌐 02 • Navegadores Web">
+      <item label="Zen Browser"><action name="Execute"><command>zen-browser</command></action></item>
+      <item label="Chromium"><action name="Execute"><command>chromium --no-sandbox --test-type</command></action></item>
+      <item label="Firefox"><action name="Execute"><command>firefox</command></action></item>
+      <item label="Midori"><action name="Execute"><command>midori</command></action></item>
+      <item label="Badwolf"><action name="Execute"><command>badwolf</command></action></item>
+      <item label="Dillo"><action name="Execute"><command>dillo</command></action></item>
+      <item label="Links2 (Gráfico)"><action name="Execute"><command>links2 -g</command></action></item>
+    </menu>
+
+    <menu id="cat-03" label="💻 03 • IDEs y Desarrollo">
+      <item label="Geany IDE"><action name="Execute"><command>geany</command></action></item>
+      <item label="Bluefish"><action name="Execute"><command>bluefish</command></action></item>
+      <item label="Lazarus IDE"><action name="Execute"><command>lazarus</command></action></item>
+      <item label="Arduino IDE"><action name="Execute"><command>arduino-ide</command></action></item>
+    </menu>
+
+    <menu id="cat-04" label="🎨 04 • Diseño y Multimedia">
+      <item label="GIMP"><action name="Execute"><command>gimp</command></action></item>
+      <item label="Inkscape"><action name="Execute"><command>inkscape</command></action></item>
+      <item label="Krita"><action name="Execute"><command>krita</command></action></item>
+      <item label="VLC Media Player"><action name="Execute"><command>vlc</command></action></item>
+      <item label="MPV Player"><action name="Execute"><command>mpv</command></action></item>
+      <item label="Audacity"><action name="Execute"><command>audacity</command></action></item>
+      <item label="Blender"><action name="Execute"><command>blender</command></action></item>
+      <item label="FreeCAD"><action name="Execute"><command>freecad</command></action></item>
+    </menu>
+
+    <menu id="cat-05" label="📋 05 • Productividad y Notas">
+      <item label="LibreOffice"><action name="Execute"><command>libreoffice</command></action></item>
+      <item label="CherryTree"><action name="Execute"><command>cherrytree</command></action></item>
+      <item label="Xournal++"><action name="Execute"><command>xournalpp</command></action></item>
+      <item label="Evince (Visor PDF)"><action name="Execute"><command>evince</command></action></item>
+      <item label="Foliate (Lector ePub)"><action name="Execute"><command>foliate</command></action></item>
+      <item label="Draw.io"><action name="Execute"><command>drawio</command></action></item>
+    </menu>
+
+    <menu id="cat-06" label="🎮 06 • Motores de Videojuegos">
+      <item label="Godot Engine 4"><action name="Execute"><command>godot4</command></action></item>
+      <item label="Godot Engine 3"><action name="Execute"><command>godot</command></action></item>
+      <item label="LÖVE 2D"><action name="Execute"><command>love2d</command></action></item>
+      <item label="Tiled Map Editor"><action name="Execute"><command>tiled</command></action></item>
+      <item label="LibreSprite"><action name="Execute"><command>libresprite</command></action></item>
+      <item label="TIC-80"><action name="Execute"><command>tic80</command></action></item>
+    </menu>
+
+    <menu id="cat-07" label="📟 07 • Terminales y Monitores">
+      <item label="XFCE Terminal"><action name="Execute"><command>xfce4-terminal</command></action></item>
+      <item label="Alacritty"><action name="Execute"><command>alacritty</command></action></item>
+      <item label="Kitty"><action name="Execute"><command>kitty</command></action></item>
+      <item label="Btop++ (Monitor)"><action name="Execute"><command>xfce4-terminal -e "btop"</command></action></item>
+      <item label="Htop"><action name="Execute"><command>xfce4-terminal -e "htop"</command></action></item>
+      <item label="Ranger (Archivos)"><action name="Execute"><command>xfce4-terminal -e "ranger"</command></action></item>
+      <item label="Yazi (Archivos Rust)"><action name="Execute"><command>xfce4-terminal -e "yazi"</command></action></item>
+      <item label="LazyGit"><action name="Execute"><command>xfce4-terminal -e "lazygit"</command></action></item>
+      <item label="Zellij (Mux)"><action name="Execute"><command>xfce4-terminal -e "zellij"</command></action></item>
+    </menu>
+
+    <menu id="cat-08" label="🛡️ 08 • Ciberseguridad y Redes">
+      <item label="Wireshark"><action name="Execute"><command>wireshark</command></action></item>
+      <item label="Nmap"><action name="Execute"><command>xfce4-terminal -e "nmap --help"</command></action></item>
+      <item label="Burp Suite"><action name="Execute"><command>burpsuite</command></action></item>
+      <item label="Metasploit"><action name="Execute"><command>xfce4-terminal -e "msfconsole"</command></action></item>
+      <item label="Bettercap"><action name="Execute"><command>xfce4-terminal -e "bettercap"</command></action></item>
+      <item label="SQLMap"><action name="Execute"><command>xfce4-terminal -e "sqlmap --help"</command></action></item>
+    </menu>
+
+    <menu id="cat-09" label="🗄️ 09 • Bases de Datos y Servidores">
+      <item label="DBeaver"><action name="Execute"><command>dbeaver</command></action></item>
+      <item label="SQLite Browser"><action name="Execute"><command>sqlitebrowser</command></action></item>
+      <item label="PostgreSQL CLI"><action name="Execute"><command>xfce4-terminal -e "psql"</command></action></item>
+      <item label="MariaDB / MySQL"><action name="Execute"><command>xfce4-terminal -e "mariadb"</command></action></item>
+      <item label="Redis CLI"><action name="Execute"><command>xfce4-terminal -e "redis-cli"</command></action></item>
+      <item label="Nginx Manager"><action name="Execute"><command>xfce4-terminal -e "nginx -v"</command></action></item>
+      <item label="Caddy Server"><action name="Execute"><command>xfce4-terminal -e "caddy version"</command></action></item>
+    </menu>
+
+    <menu id="cat-10" label="💬 10 • Mensajería y Redes Sociales">
+      <item label="Telegram Desktop"><action name="Execute"><command>telegram-desktop</command></action></item>
+      <item label="HexChat (IRC)"><action name="Execute"><command>hexchat</command></action></item>
+      <item label="FileZilla"><action name="Execute"><command>filezilla</command></action></item>
+      <item label="Transmission BitTorrent"><action name="Execute"><command>transmission</command></action></item>
+      <item label="Thunderbird Mail"><action name="Execute"><command>thunderbird</command></action></item>
+      <item label="Element (Matrix)"><action name="Execute"><command>element</command></action></item>
+    </menu>
+
+    <menu id="cat-11" label="🪟 11 • Gestores de Ventanas">
+      <item label="Openbox (Actual)"><action name="Execute"><command>openbox --reconfigure</command></action></item>
+      <item label="XFCE4 Desktop"><action name="Execute"><command>startxfce4</command></action></item>
+      <item label="i3 Tiling WM"><action name="Execute"><command>i3-wm</command></action></item>
+      <item label="Bspwm"><action name="Execute"><command>bspwm</command></action></item>
+      <item label="AwesomeWM"><action name="Execute"><command>awesomewm</command></action></item>
+      <item label="Fluxbox"><action name="Execute"><command>fluxbox</command></action></item>
+    </menu>
+
+    <menu id="cat-12" label="🕹️ 12 • Emuladores y Retro-Gaming">
+      <item label="🎮 PPSSPP (PlayStation Portable)"><action name="Execute"><command>ppsspp</command></action></item>
+      <item label="🕹️ mGBA (Game Boy Advance)"><action name="Execute"><command>mgba-qt</command></action></item>
+      <item label="👾 RetroArch (Multi-Sistema)"><action name="Execute"><command>retroarch</command></action></item>
+      <item label="💿 DuckStation (PlayStation 1)"><action name="Execute"><command>duckstation-qt</command></action></item>
+      <item label="💾 DOSBox-X (MS-DOS)"><action name="Execute"><command>dosbox-x</command></action></item>
+      <item label="🏝️ ScummVM (Aventuras)"><action name="Execute"><command>scummvm</command></action></item>
+    </menu>
+
+    <menu id="cat-13" label="👾 13 • Videojuegos Nativos ARM64">
+      <item label="🚂 OpenTTD (Transport Tycoon)"><action name="Execute"><command>openttd</command></action></item>
+      <item label="🏭 Mindustry"><action name="Execute"><command>mindustry</command></action></item>
+      <item label="🏎️ SuperTuxKart"><action name="Execute"><command>supertuxkart</command></action></item>
+      <item label="⚔️ Battle for Wesnoth"><action name="Execute"><command>wesnoth</command></action></item>
+      <item label="🧟 Cataclysm: Dark Days Ahead"><action name="Execute"><command>cataclysm-tiles</command></action></item>
+      <item label="⛏️ Luanti (Minetest)"><action name="Execute"><command>luanti</command></action></item>
+      <item label="🗡️ Flare (Action RPG)"><action name="Execute"><command>flare</command></action></item>
+      <item label="🚀 Endless Sky"><action name="Execute"><command>endless-sky</command></action></item>
+    </menu>
+
+    <menu id="cat-14" label="🔬 14 • Ciencia y Educación">
+      <item label="GNU Octave (MATLAB)"><action name="Execute"><command>octave --gui</command></action></item>
+      <item label="Stellarium (Planetario)"><action name="Execute"><command>stellarium</command></action></item>
+      <item label="GeoGebra"><action name="Execute"><command>geogebra</command></action></item>
+      <item label="KiCad EDA"><action name="Execute"><command>kicad</command></action></item>
+      <item label="Anki (Memorización)"><action name="Execute"><command>anki</command></action></item>
+      <item label="QGIS (Cartografía)"><action name="Execute"><command>qgis</command></action></item>
+      <item label="wxMaxima"><action name="Execute"><command>wxmaxima</command></action></item>
+      <item label="Calibre (eBooks)"><action name="Execute"><command>calibre</command></action></item>
+    </menu>
+
+    <menu id="cat-15" label="🎵 15 • Producción Musical y Audio">
+      <item label="LMMS (Digital Audio Workstation)"><action name="Execute"><command>lmms</command></action></item>
+      <item label="Hydrogen Drum Machine"><action name="Execute"><command>hydrogen</command></action></item>
+      <item label="Sonic Pi (Live Coding)"><action name="Execute"><command>sonic-pi</command></action></item>
+      <item label="MuseScore"><action name="Execute"><command>musescore</command></action></item>
+      <item label="MilkyTracker (Chiptune)"><action name="Execute"><command>milkytracker</command></action></item>
+      <item label="Audacity"><action name="Execute"><command>audacity</command></action></item>
+    </menu>
+
+    <separator label="Sistema y Sesión" />
     <item label="🔄 Recargar Interfaz Openbox">
       <action name="Restart" />
+    </item>
+    <item label="☁️ Actualizar Sistema (Cloudflare Edge)">
+      <action name="Execute">
+        <command>xfce4-terminal --title="Actualizar Sistema" -e "actualizar"</command>
+      </action>
     </item>
     <item label="💾 Guardar Cambios Locales">
       <action name="Execute">

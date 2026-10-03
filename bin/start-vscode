@@ -132,7 +132,7 @@ export XDG_DATA_HOME="$HOME/.local/share"
 export VSCODE_CLI_USE_FILE_KEYCHAIN=1
 
 # 4. Configurar preferencias de Termux-X11 (Portapapeles, compatibilidad con teclado flotante/táctil, filtrado bilineal)
-termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear preferScancodes:false enforceCharBasedInput:true hardwareKbdScancodesWorkaround:false scaleTouchpad:true >/dev/null 2>&1 || true
+termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear preferScancodes:true enforceCharBasedInput:false hardwareKbdScancodesWorkaround:true showIMEWhileExternalConnected:true backButtonAction:"toggle soft keyboard" scaleTouchpad:true >/dev/null 2>&1 || true
 
 # 5. Iniciar servidor de sonido PulseAudio con salida física Android (OpenSL ES / AAudio)
 mkdir -p "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/pulse"
@@ -204,22 +204,43 @@ if ! pgrep -f "pcmanfm.*--desktop" > /dev/null 2>&1; then
     sleep 0.5
 fi
 
-# 8.1 Sincronizar iconos y archivos .desktop locales para tint2 y Openbox
-mkdir -p "$HOME/.local/share/applications" "$HOME/.icons" "$HOME/.local/share/icons"
+# 8.1 Sincronizar iconos, emulador de terminal y lanzadores .desktop locales
+mkdir -p "$HOME/.local/share/applications" "$HOME/.icons" "$HOME/.local/share/icons" "$HOME/Desktop"
+[ -f "$PREFIX/bin/xfce4-terminal" ] && [ ! -f "$PREFIX/bin/x-terminal-emulator" ] && ln -sf "$PREFIX/bin/xfce4-terminal" "$PREFIX/bin/x-terminal-emulator" 2>/dev/null || true
+
+# Sincronizar pixmaps desde assets del repositorio
+if [ -d "$REPO_DIR/assets/pixmaps" ]; then
+    mkdir -p "/data/data/com.termux/files/usr/share/pixmaps"
+    cp -rn "$REPO_DIR/assets/pixmaps/"*.png "/data/data/com.termux/files/usr/share/pixmaps/" 2>/dev/null || true
+fi
+
+# Desplegar lanzadores centrales
+if [ -d "$REPO_DIR/config/applications" ]; then
+    cp -f "$REPO_DIR/config/applications/"*.desktop "$PREFIX/share/applications/" 2>/dev/null || true
+    cp -f "$REPO_DIR/config/applications/"*.desktop "$HOME/.local/share/applications/" 2>/dev/null || true
+    cp -f "$REPO_DIR/config/applications/"*.desktop "$HOME/Desktop/" 2>/dev/null || true
+fi
+
 [ -f "$PREFIX/share/applications/code-oss.desktop" ] && cp -f "$PREFIX/share/applications/code-oss.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
 [ -f "$PREFIX/share/applications/zen-browser.desktop" ] && cp -f "$PREFIX/share/applications/zen-browser.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
 [ -f "$PREFIX/share/applications/touch-toggle.desktop" ] && cp -f "$PREFIX/share/applications/touch-toggle.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
+
+# Asegurar permisos ejecutables en el escritorio para que nunca fallen
+chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
+
 for userapp in "$HOME/.local/share/applications/userapp-Zen-"*.desktop; do
     if [ -f "$userapp" ]; then
         grep -q "^Icon=" "$userapp" || echo "Icon=/data/data/com.termux/files/usr/share/pixmaps/zen-browser.png" >> "$userapp"
     fi
 done
 
-# 8.2 Preparar perfiles adaptativos de tint2 (Vertical flotante y Horizontal pegado)
+# 8.2 Preparar perfiles adaptativos de tint2 y sincronizar Openbox
 TINT2_DIR="$HOME/.config/tint2"
-mkdir -p "$TINT2_DIR"
+mkdir -p "$TINT2_DIR" "$HOME/.config/openbox"
 [ -f "$REPO_DIR/config/tint2rc_vertical" ] && cp "$REPO_DIR/config/tint2rc_vertical" "$TINT2_DIR/tint2rc_vertical" 2>/dev/null || true
 [ -f "$REPO_DIR/config/tint2rc_horizontal" ] && cp "$REPO_DIR/config/tint2rc_horizontal" "$TINT2_DIR/tint2rc_horizontal" 2>/dev/null || true
+[ -f "$REPO_DIR/config/menu.xml" ] && cp -f "$REPO_DIR/config/menu.xml" "$HOME/.config/openbox/menu.xml" 2>/dev/null || true
+[ -f "$REPO_DIR/config/rc.xml" ] && cp -f "$REPO_DIR/config/rc.xml" "$HOME/.config/openbox/rc.xml" 2>/dev/null || true
 
 # 8.4 Iniciar el centinela de integridad en segundo plano
 if ! pgrep -f "watcher-sync" >/dev/null 2>&1; then

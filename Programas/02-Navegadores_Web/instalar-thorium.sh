@@ -35,7 +35,7 @@ cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Thorium Browser
 Comment=Navegador hiper-optimizado para máxima velocidad de compilación y carga.
-Exec=thorium-browser
+Exec=thorium-browser --no-sandbox --test-type %U
 Icon=/data/data/com.termux/files/usr/share/pixmaps/thorium.png
 Terminal=false
 Type=Application

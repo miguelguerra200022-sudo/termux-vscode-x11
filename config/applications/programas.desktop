@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Centro de Programas (+138 Apps)
+Comment=Instalador y gestor integral de herramientas, editores y aplicaciones
+Exec=xfce4-terminal --title="Centro de Programas" --geometry=95x28 -e "programas"
+Icon=/data/data/com.termux/files/usr/share/pixmaps/package-manager.png
+Terminal=false
+Type=Application
+Categories=Utility;

@@ -123,6 +123,9 @@ startup_notifications = 0
 launcher_tooltip = 1
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/code-oss.desktop
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/zen-browser.desktop
+launcher_item_app = /data/data/com.termux/files/usr/share/applications/xfce4-terminal.desktop
+launcher_item_app = /data/data/com.termux/files/usr/share/applications/juegos.desktop
+launcher_item_app = /data/data/com.termux/files/usr/share/applications/programas.desktop
 launcher_item_app = /data/data/com.termux/files/usr/share/applications/touch-toggle.desktop
 
 # ------------------------------------------------------------------------------

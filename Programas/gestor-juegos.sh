@@ -22,12 +22,31 @@ NC='\033[0m'
 
 EMU="${1:-}"
 
-# Asegurar directorios de juegos
+# Asegurar estructura de directorios maquetada limpiamente para el usuario
+SHARED_RETRO="/storage/emulated/0/RetroGames"
 BASE_GAMES="$HOME/RetroGames"
-mkdir -p "$BASE_GAMES"
+
 if [ -d "/storage/emulated/0" ] && [ -w "/storage/emulated/0" ]; then
-    mkdir -p "/storage/emulated/0/RetroGames" 2>/dev/null || true
+    mkdir -p "$SHARED_RETRO" 2>/dev/null || true
+    # Enlazar transparentemente con el almacenamiento del teléfono sin duplicar espacio
+    if [ ! -L "$BASE_GAMES" ]; then
+        if [ -d "$BASE_GAMES" ] && [ ! "$(ls -A "$BASE_GAMES" 2>/dev/null)" ]; then
+            rm -rf "$BASE_GAMES"
+            ln -sf "$SHARED_RETRO" "$BASE_GAMES" 2>/dev/null || true
+        elif [ ! -e "$BASE_GAMES" ]; then
+            ln -sf "$SHARED_RETRO" "$BASE_GAMES" 2>/dev/null || true
+        fi
+    fi
 fi
+mkdir -p "$BASE_GAMES"
+
+# Crear estructura ordenada de subdirectorios para cada consola
+for c_dir in ppsspp mgba retroarch duckstation dosbox-x scummvm nativos; do
+    mkdir -p "$BASE_GAMES/$c_dir" 2>/dev/null || true
+    if [ -d "$SHARED_RETRO" ]; then
+        mkdir -p "$SHARED_RETRO/$c_dir" 2>/dev/null || true
+    fi
+done
 
 get_ui_cols() {
     local c
@@ -363,9 +382,26 @@ EOF_DESK
                             mv "$tmp_download" "$rom_path" 2>/dev/null || true
                         fi
                         echo -e "${GREEN}[✓] ¡${target_name} instalado exitosamente en ${rom_dir}!${NC}"
-                        if [ -d "/storage/emulated/0/RetroGames/${console}" ]; then
+                        if [ -d "/storage/emulated/0/RetroGames/${console}" ] && [ ! -L "$BASE_GAMES" ]; then
                             cp -rf "$rom_path" "/storage/emulated/0/RetroGames/${console}/" 2>/dev/null || true
                         fi
+                        # Auto-maquetar lanzador en el Escritorio y Menú
+                        local desk_file="$HOME/Desktop/${target_id}.desktop"
+                        local emu_bin=$(get_emu_bin "$console")
+                        cat << EOF_DESK > "$desk_file"
+[Desktop Entry]
+Name=$target_name
+Comment=Juego de $emu_title
+Exec=$emu_bin "$rom_path"
+Icon=/data/data/com.termux/files/usr/share/pixmaps/${console}.png
+Terminal=false
+Type=Application
+Categories=Game;
+EOF_DESK
+                        chmod +x "$desk_file" 2>/dev/null || true
+                        cp -f "$desk_file" "$HOME/.local/share/applications/" 2>/dev/null || true
+                        cp -f "$desk_file" "$PREFIX/share/applications/" 2>/dev/null || true
+                        echo -e "${GREEN}[✓] Lanzador oficial maquetado en el Escritorio.${NC}"
                         sleep 1.5
                     else
                         echo -e "${RED}[!] Error al descargar ${target_name}. Revisa tu conexión a internet.${NC}"

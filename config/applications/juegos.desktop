@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Biblioteca de Juegos (Retro & Emulación)
+Comment=Catálogo interactivo para descargar, jugar y organizar ROMs y títulos clásicos
+Exec=xfce4-terminal --title="Biblioteca de Juegos" --geometry=95x28 -e "juegos"
+Icon=/data/data/com.termux/files/usr/share/pixmaps/retroarch.png
+Terminal=false
+Type=Application
+Categories=Game;Emulator;

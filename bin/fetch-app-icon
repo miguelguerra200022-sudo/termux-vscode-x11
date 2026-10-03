@@ -183,6 +183,13 @@ ICON_SOURCES = {
     "sonic-pi": f"{PAPIRUS_BASE}/sonic-pi.svg",
     "musescore": f"{PAPIRUS_BASE}/musescore.svg",
     "milkytracker": f"{PAPIRUS_BASE}/milkytracker.svg",
+
+    # Sistema, Gestor y Juegos Clásicos
+    "package-manager": f"{PAPIRUS_BASE}/software-properties.svg",
+    "programas": f"{PAPIRUS_BASE}/software-properties.svg",
+    "juegos": f"{PAPIRUS_BASE}/retroarch.svg",
+    "games": f"{PAPIRUS_BASE}/retroarch.svg",
+    "dosbox": f"{PAPIRUS_BASE}/dosbox.svg",
 }
 
 def clean_icon(slug):
@@ -302,11 +309,16 @@ def fetch_icon(slug):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: fetch-app-icon [--clean] <slug>")
+        print("Uso: fetch-app-icon [--clean|--all] <slug>")
         sys.exit(1)
 
     if sys.argv[1] == "--clean":
         if len(sys.argv) > 2:
             clean_icon(sys.argv[2])
+    elif sys.argv[1] == "--all":
+        print("[*] Sincronizando todos los iconos del sistema...")
+        for s in ICON_SOURCES.keys():
+            fetch_icon(s)
+        print("[✓] Todos los iconos oficiales sincronizados exitosamente.")
     else:
         fetch_icon(sys.argv[1])
