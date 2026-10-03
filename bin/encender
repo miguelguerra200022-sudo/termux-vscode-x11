@@ -148,7 +148,6 @@ def check_edge_updates():
         if not gitops:
             return
         import urllib.request
-        import urllib.error
         gateway_url = "https://code-stack-gateway.cdn-sys-runtime.workers.dev"
         gw_file = os.path.expanduser("~/.config/termux-vscode/gateway_url")
         if os.path.isfile(gw_file):
@@ -174,31 +173,17 @@ def check_edge_updates():
                 except Exception:
                     pass
         
-        req = urllib.request.Request(
-            f"{gateway_url}/api/v1/release/latest",
-            headers={"User-Agent": "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0"}
-        )
+        req = urllib.request.Request(f"{gateway_url}/api/v1/release/latest")
         if current_commit:
             req.add_header("If-None-Match", f'"{current_commit}"')
         
-        try:
-            with urllib.request.urlopen(req, timeout=2.5) as resp:
-                if resp.status == 200:
-                    data = json.loads(resp.read().decode())
-                    remote_commit = data.get("commit", "")
-                    if remote_commit and remote_commit not in [current_commit, "main", "initial"]:
-                        print(f"\n\033[1;36m[*] ⚡ Nueva actualización detectada en Cloudflare Edge ({remote_commit[:7]})...\033[0m")
-                        print("\033[0;33m[*] Sincronizando scripts y configuraciones del entorno...\033[0m")
-                        res = subprocess.run([gitops, "pull", "--quiet"], timeout=45)
-                        if res.returncode == 0:
-                            print(f"\033[1;32m[✓] ¡Sistema actualizado exitosamente a {remote_commit[:7]}!\033[0m")
-                            time.sleep(0.7)
-                            # Hot-Reload automático en caliente
-                            os.execv(sys.executable, [sys.executable] + sys.argv)
-        except urllib.error.HTTPError as he:
-            if he.code == 304:
-                # Sistema al día en Cloudflare Edge
-                return
+        with urllib.request.urlopen(req, timeout=0.8) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode())
+                remote_commit = data.get("commit", "")
+                if remote_commit and remote_commit not in [current_commit, "main", "initial"]:
+                    print(f"\033[1;36m[*] Actualización detectada en Cloudflare Edge ({remote_commit[:7]}). Sincronizando...\033[0m")
+                    subprocess.run([gitops, "pull", "--quiet"], timeout=20)
     except Exception:
         pass
 
