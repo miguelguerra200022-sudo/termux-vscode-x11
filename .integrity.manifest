@@ -120,7 +120,7 @@ e821d0b35e330aca675ecef4d235015a310c22c7115de92379ac9bda0c0af557  ./Programas/11
 ae6b686f13ddd82d6e50ab70ca44238b51b46531c3f754a4595c6f841242d107  ./Programas/11-Gestores_de_Ventanas/instalar-openbox.sh
 21bd0350b449a5033b80b8495694d3f3938aeae9161ac7445188286039ea2448  ./Programas/11-Gestores_de_Ventanas/instalar-xfce4.sh
 84f683fc292679ebee059f9c32043cad60a8cdf8fd85cbf8f3957400e26051fd  ./Programas/README.md
-505eca82873be5beb5d606894f32ee65abeaaeea8c7686d572d31af9e380dab8  ./Programas/menu-instalador.sh
+3836553c8434d234e438b408485b1aa495d3ae8b2d316f3f6021407d14a865e1  ./Programas/menu-instalador.sh
 33c20df89ee1cc500078537561f0756f030d7cc0d488f194088d026d50888d57  ./README.md
 b22b87b3dd1d48161adfe0ddbf3319bd75740d433919f3a091521030a94f8d78  ./assets/ascii/banner_compact.ans.z
 dc9516ea5ca1fb95d8d5e9b5f48f287057e2919815e145f79afbf19fc8443f1e  ./assets/ascii/banner_large.ans.z
@@ -135,11 +135,11 @@ dbc5abe04befb94c2d19e2ec25a5f010143cc1405390b4cc1facbc6dae2c2720  ./assets/ascii
 f58bc91dfe87a9d57098890778c041b6eda26aaafaad04d0e12e1f37ad7201fe  ./assets/audio/cyber_intro.aac
 6b6ed869e7093484d70a8cc8302032c17e5f795615654f3ed61bd6a1725de40e  ./bin/apagar
 e3d9238ebfcabe60bd97ed60270391a32388def591f7fbd4ad93d420cd50b202  ./bin/cloud-sentinel
-930524194eb9e57528cff9ad4aded1fd52d407f55ad8fcdf7ecac409dafcd570  ./bin/code-stack-ascii
+8d3ca06449c6b3c83271757b496b38f3b74691853fdcdfd8c0d770ffd2c52ad9  ./bin/code-stack-ascii
 943f2c578031837bf423d313153330f8d42b8e17cb00b87a41b241fb1adf12e8  ./bin/desinstalar
 4fafac448321238ed383fcce056caabe189832881956b4267a31454cc16f291f  ./bin/desinstalar-vscode
 dbbf74468b26298a2f26725ff3c4abea22762c55a3c587e361adf78872a6fbca  ./bin/dev-info
-52f6d4cec66c1913800c86daf45d3ef1da363ccb662b727645f7fa6549e21bdb  ./bin/encender
+75f0d565f3cda8df4abf711745a4109d9c21abcfd916e844c79bdab752cffaff  ./bin/encender
 f798483e7652b77fe618fccb35f90c89012a7290cbbe4444c84fac211f3e0c18  ./bin/fetch-app-icon
 8f15dd3c0e950efdb12429c4f0ddd6624bdf8654c73b542802dfbb4ae4012f4d  ./bin/fix-phantom-killer
 8a747f51b76ba8c9d0e18fe0c1673c63b44d2d65f661b865a10d70f4774d4099  ./bin/flota
