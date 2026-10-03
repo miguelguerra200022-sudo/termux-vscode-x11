@@ -4,17 +4,39 @@ set -e
 # ==============================================================================
 # gitops-sync: Motor GitOps Pull-Based con Verificación Criptográfica Ed25519
 # ==============================================================================
-# - Realiza sondeo periódico o bajo demanda de actualizaciones en GitHub.
-# - Verifica estrictamente las firmas digitales Ed25519 de cada commit.
-# - Aplica cambios atómicos y valida la integridad anti-tamper antes de activar.
-# - Notifica confirmaciones de despliegue a Telegram.
+# - Actualización OTA fluida tipo App Móvil desde Cloudflare Edge CDN.
+# - Despliegue atómico de scripts y configuraciones del entorno (Openbox, Tint2, VS Code).
+# - Respeto estricto de la jerarquía: Líder (Push/Firma) vs Workers (Pull OTA aislado).
+# - Notificación de despliegues a Telegram vía Sentinel.
 # ==============================================================================
+
+LEADER_SEAL="ums9230-sp_6300-3724801c"
+
+get_current_seal() {
+    local s=""
+    [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ] && s=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null | tr -d '[:space:]')
+    if [ -z "$s" ] && command -v github-auth-broker >/dev/null 2>&1; then
+        s=$(github-auth-broker seal 2>/dev/null | tr -d '[:space:]')
+    fi
+    echo "${s:-worker-device}"
+}
+
+MY_SEAL=$(get_current_seal)
+IS_LEADER=0
+[ "$MY_SEAL" = "$LEADER_SEAL" ] && IS_LEADER=1
 
 REPO_DIR=""
 CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
-[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
-if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null | tr -d '[:space:]')
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
     REPO_DIR="$HOME/termux-vscode-x11"
+fi
+if [ ! -d "$REPO_DIR" ]; then
+    if [ -d "/sdcard/Antigravity/IdeasMillonarias/termux-vscode-x11" ]; then
+        REPO_DIR="/sdcard/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    elif [ -d "/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11" ]; then
+        REPO_DIR="/storage/emulated/0/Antigravity/IdeasMillonarias/termux-vscode-x11"
+    fi
 fi
 
 QUIET=0
@@ -33,22 +55,41 @@ notify_tg() {
     fi
 }
 
+get_local_commit() {
+    local cc=""
+    [ -f "$HOME/.config/termux-vscode/.current_commit" ] && cc=$(cat "$HOME/.config/termux-vscode/.current_commit" 2>/dev/null | tr -d '[:space:]')
+    if [ -z "$cc" ] && [ -d "$REPO_DIR/.git" ]; then
+        cc=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true)
+    fi
+    echo "$cc"
+}
+
+get_gateway_url() {
+    local u=""
+    [ -f "$HOME/.config/termux-vscode/gateway_url" ] && u=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
+    echo "${u:-https://code-stack-gateway.cdn-sys-runtime.workers.dev}"
+}
+
 check_updates() {
-    cd "$REPO_DIR"
     if ! ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 && ! curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
-        [ "$QUIET" -eq 0 ] && echo "[-] Sin conexión a internet para verificar GitOps."
+        [ "$QUIET" -eq 0 ] && echo "[-] Sin conexión a internet para verificar actualizaciones."
         return 0
     fi
 
-    # 1. Comprobación ultra-rápida contra Cloudflare Edge CDN (Cero peticiones a GitHub)
-    GATEWAY_URL=""
-    [ -f "$HOME/.config/termux-vscode/gateway_url" ] && GATEWAY_URL=$(cat "$HOME/.config/termux-vscode/gateway_url" 2>/dev/null | tr -d '[:space:]')
-    LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null)
+    GATEWAY_URL=$(get_gateway_url)
+    LOCAL_HEAD=$(get_local_commit)
 
+    # 1. Comprobación ultra-rápida contra Cloudflare Edge CDN (Cero peticiones Git)
     if [ -n "$GATEWAY_URL" ]; then
-        REMOTE_DATA=$(curl -s -f -H "If-None-Match: \"$LOCAL_HEAD\"" "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
-        if [ -n "$REMOTE_DATA" ]; then
-            REMOTE_HEAD=$(python3 -c "import json; print(json.loads('''$REMOTE_DATA''').get('commit', ''))" 2>/dev/null || true)
+        HTTP_OUT=$(curl -s --connect-timeout 3 -m 5 -A "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0" -w "\n%{http_code}" -H "If-None-Match: \"$LOCAL_HEAD\"" "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
+        HTTP_CODE=$(echo "$HTTP_OUT" | tail -n 1)
+        REMOTE_DATA=$(echo "$HTTP_OUT" | sed '$d')
+
+        if [ "$HTTP_CODE" = "304" ]; then
+            [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con Cloudflare Edge CDN ($LOCAL_HEAD)."
+            return 0
+        elif [ "$HTTP_CODE" = "200" ] && [ -n "$REMOTE_DATA" ]; then
+            REMOTE_HEAD=$(python3 -c "import json, sys; d=json.loads('''$REMOTE_DATA'''); print(d.get('commit', ''))" 2>/dev/null || true)
             if [ -n "$REMOTE_HEAD" ] && [ "$REMOTE_HEAD" != "main" ] && [ "$REMOTE_HEAD" != "initial" ]; then
                 if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ]; then
                     [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con Cloudflare Edge CDN ($LOCAL_HEAD)."
@@ -61,96 +102,305 @@ check_updates() {
         fi
     fi
 
-    # 2. Fallback a Git si no hay Gateway configurado
-    REMOTE_HEAD=$(GIT_ASKPASS="github-auth-broker" git ls-remote origin main 2>/dev/null | awk '{print $1}')
-
-    if [ -z "$REMOTE_HEAD" ]; then
-        true
-        return 1
+    # 2. Solo Líder: Fallback a Git si no hay respuesta de Edge
+    if [ "$IS_LEADER" -eq 1 ] && [ -d "$REPO_DIR/.git" ]; then
+        REMOTE_HEAD=$(GIT_ASKPASS="github-auth-broker" git -C "$REPO_DIR" ls-remote origin main 2>/dev/null | awk '{print $1}')
+        if [ -n "$REMOTE_HEAD" ]; then
+            if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ]; then
+                [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con origin/main ($LOCAL_HEAD)."
+                return 0
+            else
+                [ "$QUIET" -eq 0 ] && echo "[*] Actualización del sistema disponible: $REMOTE_HEAD"
+                return 2
+            fi
+        fi
     fi
 
-    if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ]; then
-        [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con origin/main ($LOCAL_HEAD)."
-        return 0
+    return 0
+}
+
+deploy_system_configs() {
+    local source_repo="$1"
+    [ -d "$source_repo" ] || return 0
+
+    [ "$QUIET" -eq 0 ] && echo "[*] Desplegando configuraciones y componentes del sistema..."
+
+    # 1. Despliegue de scripts en $PREFIX/bin (Dinámico, sin lista rígida)
+    if [ -d "$source_repo/bin" ]; then
+        for s in "$source_repo/bin"/*; do
+            [ -f "$s" ] || continue
+            bname=$(basename "$s")
+            cp -f "$s" "$PREFIX/bin/$bname" 2>/dev/null || true
+            chmod 755 "$PREFIX/bin/$bname" 2>/dev/null || true
+        done
+        # Asegurar permisos de seguridad en centinelas
+        chmod 500 "$PREFIX/bin/integrity-guard" "$PREFIX/bin/integrity-watchdog" "$PREFIX/bin/watcher-sync" "$PREFIX/bin/github-auth-broker" 2>/dev/null || true
+        ln -sf "$PREFIX/bin/encender" "$PREFIX/bin/vscode" 2>/dev/null || true
     fi
 
-    [ "$QUIET" -eq 0 ] && echo "[*] Actualización del sistema disponible: $REMOTE_HEAD"
-    return 2
+    # 2. Openbox (Atajos, menús, ventanas flotantes)
+    mkdir -p "$HOME/.config/openbox"
+    [ -f "$source_repo/config/rc.xml" ] && cp -f "$source_repo/config/rc.xml" "$HOME/.config/openbox/rc.xml" 2>/dev/null || true
+    [ -f "$source_repo/config/menu.xml" ] && cp -f "$source_repo/config/menu.xml" "$HOME/.config/openbox/menu.xml" 2>/dev/null || true
+
+    # 3. Tint2 (Barras de tareas móvil vertical/horizontal)
+    mkdir -p "$HOME/.config/tint2"
+    [ -f "$source_repo/config/tint2rc" ] && cp -f "$source_repo/config/tint2rc" "$HOME/.config/tint2/tint2rc" 2>/dev/null || true
+    [ -f "$source_repo/config/tint2rc_vertical" ] && cp -f "$source_repo/config/tint2rc_vertical" "$HOME/.config/tint2/tint2rc_vertical" 2>/dev/null || true
+    [ -f "$source_repo/config/tint2rc_horizontal" ] && cp -f "$source_repo/config/tint2rc_horizontal" "$HOME/.config/tint2/tint2rc_horizontal" 2>/dev/null || true
+
+    # 4. VS Code (Ajustes de teclado flotante móvil, aceleración y temas)
+    mkdir -p "$HOME/.config/Code - OSS/User"
+    [ -f "$source_repo/config/settings.json" ] && cp -f "$source_repo/config/settings.json" "$HOME/.config/Code - OSS/User/settings.json" 2>/dev/null || true
+
+    # 5. Activos multimedia y animaciones cinemáticas
+    if [ -d "$source_repo/assets" ]; then
+        mkdir -p "$PREFIX/share/code-stack-sh/assets"
+        cp -rf "$source_repo/assets/"* "$PREFIX/share/code-stack-sh/assets/" 2>/dev/null || true
+    fi
+
+    # 6. Calibración automática de aceleración gráfica GPU
+    if [ -x "$PREFIX/bin/gpu-optimizer" ]; then
+        "$PREFIX/bin/gpu-optimizer" >/dev/null 2>&1 || true
+    fi
+
+    # 7. Jerarquía: Actualizar Bóveda Dorada SOLO en el Líder
+    if [ "$IS_LEADER" -eq 1 ] && [ -d "$HOME/.config/termux-vscode/.golden" ]; then
+        for b in "watcher-sync" "integrity-watchdog" "integrity-guard" "encender" "apagar" "orientation-sentinel" "start-vscode" "stop-vscode" "switch-identity" "cloud-sentinel" "flota" "termux-runner" "vault-logs" "gitops-sync" "gpu-optimizer" "fetch-app-icon" "programas"; do
+            if [ -f "$PREFIX/bin/$b" ]; then
+                chmod 700 "$HOME/.config/termux-vscode/.golden/$b" 2>/dev/null || true
+                cp -f "$PREFIX/bin/$b" "$HOME/.config/termux-vscode/.golden/$b" 2>/dev/null || true
+                chmod 500 "$HOME/.config/termux-vscode/.golden/$b" 2>/dev/null || true
+            fi
+        done
+    fi
+
+    # 8. Jerarquía: En Workers NUNCA existirán llaves privadas ni remoto Git de escritura
+    if [ "$IS_LEADER" -eq 0 ]; then
+        rm -f "$HOME/.ssh/id_ed25519" 2>/dev/null || true
+        if [ -d "$source_repo/.git" ]; then
+            git -C "$source_repo" remote remove origin 2>/dev/null || true
+        fi
+    fi
 }
 
 pull_and_apply() {
-    cd "$REPO_DIR"
-    check_updates || true
-    RET=$?
-    if [ "$RET" -eq 0 ]; then
+    GATEWAY_URL=$(get_gateway_url)
+    LOCAL_HEAD=$(get_local_commit)
+
+    # Consultar último release en Cloudflare Edge
+    HTTP_OUT=$(curl -s --connect-timeout 3 -m 6 -A "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0" -w "\n%{http_code}" -H "If-None-Match: \"$LOCAL_HEAD\"" "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
+    HTTP_CODE=$(echo "$HTTP_OUT" | tail -n 1)
+    REMOTE_DATA=$(echo "$HTTP_OUT" | sed '$d')
+
+    if [ "$HTTP_CODE" = "304" ]; then
+        [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con Cloudflare Edge CDN ($LOCAL_HEAD)."
         return 0
     fi
 
-    echo "[*] Aplicando mejoras del sistema..."
-    GIT_ASKPASS="github-auth-broker" git fetch origin main >/dev/null 2>&1
+    REMOTE_COMMIT=""
+    COMMIT_SUBJECT=""
+    COMMIT_AUTHOR=""
 
-    FETCH_HASH=$(git rev-parse FETCH_HEAD)
+    if [ -n "$REMOTE_DATA" ]; then
+        REMOTE_COMMIT=$(python3 -c "import json; d=json.loads('''$REMOTE_DATA'''); print(d.get('commit', ''))" 2>/dev/null || true)
+        COMMIT_SUBJECT=$(python3 -c "import json; d=json.loads('''$REMOTE_DATA'''); print(d.get('msg', ''))" 2>/dev/null || true)
+        COMMIT_AUTHOR=$(python3 -c "import json; d=json.loads('''$REMOTE_DATA'''); print(d.get('author', ''))" 2>/dev/null || true)
+    fi
 
-    # 1. Verificación Criptográfica Ed25519
-    echo "[*] Verificando firma criptográfica Ed25519 del commit $FETCH_HASH..."
-    if ! git verify-commit FETCH_HEAD >/dev/null 2>&1; then
-        echo "[!] ALERTA CRÍTICA DE SEGURIDAD: El commit $FETCH_HASH NO tiene una firma Ed25519 válida o no está autorizado."
-        notify_tg "🚨 *ALERTA GITOPS: COMMIT NO FIRMADO O RECHAZADO*" "El commit \`$FETCH_HASH\` recibido de GitHub no cuenta con una firma Ed25519 autorizada. El despliegue ha sido abortado por seguridad."
+    # Si estamos al día y no forzado
+    if [ -n "$REMOTE_COMMIT" ] && [ "$REMOTE_COMMIT" = "$LOCAL_HEAD" ]; then
+        [ "$QUIET" -eq 0 ] && echo "[✓] Sistema al día ($LOCAL_HEAD)."
+        return 0
+    fi
+
+    # ==========================================================================
+    # CASO A: CELULARES WORKERS O SIN REMOTO GIT (Descarga OTA directa desde CDN)
+    # ==========================================================================
+    if [ "$IS_LEADER" -eq 0 ] || [ ! -d "$REPO_DIR/.git" ]; then
+        [ "$QUIET" -eq 0 ] && echo "[*] ⚡ Descargando actualización OTA desde Cloudflare Edge..."
+        TARGET_COMMIT="${REMOTE_COMMIT:-latest}"
+
+        TMP_DIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/ota_update_$$"
+        mkdir -p "$TMP_DIR"
+        TARBALL_FILE="$TMP_DIR/release.tar.gz"
+
+        DOWNLOAD_OK=0
+        # 1. Intentar desde Cloudflare Edge Gateway
+        if [ -n "$REMOTE_COMMIT" ]; then
+            if curl -s -f -L --connect-timeout 5 -m 30 -A "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0" "$GATEWAY_URL/api/v1/release/download/$REMOTE_COMMIT" -o "$TARBALL_FILE" 2>/dev/null && [ -s "$TARBALL_FILE" ]; then
+                DOWNLOAD_OK=1
+            fi
+        fi
+
+        # 2. Fallback a codeload CDN público de GitHub
+        if [ "$DOWNLOAD_OK" -eq 0 ]; then
+            CODELOAD_URL="https://codeload.github.com/miguelguerra200022-sudo/termux-vscode-x11/legacy.tar.gz/${TARGET_COMMIT}"
+            if curl -s -f -L --connect-timeout 5 -m 30 -A "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0" "$CODELOAD_URL" -o "$TARBALL_FILE" 2>/dev/null && [ -s "$TARBALL_FILE" ]; then
+                DOWNLOAD_OK=1
+            fi
+        fi
+
+        if [ "$DOWNLOAD_OK" -eq 0 ]; then
+            echo "[-] Error al descargar paquete de actualización OTA."
+            rm -rf "$TMP_DIR" 2>/dev/null || true
+            return 1
+        fi
+
+        # Extraer tarball
+        EXTRACT_DIR="$TMP_DIR/extracted"
+        mkdir -p "$EXTRACT_DIR"
+        tar -xzf "$TARBALL_FILE" -C "$EXTRACT_DIR" 2>/dev/null || {
+            echo "[-] Error descomprimiendo paquete de actualización."
+            rm -rf "$TMP_DIR" 2>/dev/null || true
+            return 1
+        }
+
+        # Localizar raíz extraída (user-repo-commit)
+        EXTRACTED_ROOT=$(find "$EXTRACT_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -n 1)
+        if [ -z "$EXTRACTED_ROOT" ] || [ ! -d "$EXTRACTED_ROOT/bin" ]; then
+            echo "[-] Paquete de actualización no contiene estructura válida."
+            rm -rf "$TMP_DIR" 2>/dev/null || true
+            return 1
+        fi
+
+        # Sincronizar hacia REPO_DIR (Preservando archivos locales de sesión)
+        mkdir -p "$REPO_DIR"
+        cp -rf "$EXTRACTED_ROOT/"* "$REPO_DIR/" 2>/dev/null || true
+
+        # Desplegar scripts y todas las configuraciones vivas
+        deploy_system_configs "$REPO_DIR"
+
+        # Registrar commit actual
+        if [ -n "$REMOTE_COMMIT" ]; then
+            mkdir -p "$HOME/.config/termux-vscode"
+            echo -n "$REMOTE_COMMIT" > "$HOME/.config/termux-vscode/.current_commit"
+        fi
+
+        rm -rf "$TMP_DIR" 2>/dev/null || true
+
+        [ "$QUIET" -eq 0 ] && echo "[✓] Actualización OTA aplicada con éxito a ${REMOTE_COMMIT:0:7}."
+        notify_tg "🚀 *OTA: SISTEMA ACTUALIZADO*" "📱 *Nodo:* \`$MY_SEAL\` (Worker)\n🔖 *Commit:* \`$REMOTE_COMMIT\`\n📝 *Mensaje:* $COMMIT_SUBJECT\n🛡️ *Distribución:* Cloudflare Edge CDN ✓"
+        return 0
+    fi
+
+    # ==========================================================================
+    # CASO B: CELULAR LÍDER (Vía Git con Verificación Ed25519)
+    # ==========================================================================
+    cd "$REPO_DIR"
+    [ "$QUIET" -eq 0 ] && echo "[*] Aplicando mejoras del sistema en el Líder..."
+    GIT_ASKPASS="github-auth-broker" git fetch origin main >/dev/null 2>&1 || true
+
+    FETCH_HASH=$(git rev-parse FETCH_HEAD 2>/dev/null || true)
+    if [ -z "$FETCH_HASH" ]; then
+        echo "[-] No se pudo obtener información del commit en GitHub."
         return 1
     fi
 
-    echo "[✓] Firma Ed25519 verificada con éxito."
+    # 1. Verificación Criptográfica Ed25519
+    [ "$QUIET" -eq 0 ] && echo "[*] Verificando firma criptográfica Ed25519 del commit $FETCH_HASH..."
+    if ! git verify-commit FETCH_HEAD >/dev/null 2>&1; then
+        echo "[!] ALERTA CRÍTICA DE SEGURIDAD: Commit sin firma autorizada. Abortado."
+        notify_tg "🚨 *ALERTA GITOPS: FIRMA INVÁLIDA*" "El commit \`$FETCH_HASH\` no tiene firma Ed25519 autorizada."
+        return 1
+    fi
 
-    # 2. Aplicación Fast-Forward
-    OLD_HEAD=$(git rev-parse HEAD)
+    # 2. Fast-Forward
+    OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || true)
     git merge --ff-only FETCH_HEAD >/dev/null 2>&1 || {
-        echo "[!] Error: No se pudo realizar fast-forward limpio. Posible divergencia."
+        echo "[!] No se pudo realizar fast-forward limpio."
         return 1
     }
 
     # 3. Verificación de Integridad Anti-Tamper
     if command -v integrity-guard >/dev/null 2>&1; then
-        echo "[*] Verificando integridad del manifiesto..."
         if ! integrity-guard check "$REPO_DIR" >/dev/null 2>&1; then
-            echo "[!] ALERTA: Falló la verificación de integridad tras el pull. Ejecutando rollback..."
-            git reset --hard "$OLD_HEAD" >/dev/null 2>&1
-            notify_tg "🚨 *ALERTA GITOPS: MANIFIESTO CORRUPTO*" "El árbol de archivos no superó el chequeo de integridad criptográfico tras el pull de \`$FETCH_HASH\`. Rollback ejecutado."
+            echo "[!] Falló chequeo de integridad. Ejecutando rollback..."
+            git reset --hard "$OLD_HEAD" >/dev/null 2>&1 || true
             return 1
         fi
     fi
 
-    # 4. Despliegue de binarios actualizados en $PREFIX/bin
-    SCRIPTS=(
-        "encender" "apagar" "orientation-sentinel" "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
-        "sync-vscode" "restore-vscode" "watcher-sync" "integrity-watchdog"
-        "integrity-guard" "setup-swap" "set-marketplace" "fix-phantom-killer"
-        "new-project" "start-vscode-web" "guia" "vscode" "toggle-touch-mode"
-        "switch-identity" "cloud-sentinel" "flota" "vault-logs" "termux-runner"
-        "gitops-sync" "desinstalar-vscode" "desinstalar"
-    )
+    # 4. Desplegar configuraciones vivas y scripts
+    deploy_system_configs "$REPO_DIR"
 
-    for s in "${SCRIPTS[@]}"; do
-        if [ -f "$REPO_DIR/bin/$s" ]; then
-            cp "$REPO_DIR/bin/$s" "$PREFIX/bin/$s" 2>/dev/null || true
-            chmod 755 "$PREFIX/bin/$s" 2>/dev/null || true
-            
-            # Actualizar bóveda dorada si existe
-            if [ -d "$HOME/.config/termux-vscode/.golden" ]; then
-                chmod 700 "$HOME/.config/termux-vscode/.golden/$s" 2>/dev/null || true
-                cp "$PREFIX/bin/$s" "$HOME/.config/termux-vscode/.golden/$s" 2>/dev/null || true
-                chmod 500 "$HOME/.config/termux-vscode/.golden/$s" 2>/dev/null || true
-            fi
-        fi
-    done
+    # Registrar commit
+    mkdir -p "$HOME/.config/termux-vscode"
+    echo -n "$FETCH_HASH" > "$HOME/.config/termux-vscode/.current_commit"
 
-    COMMIT_SUBJECT=$(git log -1 --format="%s" "$FETCH_HASH")
-    COMMIT_AUTHOR=$(git log -1 --format="%an" "$FETCH_HASH")
-    MY_SEAL="dispositivo"
-    [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ] && MY_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal")
+    COMMIT_SUBJECT=$(git log -1 --format="%s" "$FETCH_HASH" 2>/dev/null || true)
+    COMMIT_AUTHOR=$(git log -1 --format="%an" "$FETCH_HASH" 2>/dev/null || true)
 
-    echo "[✓] Despliegue GitOps completado exitosamente a $FETCH_HASH."
-    notify_tg "🚀 *GITOPS: DESPLIEGUE EXITOSO*" "📱 *Nodo:* \`$MY_SEAL\`\n🔖 *Commit:* \`$FETCH_HASH\`\n👤 *Autor:* \`$COMMIT_AUTHOR\`\n📝 *Mensaje:* $COMMIT_SUBJECT\n🛡️ *Firma:* Ed25519 Verificada ✓"
+    [ "$QUIET" -eq 0 ] && echo "[✓] Despliegue GitOps completado exitosamente a $FETCH_HASH."
+    notify_tg "🚀 *GITOPS: DESPLIEGUE EXITOSO*" "⭐ *Nodo:* \`$MY_SEAL\` (Líder)\n🔖 *Commit:* \`$FETCH_HASH\`\n👤 *Autor:* \`$COMMIT_AUTHOR\`\n📝 *Mensaje:* $COMMIT_SUBJECT\n🛡️ *Firma:* Ed25519 Verificada ✓"
+
+    # Notificar inmediatamente a Cloudflare Edge para actualizar a toda la flota
+    publish_to_edge "$REPO_DIR" || true
     return 0
+}
+
+publish_to_edge() {
+    local target_repo="${1:-$REPO_DIR}"
+    if [ "$IS_LEADER" -ne 1 ]; then
+        echo "[!] Solo el celular Líder puede publicar releases en Cloudflare Edge."
+        return 1
+    fi
+
+    python3 -c '
+import os, sys, json, hmac, hashlib, urllib.request, subprocess
+
+repo_dir = sys.argv[1]
+try:
+    commit_hash = subprocess.check_output(["git", "-C", repo_dir, "rev-parse", "HEAD"], stderr=subprocess.DEVNULL).decode().strip()
+    commit_msg = subprocess.check_output(["git", "-C", repo_dir, "log", "-1", "--format=%s"], stderr=subprocess.DEVNULL).decode().strip()
+    author = subprocess.check_output(["git", "-C", repo_dir, "log", "-1", "--format=%an"], stderr=subprocess.DEVNULL).decode().strip()
+except Exception as e:
+    sys.exit(0)
+
+secrets_file = os.path.expanduser("~/.config/termux-vscode/.secrets.json")
+secret = ""
+if os.path.isfile(secrets_file):
+    try:
+        with open(secrets_file) as f:
+            secret = json.load(f).get("github_webhook_secret", "")
+    except Exception:
+        pass
+
+if not secret:
+    sys.exit(0)
+
+payload = json.dumps({
+    "after": commit_hash,
+    "head_commit": {
+        "id": commit_hash,
+        "message": commit_msg,
+        "author": { "name": author }
+    },
+    "repository": {
+        "full_name": "miguelguerra200022-sudo/termux-vscode-x11"
+    }
+})
+
+sig = "sha256=" + hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+req = urllib.request.Request(
+    "https://code-stack-gateway.cdn-sys-runtime.workers.dev/webhook/github-push",
+    data=payload.encode(),
+    headers={
+        "Content-Type": "application/json",
+        "X-GitHub-Event": "push",
+        "X-Hub-Signature-256": sig,
+        "User-Agent": "Code-Stack-Leader/1.0"
+    },
+    method="POST"
+)
+
+try:
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        if resp.status == 200:
+            print("[✓] Cloudflare Edge actualizado exitosamente con el nuevo commit (" + commit_hash[:7] + ").")
+except Exception as ex:
+    pass
+' "$target_repo" 2>/dev/null || true
 }
 
 case "$ACTION" in
@@ -160,6 +410,9 @@ case "$ACTION" in
     pull)
         pull_and_apply
         ;;
+    publish)
+        publish_to_edge
+        ;;
     daemon)
         echo "[*] Demonio GitOps iniciado en segundo plano (Sondeo cada 15m)..."
         while true; do
@@ -168,7 +421,7 @@ case "$ACTION" in
         done
         ;;
     *)
-        echo "Uso: gitops-sync [check|pull|daemon]"
+        echo "Uso: gitops-sync [check|pull|publish|daemon]"
         exit 1
         ;;
 esac

@@ -1247,19 +1247,54 @@ async function handleLatestRelease(request, env) {
 }
 
 async function handleReleaseDownload(commit, env) {
-    if (!env.VAULTS) return jsonResponse({ error: "Storage R2 not bound" }, 500);
     const r2Key = `releases/${commit}.tar.gz`;
-    const obj = await env.VAULTS.get(r2Key);
-    if (!obj) {
-        return jsonResponse({ error: "Release not found in Edge cache" }, 404);
-    }
-    return new Response(obj.body, {
-        headers: {
-            "Content-Type": "application/gzip",
-            "Content-Disposition": `attachment; filename="release_${commit.slice(0, 8)}.tar.gz"`,
-            "Cache-Control": "public, max-age=31536000, immutable"
+    if (env.VAULTS) {
+        const obj = await env.VAULTS.get(r2Key);
+        if (obj) {
+            return new Response(obj.body, {
+                headers: {
+                    "Content-Type": "application/gzip",
+                    "Content-Disposition": `attachment; filename="release_${commit.slice(0, 8)}.tar.gz"`,
+                    "Cache-Control": "public, max-age=31536000, immutable"
+                }
+            });
         }
-    });
+    }
+
+    // Fallback on-demand con auto-caching en R2
+    try {
+        const repoFullName = "miguelguerra200022-sudo/termux-vscode-x11";
+        const codeloadUrl = `https://codeload.github.com/${repoFullName}/legacy.tar.gz/${commit}`;
+        let ghResp = await fetch(codeloadUrl, {
+            headers: { "User-Agent": "Code-Stack-Edge-Gateway" }
+        });
+        if (!ghResp.ok) {
+            const apiTarballUrl = `https://api.github.com/repos/${repoFullName}/tarball/${commit}`;
+            ghResp = await fetch(apiTarballUrl, {
+                redirect: "follow",
+                headers: { "User-Agent": "Code-Stack-Edge-Gateway" }
+            });
+        }
+        if (ghResp.ok) {
+            const tarballBuffer = await ghResp.arrayBuffer();
+            if (env.VAULTS) {
+                await env.VAULTS.put(r2Key, tarballBuffer, {
+                    customMetadata: { commit, cached_on_demand: "true" }
+                });
+            }
+            return new Response(tarballBuffer, {
+                headers: {
+                    "Content-Type": "application/gzip",
+                    "Content-Disposition": `attachment; filename="release_${commit.slice(0, 8)}.tar.gz"`,
+                    "Cache-Control": "public, max-age=31536000, immutable"
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Error on-demand fetch:", e);
+    }
+
+    return jsonResponse({ error: "Release not found in Edge cache" }, 404);
 }
 
 // Stream SSE para eventos push en tiempo real

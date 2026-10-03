@@ -386,30 +386,36 @@ if [ ! -d "$SCRIPT_DIR/.git" ]; then
     if [ ! -d "$SCRIPT_DIR/.git" ]; then
         echo -e "${YELLOW}[*] Descargando el repositorio desde Cloudflare Edge...${NC}"
         mkdir -p "$SCRIPT_DIR"
-        RELEASE_META=$(curl -s --connect-timeout 8 "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
+        RELEASE_META=$(curl -s --connect-timeout 8 -A "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0" "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
         RELEASE_COMMIT=$(echo "$RELEASE_META" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('commit',''))" 2>/dev/null || true)
 
         CF_OK=0
         if [ -n "$RELEASE_COMMIT" ] && [ "$RELEASE_COMMIT" != "main" ] && [ "$RELEASE_COMMIT" != "initial" ]; then
             echo -e "${CYAN}[*] Descargando versión $RELEASE_COMMIT desde Cloudflare Edge CDN...${NC}"
             TARBALL_TMP="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/repo_$$.tar.gz"
-            curl -sL --connect-timeout 20 --retry 3 \
+            curl -sL --connect-timeout 20 --retry 3 -A "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0" \
                 "$GATEWAY_URL/api/v1/release/download/$RELEASE_COMMIT" \
-                -o "$TARBALL_TMP" 2>/dev/null && \
-            [ -s "$TARBALL_TMP" ] && \
-            tar -xzf "$TARBALL_TMP" -C "$HOME" 2>/dev/null && \
-            # GitHub tarballs extraen como <user>-<repo>-<hash>/
-            EXTRACTED=$(find "$HOME" -maxdepth 1 -type d -name "*termux-vscode*" 2>/dev/null | head -n 1)
-            if [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "$SCRIPT_DIR" ]; then
-                mv "$EXTRACTED" "$SCRIPT_DIR" 2>/dev/null || true
+                -o "$TARBALL_TMP" 2>/dev/null || true
+            
+            if [ ! -s "$TARBALL_TMP" ]; then
+                curl -sL --connect-timeout 20 --retry 3 -A "Mozilla/5.0 (Android; Termux) Code-Stack-Client/1.0" \
+                    "https://codeload.github.com/miguelguerra200022-sudo/termux-vscode-x11/legacy.tar.gz/$RELEASE_COMMIT" \
+                    -o "$TARBALL_TMP" 2>/dev/null || true
             fi
-            rm -f "$TARBALL_TMP" 2>/dev/null || true
-            if [ -d "$SCRIPT_DIR/bin" ]; then
-                CF_OK=1
-                echo -e "${GREEN}[✓] Repositorio descargado desde Cloudflare Edge.${NC}"
-                # Inicializar git local (solo para tracking de versión, sin remoto activo)
-                git -C "$SCRIPT_DIR" init -q 2>/dev/null || true
-                git -C "$SCRIPT_DIR" commit --allow-empty -q -m "init: bootstrap from cloudflare edge $RELEASE_COMMIT" 2>/dev/null || true
+
+            if [ -s "$TARBALL_TMP" ]; then
+                tar -xzf "$TARBALL_TMP" -C "$HOME" 2>/dev/null && \
+                EXTRACTED=$(find "$HOME" -maxdepth 1 -type d -name "*termux-vscode*" 2>/dev/null | head -n 1)
+                if [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "$SCRIPT_DIR" ]; then
+                    mv "$EXTRACTED" "$SCRIPT_DIR" 2>/dev/null || true
+                fi
+                rm -f "$TARBALL_TMP" 2>/dev/null || true
+                if [ -d "$SCRIPT_DIR/bin" ]; then
+                    CF_OK=1
+                    echo -e "${GREEN}[✓] Repositorio descargado desde Cloudflare Edge.${NC}"
+                    git -C "$SCRIPT_DIR" init -q 2>/dev/null || true
+                    git -C "$SCRIPT_DIR" commit --allow-empty -q -m "init: bootstrap from cloudflare edge $RELEASE_COMMIT" 2>/dev/null || true
+                fi
             fi
         fi
 

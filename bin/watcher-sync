@@ -425,7 +425,11 @@ do_sync() {
 
         if [ -n "$UNPUSHED" ]; then
             if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || curl -sI --connect-timeout 2 https://1.1.1.1 >/dev/null 2>&1; then
-                GIT_ASKPASS="github-auth-broker" timeout 45 git push origin main >/dev/null 2>&1 || true
+                if GIT_ASKPASS="github-auth-broker" timeout 45 git push origin main >/dev/null 2>&1; then
+                    if command -v gitops-sync >/dev/null 2>&1; then
+                        gitops-sync publish >/dev/null 2>&1 || true
+                    fi
+                fi
             fi
         fi
     fi
