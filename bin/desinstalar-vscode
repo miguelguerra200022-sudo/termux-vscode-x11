@@ -13,7 +13,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${YELLOW}  🧹 Desinstalador Seguro de VS Code Pro + Centinelas${NC}"
+echo -e "${YELLOW}  🧹 Desinstalador del Sistema Code Stack${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
 
@@ -39,9 +39,9 @@ if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
     done
 fi
 
-# 2. Respaldo Criptográfico Final en GitHub antes de borrar
+# 2. Respaldo Final antes de borrar
 if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
-    echo -e "${CYAN}[*] Guardando cambios locales antes de desinstalar...${NC}"
+    echo -e "${CYAN}[*] Guardando cambios y preparando desinstalación...${NC}"
     
     # 2.1 Sincronizar estado de VS Code y navegador
     mkdir -p "$REPO_DIR/data/vscode/User" "$REPO_DIR/data/zen" "$REPO_DIR/config"
@@ -56,13 +56,12 @@ if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
             "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
     fi
 
-    # 2.2 Sellar integridad criptográfica con hashes SHA-256 y Ed25519
+    # 2.2 Sellar integridad
     if command -v integrity-guard >/dev/null 2>&1; then
-        echo -e "${YELLOW}[*] Sellando hashes criptográficos de integridad (Ed25519)...${NC}"
         integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
     fi
 
-    # 2.3 Respaldo final exclusivo del Líder (Workers no tocan Git)
+    # 2.3 Respaldo final exclusivo del Líder
     LOCAL_SEAL=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null || github-auth-broker seal 2>/dev/null || echo "")
     if [ "$LOCAL_SEAL" = "ums9230-sp_6300-3724801c" ]; then
         cd "$REPO_DIR"
@@ -71,15 +70,15 @@ if [ -n "$REPO_DIR" ] && [ -d "$REPO_DIR/.git" ]; then
         git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || \
         git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
 
-        # Obtener token descifrado efímeramente y push final
+        # Push final
         if GIT_ASKPASS="github-auth-broker" timeout 35 git push origin main >/dev/null 2>&1; then
-            echo -e "${GREEN}[✓] Cambios locales guardados con éxito en GitHub.${NC}"
+            echo -e "${GREEN}[✓] Respaldo final completado exitosamente.${NC}"
         fi
     fi
 fi
 
-# 3. Detener todos los procesos y demonios activos
-echo -e "${CYAN}[*] Deteniendo procesos y demonios de fondo...${NC}"
+# 3. Detener todos los procesos activos
+echo -e "${CYAN}[*] Deteniendo servicios y aplicaciones activas...${NC}"
 pkill -9 -f "watcher-sync" 2>/dev/null || true
 pkill -9 -f "integrity-watchdog" 2>/dev/null || true
 pkill -9 -f "cloud-sentinel" 2>/dev/null || true
@@ -93,8 +92,8 @@ pkill -9 -f "termux-x11" 2>/dev/null || true
 pulseaudio --kill 2>/dev/null || true
 command -v termux-wake-unlock >/dev/null 2>&1 && termux-wake-unlock || true
 
-# 4. Eliminar scripts del sistema en $PREFIX/bin
-echo -e "${CYAN}[*] Eliminando utilidades de $PREFIX/bin...${NC}"
+# 4. Eliminar scripts del sistema
+echo -e "${CYAN}[*] Removiendo herramientas del sistema...${NC}"
 SCRIPTS_TO_REMOVE=(
     "encender" "apagar" "orientation-sentinel" "start-vscode" "stop-vscode" "share-port" "dev-info" "notify-done"
     "sync-vscode" "restore-vscode" "watcher-sync" "integrity-watchdog"
@@ -102,6 +101,7 @@ SCRIPTS_TO_REMOVE=(
     "new-project" "start-vscode-web" "guia" "vscode" "desinstalar-vscode"
     "desinstalar" "bloquear-vscode" "desbloquear-vscode"
     "github-auth-broker" "flota" "switch-identity" "gitops-sync" "cloud-sentinel" "vault-logs"
+    "vault-manager" "gpu-optimizer" "programas" "fetch-app-icon" "code-stack-ascii"
 )
 
 for s in "${SCRIPTS_TO_REMOVE[@]}"; do
@@ -109,8 +109,8 @@ for s in "${SCRIPTS_TO_REMOVE[@]}"; do
     rm -f "$PREFIX/bin/$s"
 done
 
-# 5. Eliminar configuraciones, accesos directos, bóvedas y repositorios clonados
-echo -e "${CYAN}[*] Purgando configuraciones, bóvedas y accesos directos...${NC}"
+# 5. Eliminar configuraciones, accesos directos y archivos del entorno
+echo -e "${CYAN}[*] Limpiando configuraciones y archivos de entorno...${NC}"
 rm -f "$HOME/encender.sh" "$HOME/apagar.sh" "$HOME/start-vscode.sh" "$HOME/stop-vscode.sh"
 rm -rf "$HOME/.shortcuts"
 rm -rf "$HOME/.config/termux-vscode"
@@ -123,8 +123,8 @@ rm -f "$HOME/.system_vault.enc"
 rm -f "/storage/emulated/0/Download/termux-x11-universal-debug.apk"
 rm -f "/storage/emulated/0/Download/termux-widget.apk"
 
-# 6. Purgar configuraciones de Git Global (Cero Fugas)
-echo -e "${CYAN}[*] Limpiando configuraciones de Git Global (Cero Fugas)...${NC}"
+# 6. Restaurar parámetros de Git
+echo -e "${CYAN}[*] Restaurando parámetros de entorno...${NC}"
 git config --global --unset user.name 2>/dev/null || true
 git config --global --unset user.email 2>/dev/null || true
 git config --global --unset user.signingkey 2>/dev/null || true
@@ -132,8 +132,8 @@ git config --global --unset gpg.format 2>/dev/null || true
 git config --global --unset commit.gpgsign 2>/dev/null || true
 git config --global --unset gpg.ssh.allowedsignersfile 2>/dev/null || true
 
-# 7. Restaurar ~/.bashrc limpio y purgar historial
-echo -e "${CYAN}[*] Restaurando ~/.bashrc y purgando historial de comandos...${NC}"
+# 7. Restaurar terminal y limpiar historial
+echo -e "${CYAN}[*] Restaurando terminal y limpiando historial...${NC}"
 cat << 'BASHRC_CLEAN' > "$HOME/.bashrc"
 export VSCODE_CLI_USE_FILE_KEYCHAIN=1
 export BROWSER=zen-browser
@@ -148,7 +148,6 @@ rm -f "$HOME/.bash_history" 2>/dev/null || true
 echo ""
 echo -e "${GREEN}======================================================${NC}"
 echo -e "${GREEN}  ✔ Desinstalación completada con éxito${NC}"
-echo -e "${GREEN}  ✔ Todos los cambios fueron asegurados localmente${NC}"
-echo -e "${GREEN}  ✔ Cero rastros de tokens ni configuraciones en el móvil${NC}"
+echo -e "${GREEN}  ✔ El sistema ha quedado completamente limpio${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""

@@ -120,7 +120,7 @@ e821d0b35e330aca675ecef4d235015a310c22c7115de92379ac9bda0c0af557  ./Programas/11
 ae6b686f13ddd82d6e50ab70ca44238b51b46531c3f754a4595c6f841242d107  ./Programas/11-Gestores_de_Ventanas/instalar-openbox.sh
 21bd0350b449a5033b80b8495694d3f3938aeae9161ac7445188286039ea2448  ./Programas/11-Gestores_de_Ventanas/instalar-xfce4.sh
 84f683fc292679ebee059f9c32043cad60a8cdf8fd85cbf8f3957400e26051fd  ./Programas/README.md
-09f905c1e8223141376c7c82650eadb509fab5a64bc5ec13f09e59f69aad4c00  ./Programas/menu-instalador.sh
+d0aa8184b84bd0cfc010430ebf41d7c12241b5fe968100defd8b25505d09a8fd  ./Programas/menu-instalador.sh
 33c20df89ee1cc500078537561f0756f030d7cc0d488f194088d026d50888d57  ./README.md
 c6245d20a08c0455548c57558dc4111b52770a89a3dbfa7c5c55957a96fadf68  ./assets/ascii/banner_compact.ans.z
 8da31a686574b46c316343314b0ca3130b9a04232c8f4abe19ff157efd330368  ./assets/ascii/banner_large.ans.z
@@ -135,7 +135,7 @@ f58bc91dfe87a9d57098890778c041b6eda26aaafaad04d0e12e1f37ad7201fe  ./assets/audio
 e3d9238ebfcabe60bd97ed60270391a32388def591f7fbd4ad93d420cd50b202  ./bin/cloud-sentinel
 adfed8b8b5de1a1e4836eab6d7ed224327d037aecca524b6108bd9ceb6ed6ab2  ./bin/code-stack-ascii
 943f2c578031837bf423d313153330f8d42b8e17cb00b87a41b241fb1adf12e8  ./bin/desinstalar
-5305739f16400b4847ff1feda8000b87b572371e409380b4de0b614a824b40d3  ./bin/desinstalar-vscode
+4fafac448321238ed383fcce056caabe189832881956b4267a31454cc16f291f  ./bin/desinstalar-vscode
 dbbf74468b26298a2f26725ff3c4abea22762c55a3c587e361adf78872a6fbca  ./bin/dev-info
 4a043396794f000226b01a8430ef20ff480bcf59b8ec345dff52960803bcef50  ./bin/encender
 f798483e7652b77fe618fccb35f90c89012a7290cbbe4444c84fac211f3e0c18  ./bin/fetch-app-icon
@@ -635,5 +635,5 @@ abd9e49638060c228777916f8be20de7f79e389419fae6e4275293935ed26b08  ./data/zen/qql
 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a  ./data/zen/qqlfient.Default (release)/zen-themes.json
 a39ca57624ff36ea946acb2aaf721eafbaf1e2b3cefa55dd7d6ab67733a0f23f  ./docs/GUIA_RAPIDA.md
 b48446381eee60692600cb35ac250ac63a126be28924b45781ee9e4e9d7565a6  ./instalar
-b8b383c165b2746cb099774211748f6ccb64da59cfc665f9143b3137977077de  ./install.sh
+02f63a792f2f3c59b0efad54a5d49e4a897b13e87fadb355f7464c585081a5aa  ./install.sh
 a18dea5410b968f9d54202db54ba502e1cf16457b28aa89cb7ca1d50985f3cd6  ./uninstall.sh

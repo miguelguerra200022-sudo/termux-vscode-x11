@@ -208,6 +208,14 @@ is_program_installed() {
         fi
     fi
 
+    if [ "$slug" = "openbox" ]; then
+        if [ -n "${INSTALLED_BIN_MAP["openbox"]}" ] || \
+           [ -n "${INSTALLED_DESKTOP_MAP["openbox.desktop"]}" ] || \
+           command -v openbox >/dev/null 2>&1; then
+            return 0
+        fi
+    fi
+
     # Comprobación por binario
     if [ -n "${INSTALLED_BIN_MAP["$slug"]}" ]; then
         return 0

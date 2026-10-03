@@ -254,13 +254,26 @@ apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--fo
     pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $SYSTEM_BASE 2>/dev/null || true
 
 # 7b. Entorno gráfico y audio (Termux-X11, Openbox, Tint2, PulseAudio)
-echo -e "${YELLOW}[*] Instalando entorno gráfico y audio (X11, Openbox, Tint2, PulseAudio)...${NC}"
-# Reparar paquetes rotos de dpkg previos si los hubiere
+echo -e "${YELLOW}[*] Instalando entorno gráfico y componentes de pantalla...${NC}"
 dpkg --configure -a 2>/dev/null || true
-dpkg --remove --force-remove-reinstreq mpv ffmpeg 2>/dev/null || true
-GRAPHICS_BASE="termux-x11-nightly openbox tint2 pcmanfm pulseaudio feh virglrenderer-android"
-apt-get install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $GRAPHICS_BASE 2>/dev/null || \
-    pkg install -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" $GRAPHICS_BASE 2>/dev/null || true
+
+GRAPHICS_PKGS=(
+    "openbox"
+    "obconf"
+    "tint2"
+    "pcmanfm"
+    "pulseaudio"
+    "feh"
+    "virglrenderer-android"
+    "termux-x11-nightly"
+)
+
+for g_pkg in "${GRAPHICS_PKGS[@]}"; do
+    if ! command -v "$g_pkg" >/dev/null 2>&1 && ! dpkg -s "$g_pkg" >/dev/null 2>&1; then
+        pkg install -y -o Dpkg::Options::="--force-confnew" "$g_pkg" 2>/dev/null || \
+        apt-get install -y -o Dpkg::Options::="--force-confnew" "$g_pkg" 2>/dev/null || true
+    fi
+done
 
 # 8. Detección Inteligente e Instalación de APKs (X11 y Widget)
 echo -e "${YELLOW}[*] Comprobando complementos gráficos de Android (Termux:X11 y Termux:Widget)...${NC}"
@@ -549,6 +562,24 @@ sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/zen-browse
 sed -i 's|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/touch-toggle.png|g' "$PREFIX/share/applications/touch-toggle.desktop" 2>/dev/null || true
 mkdir -p "$HOME/.local/share/applications" "$HOME/.icons"
 cp -f "$PREFIX/share/applications/code-oss.desktop" "$PREFIX/share/applications/zen-browser.desktop" "$PREFIX/share/applications/touch-toggle.desktop" "$HOME/.local/share/applications/" 2>/dev/null || true
+
+if command -v openbox >/dev/null 2>&1; then
+    DESK_OPENBOX="$PREFIX/share/applications/openbox.desktop"
+    if [ ! -f "$DESK_OPENBOX" ]; then
+        cat << 'DESK_OB_EOF' > "$DESK_OPENBOX"
+[Desktop Entry]
+Name=Openbox Window Manager
+Comment=Gestor de ventanas ultra-ligero para X11
+Exec=openbox
+Icon=/data/data/com.termux/files/usr/share/pixmaps/openbox.png
+Terminal=false
+Type=Application
+Categories=System;WindowManager;
+DESK_OB_EOF
+    fi
+    cp -f "$DESK_OPENBOX" "$HOME/.local/share/applications/" 2>/dev/null || true
+    cp -f "$DESK_OPENBOX" "$HOME/Desktop/" 2>/dev/null || true
+fi
 
 # 13. Configuración de Bóveda Cifrada Local (Zero Texto Plano)
 TARGET_FOLDER="credenciales/${SELLO_HARDWARE}"
