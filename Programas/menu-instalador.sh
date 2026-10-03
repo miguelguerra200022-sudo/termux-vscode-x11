@@ -1,4 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# Restauración estricta de terminal ante cualquier salida o interrupción
+cleanup_terminal() {
+    stty sane 2>/dev/null || true
+    echo -ne "\033[?25h\033[0m" 2>/dev/null || true
+}
+trap cleanup_terminal EXIT INT TERM HUP
 # ==============================================================================
 # menu-instalador.sh: Centro de Instalación y Desinstalación de Software
 # ==============================================================================
@@ -78,7 +84,7 @@ read_menu_input() {
     # Desactivar modo canónico y eco para capturar la tecla borrar en tiempo real
     stty -icanon -echo min 1 time 0 2>/dev/null || true
 
-    trap 'stty "$old_stty" 2>/dev/null; exit 130' INT TERM
+    trap 'stty "$old_stty" 2>/dev/null || stty sane 2>/dev/null; echo -ne "\\033[?25h\\033[0m" 2>/dev/null; exit 130' INT TERM
 
     while IFS= read -r -s -n 1 char; do
         # Tecla ENTER (\r = 13, \n = 10, o vacío)

@@ -31,6 +31,30 @@ import termios
 import time
 import tty
 import zlib
+import atexit
+
+def global_terminal_cleanup():
+    try:
+        sys.stdout.write("\033[0m\033[r\033[?25h\033[?1049l")
+        sys.stdout.flush()
+    except Exception:
+        pass
+    try:
+        subprocess.run(["stty", "sane"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+atexit.register(global_terminal_cleanup)
+
+def sigint_handler(sig, frame):
+    global_terminal_cleanup()
+    sys.exit(130)
+
+try:
+    signal.signal(signal.SIGINT, sigint_handler)
+    signal.signal(signal.SIGTERM, sigint_handler)
+except Exception:
+    pass
 
 try:
     from wcwidth import wcswidth

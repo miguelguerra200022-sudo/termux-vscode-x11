@@ -1,4 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
+cleanup_terminal() {
+    stty sane 2>/dev/null || true
+    echo -ne "\033[?25h\033[0m" 2>/dev/null || true
+}
+trap cleanup_terminal EXIT INT TERM HUP
+
 REPO_DIR=""
 CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
 [ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
@@ -8,7 +14,11 @@ fi
 
 MENU_SCRIPT="$REPO_DIR/Programas/menu-instalador.sh"
 if [ -f "$MENU_SCRIPT" ]; then
-    exec bash "$MENU_SCRIPT" "$@"
+    bash "$MENU_SCRIPT" "$@"
+    RET=$?
+    cleanup_terminal
+    exit $RET
 else
     echo "No se encontró el menú en $MENU_SCRIPT"
+    exit 1
 fi

@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -e
+trap 'echo -ne "\033[?25h\033[0m" 2>/dev/null; stty sane 2>/dev/null || true' EXIT INT TERM HUP
 
 # ==============================================================================
 # switch-identity: Conmutador Multi-Dispositivo Exclusivo del Líder
