@@ -349,7 +349,7 @@ def classify_key(k):
         return 'NONE'
     if k in ('\t', '\x1b[Z'):
         return 'TAB'
-    if k in ('q', 'Q', '\x03'):
+    if k in ('q', 'Q', '\x03', 'QUIT'):
         return 'QUIT'
     # Flecha Arriba, W o K (soporta \x1b[A, \x1bOA, \x1b[1;5A, etc.)
     if k in ('w', 'W', 'k', 'K') or '[A' in k or 'OA' in k or (k.startswith('\x1b') and k.endswith('A')):
@@ -558,7 +558,7 @@ def main():
 
     # 1. Si se pasó una ruta directa como argumento, abrirla de inmediato
     # 0. Reproducir cinemática 3D Code Stack Sh (Opción A1) si no se usa flag rápida
-    if "--no-intro" not in sys.argv and "--fast" not in sys.argv and not [a for a in sys.argv[1:] if not a.startswith('-')]:
+    if sys.stdin.isatty() and sys.stdout.isatty() and "--no-intro" not in sys.argv and "--fast" not in sys.argv and not [a for a in sys.argv[1:] if not a.startswith('-')]:
         try:
             ascii_bin = shutil.which("code-stack-ascii")
             if not ascii_bin:
