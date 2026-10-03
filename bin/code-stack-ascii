@@ -1,584 +1,830 @@
 #!/data/data/com.termux/files/usr/bin/python3
-# ==============================================================================
-# code-stack-ascii: Motor Dinámico de Animación ASCII Matrix y Split-Screen
-# ==============================================================================
-# - Calcula automáticamente el tamaño de pantalla de cualquier dispositivo.
-# - Renderizado de alto contraste Matrix (cero ruido, negros puros, verde neón).
-# - Modo Intro: Cinemática 3D fluida a 20 FPS con salto instantáneo sin esperas.
-# - Modo Split-Screen (DECSTBM): Bucle de video en panel superior y registros abajo.
-# - Cero dependencias externas y consumo < 0.5% CPU en Termux.
-# ==============================================================================
+"""
+code-stack-ascii: Motor Dinámico de Animación TrueColor CSAN2 (Half-Block) y Split-Screen.
+- Formato CSAN2 con bloques medios (▀ / ▄) y 24-bit TrueColor.
+- Acceso indexado O(1) con descompresión zlib por fotograma y caché acotada.
+- Modo Intro 3D con audio estéreo sincronizado y salto instantáneo (< 1ms).
+- Modo Split-Screen blindado con emulación de terminal virtual (pyte) y fallback DECSTBM.
+- API get_formatted_banner_lines para incrustación fluida en menús.
+"""
 
+import argparse
+import codecs
+from collections import OrderedDict
+from contextlib import contextmanager
+import errno
+import fcntl
+from functools import lru_cache
+import json
+import math
 import os
-import sys
-import time
-import zlib
-import shutil
-import subprocess
-import select
+from pathlib import Path
 import pty
+import re
+import select
+import shutil
+import signal
+import struct
+import subprocess
+import sys
 import termios
+import time
 import tty
+import zlib
+
+try:
+    from wcwidth import wcswidth
+except ImportError:
+    def wcswidth(s):
+        return len(s)
+
+try:
+    import pyte
+except ImportError:
+    pyte = None
+
+MAGIC = b"CSAN2\x00\r\n"
+RESET = "\033[0m"
+CLEAR = "\033[2J\033[H"
+
+ANSI_RE = re.compile(r"\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])", re.DOTALL)
+SGR_RE = re.compile(r"\x1b\[[0-9:;]*m")
+
+INTRO_PROFILES = (
+    ("ascii/intro_xlarge.ans.z", 96, 20),
+    ("ascii/intro_large.ans.z", 82, 17),
+    ("ascii/intro_medium.ans.z", 68, 14),
+    ("ascii/intro_small.ans.z", 52, 11),
+    ("ascii/intro_compact.ans.z", 36, 8),
+)
+
+BANNER_PROFILES = (
+    ("ascii/banner_large.ans.z", 80, 9),
+    ("ascii/banner_medium.ans.z", 66, 8),
+    ("ascii/banner_small.ans.z", 52, 7),
+    ("ascii/banner_compact.ans.z", 44, 6),
+    ("ascii/banner_tiny.ans.z", 36, 4),
+)
+
+MAX_HEADER = 16 * 1024 * 1024
+MAX_COMPRESSED_FRAME = 8 * 1024 * 1024
+MAX_RAW_FRAME = 16 * 1024 * 1024
+MAX_LEGACY_RAW = 256 * 1024 * 1024
+FRAME_CACHE_SIZE = 32
+
+def terminal_size():
+    for stream in (sys.stdout, sys.stdin):
+        try:
+            size = os.get_terminal_size(stream.fileno())
+            if size.columns > 0 and size.lines > 0:
+                return size.columns, size.lines
+        except (AttributeError, OSError, ValueError):
+            pass
+    size = shutil.get_terminal_size((80, 24))
+    return max(1, size.columns), max(1, size.lines)
+
+def iter_styled_tokens(text):
+    pos = 0
+    n = len(text)
+    while pos < n:
+        if text[pos] == '\x1b':
+            m = ANSI_RE.match(text, pos)
+            if m:
+                token = m.group()
+                if SGR_RE.fullmatch(token):
+                    yield token, 0
+                pos = m.end()
+                continue
+            pos += 1
+            continue
+
+        ch = text[pos]
+        pos += 1
+        if ord(ch) < 32 or (0x7F <= ord(ch) < 0xA0):
+            continue
+        w = wcswidth(ch)
+        if w >= 0:
+            yield ch, w
+
+def visible_width(text):
+    return sum(w for _, w in iter_styled_tokens(text))
+
+def ansi_truncate(text, max_visible, ellipsis="..."):
+    limit = max(0, int(max_visible))
+    if not limit:
+        return ""
+
+    tokens = list(iter_styled_tokens(str(text)))
+    total_w = sum(w for _, w in tokens)
+    truncated = total_w > limit
+
+    suffix = ""
+    suffix_w = 0
+    if truncated and ellipsis:
+        s_tokens = list(iter_styled_tokens(ellipsis))
+        parts = []
+        for t, w in s_tokens:
+            if suffix_w + w > limit:
+                break
+            parts.append(t)
+            suffix_w += w
+        suffix = "".join(parts)
+
+    available = limit - suffix_w
+    used = 0
+    output = []
+    for token, w in tokens:
+        if used + w > available:
+            break
+        output.append(token)
+        used += w
+
+    output.append(RESET)
+    if truncated:
+        output.append(suffix)
+    return "".join(output)
+
+def ansi_pad(text, width, align="left"):
+    width = max(0, int(width))
+    clipped = ansi_truncate(text, width)
+    missing = max(0, width - visible_width(clipped))
+    if align == "center":
+        left = missing // 2
+        return " " * left + clipped + " " * (missing - left)
+    elif align == "right":
+        return " " * missing + clipped
+    return clipped + " " * missing
 
 def find_asset(subpath):
-    candidates = [
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", subpath),
-        os.path.join(os.environ.get("PREFIX", "/data/data/com.termux/files/usr"), "share/code-stack-sh/assets", subpath),
-        os.path.expanduser(f"~/termux-vscode-x11/assets/{subpath}")
-    ]
+    candidates = (
+        Path(__file__).resolve().parents[1] / "assets" / subpath,
+        Path(os.environ.get("PREFIX", "/data/data/com.termux/files/usr")) / "share" / "code-stack-sh" / "assets" / subpath,
+        Path.home() / "termux-vscode-x11" / "assets" / subpath,
+    )
     for c in candidates:
-        if os.path.isfile(c):
+        if c.is_file():
             return c
     return None
 
+def bounded_decompress(data, maximum):
+    decoder = zlib.decompressobj()
+    raw = decoder.decompress(data, maximum + 1)
+    if len(raw) > maximum or decoder.unconsumed_tail:
+        raise ValueError("Contenido descomprimido supera el límite")
+    return raw
+
+class FrameStore:
+    def __init__(self, filename):
+        self.path = Path(filename)
+        self.cache = OrderedDict()
+        self.legacy_frames = None
+        self.offsets = []
+        self.base = 0
+        self.cols = 0
+        self.rows = 0
+        self.fps = 12.0
+        self.mode = "legacy"
+
+        filesize = self.path.stat().st_size
+
+        with self.path.open("rb") as stream:
+            prefix = stream.read(len(MAGIC))
+            if prefix != MAGIC:
+                stream.seek(0)
+                raw = bounded_decompress(stream.read(), MAX_LEGACY_RAW)
+                frames = raw.split(b"\x00")
+                if frames and frames[-1] == b"":
+                    frames.pop()
+                if not frames:
+                    raise ValueError("Animación vacía")
+                self.legacy_frames = frames
+                first = frames[0].decode("utf-8", "replace").splitlines()
+                self.rows = len(first)
+                self.cols = max((visible_width(line) for line in first), default=0)
+                return
+
+            length_bytes = stream.read(4)
+            if len(length_bytes) != 4:
+                raise ValueError("Cabecera incompleta")
+            header_size = struct.unpack(">I", length_bytes)[0]
+            if not 0 < header_size <= MAX_HEADER:
+                raise ValueError("Tamaño de cabecera inválido")
+
+            header_bytes = stream.read(header_size)
+            if len(header_bytes) != header_size:
+                raise ValueError("Cabecera truncada")
+
+            header = json.loads(header_bytes)
+            if header.get("version") != 2:
+                raise ValueError("Versión no soportada")
+
+            self.cols = int(header["cols"])
+            self.rows = int(header["rows"])
+            self.fps = float(header["fps"])
+            self.mode = header.get("mode", "half-block")
+            self.base = len(MAGIC) + 4 + header_size
+
+            offsets = header.get("frames", [])
+            for entry in offsets:
+                self.offsets.append((entry[0], entry[1]))
+
+    def __len__(self):
+        if self.legacy_frames is not None:
+            return len(self.legacy_frames)
+        return len(self.offsets)
+
+    def frame_bytes(self, index):
+        index %= len(self)
+        if self.legacy_frames is not None:
+            return self.legacy_frames[index]
+
+        if index in self.cache:
+            v = self.cache.pop(index)
+            self.cache[index] = v
+            return v
+
+        offset, size = self.offsets[index]
+        with self.path.open("rb") as stream:
+            stream.seek(self.base + offset)
+            compressed = stream.read(size)
+
+        value = bounded_decompress(compressed, MAX_RAW_FRAME)
+        self.cache[index] = value
+        while len(self.cache) > FRAME_CACHE_SIZE:
+            self.cache.popitem(last=False)
+        return value
+
+    def __getitem__(self, index):
+        return self.frame_bytes(index)
+
+    def lines(self, index):
+        return self.frame_bytes(index).decode("utf-8", "replace").splitlines()
+
+@lru_cache(maxsize=12)
+def open_store(filename, mtime_ns, size):
+    return FrameStore(filename)
+
 def load_frames(subpath):
     path = find_asset(subpath)
-    if not path or not os.path.isfile(path):
-        return []
-    try:
-        with open(path, "rb") as f:
-            raw = zlib.decompress(f.read())
-        return raw.split(b"\x00")
-    except Exception:
-        return []
-
-def ansi_truncate(s, max_visible):
-    """Trunca una cadena ANSI respetando secuencias de escape completas sin romper colores."""
-    if max_visible <= 0:
-        return ""
-    visible = 0
-    result = []
-    i = 0
-    n = len(s)
-    while i < n:
-        if s[i] == '\033' and i + 1 < n and s[i+1] == '[':
-            end = s.find('m', i)
-            if end != -1:
-                result.append(s[i:end+1])
-                i = end + 1
-                continue
-        if visible >= max_visible:
-            break
-        result.append(s[i])
-        visible += 1
-        i += 1
-    result.append('\033[0m')
-    return ''.join(result)
-
-def get_intro_profile(term_cols, term_rows):
-    """Selecciona el perfil óptimo de pantalla completa según las dimensiones reales."""
-    candidates = [
-        ("ascii/intro_xlarge.ans.z", 96, 20),
-        ("ascii/intro_large.ans.z", 82, 17),
-        ("ascii/intro_medium.ans.z", 68, 14),
-        ("ascii/intro_small.ans.z", 52, 11),
-    ]
-    for name, w, h in candidates:
-        if term_cols >= w + 2 and term_rows >= h + 3:
-            return name, w, h
-    return "ascii/intro_small.ans.z", 52, 11
-
-def get_banner_profile(term_cols, term_rows):
-    """Selecciona el banner panorámico óptimo para pantalla dividida o encabezados."""
-    candidates = [
-        ("ascii/banner_large.ans.z", 80, 9),
-        ("ascii/banner_medium.ans.z", 66, 8),
-        ("ascii/banner_small.ans.z", 52, 7),
-        ("ascii/banner_compact.ans.z", 44, 6),
-    ]
-    for name, w, h in candidates:
-        if term_cols >= w + 2 and term_rows >= (h + 3):
-            return name, w, h
-    return "ascii/banner_compact.ans.z", 44, 6
-
-def start_audio():
-    """Inicia reproducción de audio sin bloqueos (usando mpv, ffplay o termux-media-player con timeout)."""
-    audio_path = find_asset("audio/cyber_intro.aac")
-    if not audio_path or not os.path.isfile(audio_path):
+    if not path:
         return None
-    # 1. MPV nativo de Android (ultrarrápido, driver AAudio/OpenSLES, proceso hijo gestionado)
-    if shutil.which("mpv"):
-        try:
-            return subprocess.Popen(
-                ["mpv", "--no-video", "--no-terminal", "--really-quiet", "--loop=inf", audio_path],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-        except Exception:
-            pass
-    # 2. FFplay oficial (arquitectura RipperdocNiladri/ASCII-Art)
-    if shutil.which("ffplay"):
-        try:
-            return subprocess.Popen(
-                ["ffplay", "-nodisp", "-vn", "-loop", "0", "-loglevel", "quiet", audio_path],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-        except Exception:
-            pass
-    # 3. Fallback seguro a termux-media-player con timeout estricto de 1.0s para evitar cuelgues
-    if shutil.which("termux-media-player"):
-        try:
-            subprocess.run(
-                ["termux-media-player", "play", audio_path],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=1.0
-            )
-            return "termux-media-player"
-        except Exception:
-            pass
+    try:
+        st = path.stat()
+        return open_store(str(path), st.st_mtime_ns, st.st_size)
+    except Exception:
+        return None
+
+def select_profile(profiles, cols, rows):
+    for name, exp_cols, exp_rows in profiles:
+        if exp_cols <= cols and exp_rows <= rows:
+            store = load_frames(name)
+            if store and store.cols <= cols and store.rows <= rows:
+                return name, store.cols, store.rows, store
     return None
 
-def stop_audio(proc):
-    """Detiene el proceso de audio de forma 100% segura e instantánea (< 1ms)."""
-    if proc is None:
-        return
-    if isinstance(proc, subprocess.Popen):
-        try:
-            proc.terminate()
-            proc.wait(timeout=0.3)
-        except Exception:
-            try:
-                proc.kill()
-            except Exception:
-                pass
-    elif proc == "termux-media-player":
-        if shutil.which("termux-media-player"):
-            try:
-                subprocess.run(
-                    ["termux-media-player", "stop"],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    timeout=1.0,
-                    check=False
-                )
-            except Exception:
-                pass
+def get_intro_profile(term_cols, term_rows):
+    res = select_profile(INTRO_PROFILES, max(0, term_cols - 1), max(0, term_rows - 3))
+    if res:
+        return res[:3]
+    return "", 0, 0
 
-def get_controlling_tty_fd():
-    """
-    Obtiene el descriptor de archivo de la terminal interactiva (teclado),
-    incluso si sys.stdin fue canalizado a través de una tubería (pipe) como en 'curl ... | bash'.
-    """
-    if sys.stdin.isatty():
-        return sys.stdin.fileno(), None
-    if os.path.exists("/dev/tty"):
-        try:
-            tty_f = open("/dev/tty", "rb", buffering=0)
-            return tty_f.fileno(), tty_f
-        except Exception:
-            pass
-    return None, None
-
-def play_intro(fps=12):
-    if not sys.stdout.isatty():
-        return 0
-
-    term_cols, term_rows = shutil.get_terminal_size((80, 24))
-    subpath, frame_w, frame_h = get_intro_profile(term_cols, term_rows)
-    frames = load_frames(subpath)
-    if not frames:
-        return 0
-
-    pad_left = " " * max(0, (term_cols - frame_w) // 2)
-    top_offset = max(0, (term_rows - frame_h - 2) // 2)
-    hint_row = min(term_rows, top_offset + frame_h + 2)
-
-    old_settings = None
-    fd, tty_f = get_controlling_tty_fd()
-    if fd is not None:
-        try:
-            old_settings = termios.tcgetattr(fd)
-            tty.setcbreak(fd)
-            termios.tcflush(fd, termios.TCIFLUSH)
-        except Exception:
-            pass
-
-    audio_proc = start_audio()
-
-    sys.stdout.write("\033[2J\033[?25l")
-    sys.stdout.flush()
-
-    frame_duration = 1.0 / fps
-    frame_idx = 0
-    total_frames = len(frames)
-
-    try:
-        while True:
-            # Salto instantáneo si ya hay tecla pulsada en buffer tras dibujar el primer frame
-            if fd is not None and frame_idx > 0:
-                r, _, _ = select.select([fd], [], [], 0)
-                if r:
-                    try:
-                        os.read(fd, 1024)
-                        termios.tcflush(fd, termios.TCIFLUSH)
-                    except Exception:
-                        pass
-                    break
-
-            raw_str = frames[frame_idx % total_frames].decode("utf-8", errors="replace")
-            lines = raw_str.split("\n")
-
-            buf = []
-            max_line_w = max(0, term_cols - len(pad_left))
-            for r_idx, line in enumerate(lines[:frame_h]):
-                r_pos = top_offset + r_idx + 1
-                if r_pos <= term_rows:
-                    clipped_line = ansi_truncate(line, max_line_w)
-                    buf.append(f"\033[{r_pos};1H\033[2K{pad_left}{clipped_line}")
-
-            if hint_row <= term_rows:
-                hint = f"{pad_left}\033[1;36m   [ Pulsa cualquier tecla para entrar a Code Stack Sh ]\033[0m"
-                buf.append(f"\033[{hint_row};1H\033[2K{hint}")
-
-            sys.stdout.write("".join(buf))
-            sys.stdout.flush()
-
-            # Espera activa: si el usuario pulsa tecla despierta en < 1ms
-            if fd is not None:
-                r, _, _ = select.select([fd], [], [], frame_duration)
-                if r:
-                    try:
-                        os.read(fd, 1024)
-                        termios.tcflush(fd, termios.TCIFLUSH)
-                    except Exception:
-                        pass
-                    break
-            else:
-                time.sleep(frame_duration)
-                if frame_idx >= total_frames:
-                    break
-
-            frame_idx += 1
-    finally:
-        stop_audio(audio_proc)
-        if old_settings and fd is not None:
-            try:
-                termios.tcflush(fd, termios.TCIFLUSH)
-                termios.tcsetattr(fd, termios.TCSANOW, old_settings)
-            except Exception:
-                pass
-        if tty_f:
-            try:
-                tty_f.close()
-            except Exception:
-                pass
-        sys.stdout.write("\033[0m\033[?25h\033[2J\033[H")
-        sys.stdout.flush()
-
-    return 0
-
-def run_split_command(cmd, title="INSTALACIÓN"):
-    term_cols, term_rows = shutil.get_terminal_size((80, 24))
-
-    # Terminal demasiado pequeña o no interactiva -> Ejecutar normal sin split
-    if not sys.stdout.isatty() or term_rows < 18 or term_cols < 48:
-        print(f"\033[1;36m[⚡ Code Stack Sh] Iniciando: {title}...\033[0m\n")
-        return subprocess.run(cmd).returncode
-
-    subpath, banner_w, banner_h = get_banner_profile(term_cols, term_rows)
-    frames = load_frames(subpath)
-    if not frames:
-        print(f"\033[1;36m[⚡ Code Stack Sh] Iniciando: {title}...\033[0m\n")
-        return subprocess.run(cmd).returncode
-
-    split_start = banner_h + 2
-    split_end = term_rows
-
-    pad_left = " " * max(0, (term_cols - banner_w) // 2)
-
-    # Preparar terminal: limpiar, ocultar cursor, configurar márgenes VT100
-    sys.stdout.write("\033[2J\033[?25l")
-    sys.stdout.write(f"\033[{split_start};{split_end}r")
-
-    # 1. Dibujar fotograma inicial del banner
-    max_w = max(0, term_cols - len(pad_left))
-    lines_init = frames[0].decode("utf-8", errors="replace").split("\n")
-    for r_idx, line in enumerate(lines_init[:banner_h]):
-        clipped = ansi_truncate(line, max_w)
-        sys.stdout.write(f"\033[{r_idx + 1};1H\033[2K{pad_left}{clipped}")
-
-    # 2. Línea divisoria elegante
-    tag = f" ⚡ {title} // CODE STACK SH "
-    dash_count = max(0, (term_cols - len(tag) - 2) // 2)
-    div_line = f"\033[{banner_h + 1};1H\033[1;36m" + "═" * dash_count + f"\033[1;32;40m{tag}\033[1;36;40m" + "═" * max(0, term_cols - dash_count - len(tag)) + "\033[0m"
-    sys.stdout.write(div_line)
-    sys.stdout.write(f"\033[{split_start};1H")
-    sys.stdout.flush()
-
-    # Abrir PTY para ejecutar el comando
-    master, slave = pty.openpty()
-    proc = subprocess.Popen(cmd, stdin=slave, stdout=slave, stderr=slave, close_fds=True)
-    os.close(slave)
-    os.set_blocking(master, False)
-
-    old_stdin = None
-    input_fd, tty_f = get_controlling_tty_fd()
-    if input_fd is not None:
-        try:
-            old_stdin = termios.tcgetattr(input_fd)
-            tty.setcbreak(input_fd)
-        except Exception:
-            pass
-
-    frame_idx = 0
-    total_frames = len(frames)
-    last_banner_time = 0
-    cursor_initialized = False
-
-    try:
-        while proc.poll() is None:
-            now = time.perf_counter()
-            # Refrescar banner a ~15 FPS
-            if now - last_banner_time >= 0.066:
-                last_banner_time = now
-                frame_bytes = frames[frame_idx % total_frames]
-                frame_idx += 1
-                lines = frame_bytes.decode("utf-8", errors="replace").split("\n")
-
-                buf = ["\0337"]  # Salvar posición del cursor
-                max_w = max(0, term_cols - len(pad_left))
-                for r_idx, line in enumerate(lines[:banner_h]):
-                    clipped = ansi_truncate(line, max_w)
-                    buf.append(f"\033[{r_idx + 1};1H\033[2K{pad_left}{clipped}")
-                buf.append("\0338")  # Restaurar posición del cursor
-
-                sys.stdout.write("".join(buf))
-                sys.stdout.flush()
-
-            readers = [master]
-            if input_fd is not None:
-                readers.append(input_fd)
-
-            r, _, _ = select.select(readers, [], [], 0.02)
-            if master in r:
-                try:
-                    data = os.read(master, 2048)
-                    if data:
-                        if not cursor_initialized:
-                            sys.stdout.write(f"\033[{split_start};1H\033[?25h")
-                            cursor_initialized = True
-                        sys.stdout.write(data.decode("utf-8", errors="replace"))
-                        sys.stdout.flush()
-                except OSError:
-                    break
-
-            if input_fd is not None and input_fd in r:
-                try:
-                    user_data = os.read(input_fd, 1024)
-                    if user_data:
-                        os.write(master, user_data)
-                except OSError:
-                    pass
-
-        proc.wait()
-        # Consumir datos restantes
-        try:
-            trailing = os.read(master, 4096)
-            if trailing:
-                sys.stdout.write(trailing.decode("utf-8", errors="replace"))
-                sys.stdout.flush()
-        except OSError:
-            pass
-    finally:
-        if old_stdin and input_fd is not None:
-            try:
-                termios.tcsetattr(input_fd, termios.TCSADRAIN, old_stdin)
-            except Exception:
-                pass
-        if tty_f:
-            try:
-                tty_f.close()
-            except Exception:
-                pass
-        try:
-            os.close(master)
-        except Exception:
-            pass
-        # Restaurar márgenes normales y cursor
-        sys.stdout.write(f"\033[r\033[?25h\033[{term_rows};1H\n")
-        sys.stdout.flush()
-
-    return proc.returncode
+def get_banner_profile(term_cols, term_rows):
+    res = select_profile(BANNER_PROFILES, max(0, term_cols - 1), max(0, term_rows))
+    if res:
+        return res[:3]
+    return "", 0, 0
 
 def get_formatted_banner_lines(frame_index=0, max_cols=None, max_rows=None):
-    """Devuelve las líneas del banner adaptadas para incluir en un menú sin desbordar."""
-    term_cols, term_rows = shutil.get_terminal_size((80, 24))
+    cols, rows = terminal_size()
     if max_cols is not None:
-        term_cols = min(term_cols, max_cols)
+        cols = max(0, int(max_cols))
     if max_rows is not None:
-        term_rows = min(term_rows, max_rows)
+        rows = max(0, int(max_rows))
 
-    if term_cols < 44:
-        compact = [
-            "\033[1;36m █▀▀ █▀█ █▀▄ █▀▀   █▀▀ ▀█▀ █▀█ █▀▀ █ █   █▀▀ █ █ \033[0m",
-            "\033[1;32m █   █ █ █ █ ██▄   ███  █  █▀█ █▄▄ ██▄   ███ █▀█ \033[0m",
-            "\033[1;34m ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀▀  ▀  ▀ ▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀ ▀ \033[0m",
-        ]
-        pad_left = " " * max(0, (term_cols - 49) // 2)
-        return [pad_left + ansi_truncate(l, term_cols) for l in compact]
-
-    subpath, banner_w, banner_h = get_banner_profile(term_cols, term_rows)
-    frames = load_frames(subpath)
-    if not frames:
+    usable = max(0, cols - 1)
+    if usable == 0 or rows == 0:
         return []
 
-    frame_bytes = frames[frame_index % len(frames)]
-    lines = frame_bytes.decode("utf-8", errors="replace").split("\n")
-    pad_left = " " * max(0, (term_cols - banner_w) // 2)
-    max_w = max(0, term_cols - len(pad_left))
+    selected = select_profile(BANNER_PROFILES, usable, rows)
+    if not selected:
+        return [ansi_pad("\033[1;36mCODE STACK SH\033[0m", usable, "center")]
 
-    formatted = []
-    for line in lines[:banner_h]:
-        formatted.append(pad_left + ansi_truncate(line, max_w))
-    return formatted
+    _, width, height, store = selected
+    padding = " " * max(0, (usable - width) // 2)
+    return [
+        padding + ansi_truncate(line, width, ellipsis="")
+        for line in store.lines(frame_index)[:height]
+    ]
 
-def play_banner_interactive(fps=12):
-    """Reproduce el banner flotante animado de Code Stack Sh hasta pulsar cualquier tecla."""
-    if not sys.stdout.isatty():
-        return 0
+def get_controlling_tty_fd():
+    try:
+        if sys.stdin.isatty():
+            return sys.stdin.fileno(), None
+    except Exception:
+        pass
+    try:
+        stream = open("/dev/tty", "rb", buffering=0)
+        return stream.fileno(), stream
+    except Exception:
+        return None, None
 
-    term_cols, term_rows = shutil.get_terminal_size((80, 24))
-    subpath, banner_w, banner_h = get_banner_profile(term_cols, term_rows)
-    frames = load_frames(subpath)
-    if not frames:
-        return 0
-
-    old_settings = None
-    fd, tty_f = get_controlling_tty_fd()
-    if fd is not None:
+@contextmanager
+def terminal_session(input_fd=None, raw=False):
+    previous = None
+    try:
+        if input_fd is not None:
+            previous = termios.tcgetattr(input_fd)
+            if raw:
+                tty.setraw(input_fd)
+            else:
+                tty.setcbreak(input_fd)
+        sys.stdout.write("\033[?1049h\033[?25l" + CLEAR)
+        sys.stdout.flush()
+        yield
+    finally:
+        if previous is not None:
+            try:
+                termios.tcsetattr(input_fd, termios.TCSANOW, previous)
+            except Exception:
+                pass
         try:
-            old_settings = termios.tcgetattr(fd)
-            tty.setcbreak(fd)
+            sys.stdout.write(RESET + "\033[r\033[?25h\033[?1049l")
+            sys.stdout.flush()
         except Exception:
             pass
 
-    sys.stdout.write("\033[2J\033[?25l")
+class AudioPlayer:
+    def __init__(self):
+        self.process = None
+        self.used_player = None
+
+    def start(self):
+        path = find_asset("audio/cyber_intro.aac")
+        if not path:
+            return
+
+        if shutil.which("mpv"):
+            try:
+                self.process = subprocess.Popen(
+                    ["mpv", "--no-video", "--no-terminal", "--really-quiet", "--loop=inf", str(path)],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                self.used_player = "mpv"
+                return
+            except Exception:
+                pass
+
+        if shutil.which("ffplay"):
+            try:
+                self.process = subprocess.Popen(
+                    ["ffplay", "-nodisp", "-vn", "-loop", "0", "-loglevel", "quiet", str(path)],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                self.used_player = "ffplay"
+                return
+            except Exception:
+                pass
+
+        if shutil.which("termux-media-player"):
+            try:
+                subprocess.run(["termux-media-player", "play", str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=0.8)
+                self.used_player = "termux-media-player"
+            except Exception:
+                pass
+
+    def stop(self):
+        if self.process is not None:
+            if self.process.poll() is None:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=0.15)
+                except Exception:
+                    try:
+                        self.process.kill()
+                        self.process.wait()
+                    except Exception:
+                        pass
+            self.process = None
+
+        if self.used_player == "termux-media-player" and shutil.which("termux-media-player"):
+            try:
+                subprocess.run(["termux-media-player", "stop"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=0.5, check=False)
+            except Exception:
+                pass
+
+def paint_lines(lines, top=1):
+    output = []
+    for idx, line in enumerate(lines):
+        output.append(f"\033[{top + idx};1H{RESET}\033[2K{line}")
+    sys.stdout.write("".join(output))
     sys.stdout.flush()
 
-    pad_left = " " * max(0, (term_cols - banner_w) // 2)
-    top_offset = max(0, (term_rows - banner_h - 2) // 2)
-    hint_row = min(term_rows, top_offset + banner_h + 2)
+def play_animation(kind, fps=None):
+    if not sys.stdout.isatty():
+        return 0
 
-    frame_duration = 1.0 / fps
-    frame_idx = 0
-    total_frames = len(frames)
+    input_fd, tty_file = get_controlling_tty_fd()
+    audio = None
+    started = time.monotonic()
+    prev_size = None
+    prev_key = None
+    selected = None
+
+    profiles = INTRO_PROFILES if kind == "intro" else BANNER_PROFILES
 
     try:
-        while True:
-            if fd is not None:
-                r, _, _ = select.select([fd], [], [], 0)
-                if r:
-                    try:
-                        os.read(fd, 1024)
-                        termios.tcflush(fd, termios.TCIFLUSH)
-                    except Exception:
-                        pass
-                    break
+        with terminal_session(input_fd):
+            if kind == "intro":
+                audio = AudioPlayer()
+                audio.start()
 
-            raw_str = frames[frame_idx % total_frames].decode("utf-8", errors="replace")
-            lines = raw_str.split("\n")
+            while True:
+                cols, rows = terminal_size()
+                usable = max(0, cols - 1)
+                pic_rows = max(0, rows - 3)
 
-            buf = []
-            max_line_w = max(0, term_cols - len(pad_left))
-            for r_idx, line in enumerate(lines[:banner_h]):
-                r_pos = top_offset + r_idx + 1
-                if r_pos <= term_rows:
-                    clipped_line = ansi_truncate(line, max_line_w)
-                    buf.append(f"\033[{r_pos};1H\033[2K{pad_left}{clipped_line}")
+                if prev_size != (cols, rows):
+                    prev_size = (cols, rows)
+                    selected = select_profile(profiles, usable, pic_rows)
+                    sys.stdout.write(CLEAR)
+                    prev_key = None
 
-            if hint_row <= term_rows:
-                hint = f"{pad_left}\033[1;36m   [ Banner Code Stack Sh • Pulsa cualquier tecla para salir ]\033[0m"
-                buf.append(f"\033[{hint_row};1H\033[2K{hint}")
+                if not selected:
+                    text = ansi_pad("\033[1;36mCODE STACK SH\033[0m", usable, "center")
+                    paint_lines([text], max(1, rows // 2))
+                    if input_fd is None:
+                        return 0
+                    delay = 0.1
+                else:
+                    name, width, height, store = selected
+                    eff_fps = fps if fps is not None else store.fps
+                    elapsed = time.monotonic() - started
+                    frame_num = int(elapsed * eff_fps)
+                    frame_idx = frame_num % len(store)
 
-            sys.stdout.write("".join(buf))
-            sys.stdout.flush()
+                    if input_fd is None and frame_num >= len(store):
+                        return 0
 
-            if fd is not None:
-                r, _, _ = select.select([fd], [], [], frame_duration)
-                if r:
-                    try:
-                        os.read(fd, 1024)
-                        termios.tcflush(fd, termios.TCIFLUSH)
-                    except Exception:
-                        pass
-                    break
-            else:
-                time.sleep(frame_duration)
+                    key = (name, frame_idx, cols, rows)
+                    if key != prev_key:
+                        prev_key = key
+                        left = " " * max(0, (usable - width) // 2)
+                        top = max(1, (rows - height - 2) // 2)
 
-            frame_idx += 1
+                        lines = [
+                            left + ansi_truncate(line, width, ellipsis="")
+                            for line in store.lines(frame_idx)[:height]
+                        ]
+                        paint_lines(lines, top)
+
+                        hint_row = min(rows, top + height + 1)
+                        mode_tag = f"• {store.mode.upper()}" if hasattr(store, "mode") else ""
+                        hint = ansi_pad(f"\033[1;36m[ Code Stack Sh {mode_tag} • Pulsa cualquier tecla para entrar ]\033[0m", usable, "center")
+                        paint_lines([hint], hint_row)
+
+                    next_frame = started + (frame_num + 1) / eff_fps
+                    delay = max(0.0, min(0.1, next_frame - time.monotonic()))
+
+                if input_fd is not None:
+                    r, _, _ = select.select([input_fd], [], [], delay)
+                    if r:
+                        try:
+                            os.read(input_fd, 1024)
+                            termios.tcflush(input_fd, termios.TCIFLUSH)
+                        except Exception:
+                            pass
+                        return 0
+                else:
+                    time.sleep(delay)
     finally:
-        if old_settings and fd is not None:
+        if audio is not None:
+            audio.stop()
+        if tty_file:
             try:
-                termios.tcflush(fd, termios.TCIFLUSH)
-                termios.tcsetattr(fd, termios.TCSANOW, old_settings)
+                tty_file.close()
             except Exception:
                 pass
-        if tty_f:
-            try:
-                tty_f.close()
-            except Exception:
-                pass
-        sys.stdout.write("\033[0m\033[?25h\033[2J\033[H")
-        sys.stdout.flush()
 
-    return 0
+def play_intro(fps=None):
+    return play_animation("intro", fps)
+
+def play_banner_interactive(fps=None):
+    return play_animation("banner", fps)
+
+def set_pty_size(fd, cols, rows):
+    packed = struct.pack("HHHH", max(1, rows), max(1, cols), 0, 0)
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, packed)
+
+def normalized_return_code(wait_status):
+    if os.WIFEXITED(wait_status):
+        return os.WEXITSTATUS(wait_status)
+    if os.WIFSIGNALED(wait_status):
+        return 128 + os.WTERMSIG(wait_status)
+    return 1
+
+def terminate_child(pid):
+    try:
+        os.killpg(pid, signal.SIGTERM)
+    except Exception:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except Exception:
+            return
+    deadline = time.monotonic() + 0.5
+    while time.monotonic() < deadline:
+        try:
+            found, _ = os.waitpid(pid, os.WNOHANG)
+            if found:
+                return
+        except Exception:
+            return
+        time.sleep(0.02)
+    try:
+        os.killpg(pid, signal.SIGKILL)
+    except Exception:
+        pass
+    try:
+        os.waitpid(pid, 0)
+    except Exception:
+        pass
+
+def pyte_color(value, foreground=True):
+    base = 30 if foreground else 40
+    extended = 38 if foreground else 48
+    normal = {
+        "black": 0, "red": 1, "green": 2, "brown": 3, "yellow": 3,
+        "blue": 4, "magenta": 5, "cyan": 6, "white": 7,
+    }
+    bright = {
+        "brightblack": 0, "brightred": 1, "brightgreen": 2, "brightbrown": 3, "brightyellow": 3,
+        "brightblue": 4, "brightmagenta": 5, "brightcyan": 6, "brightwhite": 7,
+    }
+    if value == "default":
+        return "39" if foreground else "49"
+    if value in normal:
+        return str(base + normal[value])
+    if value in bright:
+        return str(base + 60 + bright[value])
+    if isinstance(value, str) and re.fullmatch(r"[0-9a-fA-F]{6}", value):
+        red = int(value[0:2], 16)
+        green = int(value[2:4], 16)
+        blue = int(value[4:6], 16)
+        return f"{extended};2;{red};{green};{blue}"
+    return "39" if foreground else "49"
+
+def pyte_style(character):
+    parameters = ["0", pyte_color(character.fg, True), pyte_color(character.bg, False)]
+    for attribute, code in (
+        ("bold", "1"), ("italics", "3"), ("underscore", "4"),
+        ("blink", "5"), ("reverse", "7"), ("strikethrough", "9"),
+    ):
+        if getattr(character, attribute, False):
+            parameters.append(code)
+    return "\033[" + ";".join(parameters) + "m"
+
+def render_virtual_line(screen, row, width):
+    parts = []
+    previous_style = None
+    for col in range(width):
+        character = screen.buffer[row][col]
+        if character.data == "":
+            continue
+        style = pyte_style(character)
+        if style != previous_style:
+            parts.append(style)
+            previous_style = style
+        parts.append(character.data)
+    parts.append(RESET)
+    return "".join(parts)
+
+def split_layout(cols, rows):
+    usable = max(1, cols - 1)
+    if cols < 40 or rows < 16:
+        return usable, 0, 1, max(1, rows)
+    maximum_banner = min(9, max(0, rows - 10))
+    selected = select_profile(BANNER_PROFILES, usable, maximum_banner)
+    banner_height = selected[2] if selected else 0
+    divider_height = 1 if banner_height else 0
+    panel_top = banner_height + divider_height + 1
+    panel_height = max(1, rows - banner_height - divider_height)
+    return usable, banner_height, panel_top, panel_height
+
+def run_split_command(command, title="INSTALACIÓN"):
+    if not command:
+        raise ValueError("Falta el comando")
+
+    if not sys.stdout.isatty():
+        return subprocess.run(command).returncode
+
+    if not pyte:
+        return subprocess.run(command).returncode
+
+    input_fd, tty_file = get_controlling_tty_fd()
+    if input_fd is None:
+        return subprocess.run(command).returncode
+
+    cols, rows = terminal_size()
+    usable, banner_height, panel_top, panel_height = split_layout(cols, rows)
+
+    screen = pyte.Screen(usable, panel_height)
+    stream = pyte.Stream(screen)
+    decoder = codecs.getincrementaldecoder("utf-8")("replace")
+
+    pid = None
+    master = None
+    child_status = None
+    pending_input = bytearray()
+    eof = False
+    prev_size = None
+    last_paint = 0.0
+    started = time.monotonic()
+
+    try:
+        with terminal_session(input_fd, raw=True):
+            pid, master = pty.fork()
+            if pid == 0:
+                try:
+                    set_pty_size(0, usable, panel_height)
+                    os.execvp(command[0], command)
+                except Exception as exc:
+                    os.write(2, f"Error al ejecutar {command[0]}: {exc}\r\n".encode())
+                    os._exit(127)
+
+            os.set_blocking(master, False)
+            set_pty_size(master, usable, panel_height)
+
+            while True:
+                now = time.monotonic()
+                cols, rows = terminal_size()
+
+                if prev_size != (cols, rows):
+                    prev_size = (cols, rows)
+                    usable, banner_height, panel_top, panel_height = split_layout(cols, rows)
+                    screen.resize(lines=panel_height, columns=usable)
+                    screen.dirty.update(range(panel_height))
+                    set_pty_size(master, usable, panel_height)
+                    sys.stdout.write(CLEAR)
+                    last_paint = 0.0
+
+                if now - last_paint >= 1.0 / 15.0:
+                    output = []
+                    if banner_height:
+                        selected = select_profile(BANNER_PROFILES, usable, banner_height)
+                        if selected:
+                            _, width, height, store = selected
+                            frame = int((now - started) * store.fps)
+                            left = " " * max(0, (usable - width) // 2)
+                            for r_idx, line in enumerate(store.lines(frame)[:height], start=1):
+                                output.append(f"\033[{r_idx};1H{RESET}\033[2K{left}{ansi_truncate(line, width, ellipsis='')}")
+
+                        divider = ansi_pad(f"\033[1;36m ⚡ {title} // CODE STACK SH \033[0m", usable, "center")
+                        output.append(f"\033[{banner_height + 1};1H{RESET}\033[2K{divider}")
+
+                    for r in sorted(screen.dirty):
+                        if 0 <= r < panel_height:
+                            output.append(f"\033[{panel_top + r};1H{RESET}\033[2K{render_virtual_line(screen, r, usable)}")
+                    screen.dirty.clear()
+
+                    cur_r = panel_top + min(panel_height - 1, screen.cursor.y)
+                    cur_c = min(usable - 1, screen.cursor.x) + 1
+                    cur_vis = "\033[?25l" if screen.cursor.hidden else "\033[?25h"
+                    output.append(f"{RESET}\033[{cur_r};{cur_c}H{cur_vis}")
+
+                    sys.stdout.write("".join(output))
+                    sys.stdout.flush()
+                    last_paint = now
+
+                if child_status is None:
+                    waited, status = os.waitpid(pid, os.WNOHANG)
+                    if waited:
+                        child_status = status
+
+                if eof:
+                    if child_status is None:
+                        _, child_status = os.waitpid(pid, 0)
+                    break
+
+                readers = [master]
+                if child_status is None:
+                    readers.append(input_fd)
+                writers = [master] if pending_input else []
+
+                r_list, w_list, _ = select.select(readers, writers, [], 0.02)
+                if master in r_list:
+                    try:
+                        data = os.read(master, 65536)
+                    except OSError as exc:
+                        if exc.errno == errno.EIO:
+                            data = b""
+                        elif exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
+                            data = None
+                        else:
+                            raise
+                    if data == b"":
+                        eof = True
+                        tail = decoder.decode(b"", final=True)
+                        if tail:
+                            stream.feed(tail)
+                    elif data:
+                        stream.feed(decoder.decode(data))
+
+                if input_fd in r_list:
+                    data = os.read(input_fd, 4096)
+                    if data:
+                        pending_input.extend(data)
+
+                if master in w_list and pending_input:
+                    try:
+                        cnt = os.write(master, pending_input)
+                        del pending_input[:cnt]
+                    except (BlockingIOError, OSError):
+                        pass
+
+            finallines = [render_virtual_line(screen, r, usable) for r in range(panel_height)]
+            paint_lines(finallines, panel_top)
+    finally:
+        if master is not None:
+            try:
+                os.close(master)
+            except OSError:
+                pass
+        if pid and child_status is None:
+            terminate_child(pid)
+        if tty_file:
+            try:
+                tty_file.close()
+            except Exception:
+                pass
+
+    return normalized_return_code(child_status)
+
+def parse_run(arguments):
+    title = "PROCESO DE INSTALACIÓN"
+    arguments = list(arguments)
+    while arguments and arguments[0] != "--":
+        if arguments[0] == "--title":
+            if len(arguments) < 2:
+                raise SystemExit("Falta el valor de --title")
+            title = arguments[1]
+            del arguments[:2]
+        else:
+            break
+
+    if arguments and arguments[0] == "--":
+        arguments.pop(0)
+
+    if not arguments:
+        raise SystemExit("Uso: code-stack-ascii run [--title TITULO] -- comando [args]")
+
+    if len(arguments) == 1:
+        shell = shutil.which("bash") or "/data/data/com.termux/files/usr/bin/bash"
+        command = [shell, "-c", arguments[0]]
+    else:
+        command = arguments
+
+    return command, title
 
 def main():
-    if len(sys.argv) < 2:
-        print("Uso: code-stack-ascii [intro | banner | run <comando> [titulo]]")
-        sys.exit(1)
+    if len(sys.argv) > 1 and sys.argv[1] == "run":
+        command, title = parse_run(sys.argv[2:])
+        return run_split_command(command, title)
 
-    action = sys.argv[1]
+    parser = argparse.ArgumentParser(description=__doc__)
+    actions = parser.add_subparsers(dest="action", required=True)
 
-    if action == "intro":
-        sys.exit(play_intro())
-    elif action == "banner":
-        single_frame = None
-        for arg in sys.argv[2:]:
-            if arg.isdigit():
-                single_frame = int(arg)
-                break
-        if "--frame" in sys.argv:
-            idx = sys.argv.index("--frame")
-            if idx + 1 < len(sys.argv) and sys.argv[idx + 1].isdigit():
-                single_frame = int(sys.argv[idx + 1])
+    intro_p = actions.add_parser("intro")
+    intro_p.add_argument("--fps", type=float)
 
-        if single_frame is not None or not sys.stdout.isatty():
-            lines = get_formatted_banner_lines(single_frame or 0)
-            for line in lines:
+    banner_p = actions.add_parser("banner")
+    banner_p.add_argument("index", nargs="?", type=int)
+    banner_p.add_argument("--frame", type=int)
+    banner_p.add_argument("--cols", type=int)
+    banner_p.add_argument("--rows", type=int)
+    banner_p.add_argument("--fps", type=float)
+
+    args = parser.parse_args()
+
+    if getattr(args, "fps", None) is not None:
+        if not math.isfinite(args.fps) or not 0 < args.fps <= 240:
+            parser.error("--fps debe estar entre 0 y 240")
+
+    if args.action == "intro":
+        return play_intro(args.fps)
+
+    if args.action == "banner":
+        idx = args.frame if args.frame is not None else args.index
+        if idx is not None or not sys.stdout.isatty():
+            for line in get_formatted_banner_lines(idx or 0, max_cols=args.cols, max_rows=args.rows):
                 print(line)
-            sys.exit(0)
-        else:
-            sys.exit(play_banner_interactive())
-    elif action == "run":
-        if len(sys.argv) < 3:
-            print("Uso: code-stack-ascii run <comando> [titulo]")
-            sys.exit(1)
-        title = "PROCESO DE INSTALACIÓN"
-        cmd_args = sys.argv[2:]
-        if "--title" in cmd_args:
-            t_idx = cmd_args.index("--title")
-            if t_idx + 1 < len(cmd_args):
-                title = cmd_args[t_idx + 1]
-                del cmd_args[t_idx:t_idx + 2]
+            return 0
+        return play_banner_interactive(args.fps)
 
-        if cmd_args and cmd_args[0] == "--":
-            cmd_args = cmd_args[1:]
-
-        if len(cmd_args) == 1:
-            cmd = ["/data/data/com.termux/files/usr/bin/bash", "-c", cmd_args[0]]
-        else:
-            cmd = cmd_args
-
-        rc = run_split_command(cmd, title=title)
-        sys.exit(rc)
-    else:
-        print(f"Acción desconocida: {action}")
-        sys.exit(1)
+    return 1
 
 if __name__ == "__main__":
-    main()
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(130)
+    except BrokenPipeError:
+        sys.exit(1)
