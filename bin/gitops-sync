@@ -91,7 +91,7 @@ check_updates() {
         elif [ "$HTTP_CODE" = "200" ] && [ -n "$REMOTE_DATA" ]; then
             REMOTE_HEAD=$(python3 -c "import json, sys; d=json.loads('''$REMOTE_DATA'''); print(d.get('commit', ''))" 2>/dev/null || true)
             if [ -n "$REMOTE_HEAD" ] && [ "$REMOTE_HEAD" != "main" ] && [ "$REMOTE_HEAD" != "initial" ]; then
-                if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ]; then
+                if [ "$REMOTE_HEAD" = "$LOCAL_HEAD" ] || [[ "$REMOTE_HEAD" == "$LOCAL_HEAD"* ]] || [[ "$LOCAL_HEAD" == "$REMOTE_HEAD"* ]]; then
                     [ "$QUIET" -eq 0 ] && echo "[✓] Sistema 100% al día con Cloudflare Edge CDN ($LOCAL_HEAD)."
                     return 0
                 else
