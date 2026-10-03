@@ -618,7 +618,7 @@ def main():
 
     while True:
         term_size = shutil.get_terminal_size((80, 24))
-        cols = max(38, min(term_size.columns, 100))
+        cols = max(36, min(term_size.columns - 2, 96))
         div_line = f"{GRAY}" + "─" * cols + f"{NC}"
         data = load_data()
         descriptions = data.get("descriptions", {})
@@ -626,8 +626,8 @@ def main():
 
         # Preparar banner adaptativo independiente cerrado en caja
         b_box_lines = []
-        if banner_helper and term_size.lines >= 24 and cols >= 40:
-            max_b_rows = min(6, term_size.lines - 18)
+        if banner_helper and term_size.lines >= 24 and cols >= 38:
+            max_b_rows = min(5, term_size.lines - 19)
             if max_b_rows >= 4:
                 try:
                     b_box_lines = banner_helper.get_boxed_banner_lines(banner_frame_idx, max_cols=cols, max_rows=max_b_rows)
@@ -896,12 +896,11 @@ def main():
 
         sys.stdout.flush()
 
-        # Captura de teclado reactiva (soporta tick de animación si el banner está en pantalla)
-        anim_timeout = 0.18 if (banner_helper and b_lines) else None
-        raw_key = get_key(timeout=anim_timeout)
+        # Captura de teclado reactiva y estable (sin parpadeos de bucle)
+        raw_key = get_key(timeout=None)
         if raw_key is None:
-            banner_frame_idx = (banner_frame_idx + 4) % 120
             continue
+        banner_frame_idx = (banner_frame_idx + 2) % 120
         action = classify_key(raw_key)
 
         # Acciones Globales

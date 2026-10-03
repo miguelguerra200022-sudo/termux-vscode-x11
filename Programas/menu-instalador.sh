@@ -24,7 +24,8 @@ INSTALLED_REGISTRY="$HOME/.config/termux-software-center/installed.list"
 get_ui_cols() {
     local c
     c=$(tput cols 2>/dev/null || echo 80)
-    if [ "$c" -lt 42 ]; then c=42; elif [ "$c" -gt 86 ]; then c=86; fi
+    c=$((c - 2))
+    if [ "$c" -lt 36 ]; then c=36; elif [ "$c" -gt 86 ]; then c=86; fi
     echo "$c"
 }
 
@@ -831,9 +832,11 @@ run_main_menu() {
         local t_cols=$(get_ui_cols)
 
         # 1. Caja Superior: Banner CSAN2 Independiente
-        if [ "$t_lines" -ge 20 ]; then
+        # Solo mostrar banner si la terminal tiene al menos 24 líneas para que
+        # ambas cajas (banner + menú + prompt) quepan simultáneamente sin scroll.
+        if [ "$t_lines" -ge 24 ]; then
             local max_b_rows=4
-            [ "$t_lines" -ge 28 ] && max_b_rows=6
+            [ "$t_lines" -ge 30 ] && max_b_rows=6
             if command -v code-stack-ascii >/dev/null 2>&1; then
                 python3 "$(command -v code-stack-ascii)" banner "$banner_frame" --boxed --cols "$t_cols" --rows "$max_b_rows" 2>/dev/null || true
             elif [ -f "$REPO_DIR/bin/code-stack-ascii" ]; then

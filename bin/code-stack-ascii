@@ -33,7 +33,13 @@ import tty
 import zlib
 import atexit
 
+_interactive_started = False
+
 def global_terminal_cleanup():
+    global _interactive_started
+    if not _interactive_started:
+        return
+    _interactive_started = False
     try:
         sys.stdout.write("\033[0m\033[r\033[?25h\033[?1049l")
         sys.stdout.flush()
@@ -342,8 +348,9 @@ def get_formatted_banner_lines(frame_index=0, max_cols=None, max_rows=None):
 
 def get_boxed_banner_lines(frame_index=0, max_cols=None, max_rows=None, border_color="\033[1;34m"):
     cols, rows = terminal_size()
-    target_w = max_cols if max_cols is not None else cols
-    target_w = max(38, min(target_w, 100))
+    max_safe = max(36, cols - 2)
+    target_w = max_cols if max_cols is not None else max_safe
+    target_w = max(36, min(target_w, max_safe, 96))
     inner_w = target_w - 2
     raw_lines = get_formatted_banner_lines(frame_index, max_cols=inner_w, max_rows=max_rows)
     if not raw_lines:
@@ -364,7 +371,11 @@ def render_boxed_menu(title="", subtitle="", items=None, actions=None, cols=70, 
         items = []
     if actions is None:
         actions = []
-    w = max(38, min(cols, 100)) - 2
+    t_cols, t_rows = terminal_size()
+    max_safe = max(36, t_cols - 2)
+    target_w = cols if cols is not None else max_safe
+    target_w = max(36, min(target_w, max_safe, 96))
+    w = target_w - 2
     border_top = f"{border_color}╔{'═' * w}╗\033[0m"
     border_sep = f"{border_color}╟{'─' * w}╢\033[0m"
     border_bot = f"{border_color}╚{'═' * w}╝\033[0m"
@@ -441,6 +452,8 @@ def get_controlling_tty_fd():
 
 @contextmanager
 def terminal_session(input_fd=None, raw=False):
+    global _interactive_started
+    _interactive_started = True
     previous = None
     try:
         if input_fd is not None:
