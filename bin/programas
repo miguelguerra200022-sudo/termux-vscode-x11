@@ -17,6 +17,22 @@ if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
     REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || echo "$HOME/termux-vscode-x11")
 fi
 
+# Comprobación de actualizaciones en Cloudflare Edge antes de abrir
+if command -v gitops-sync >/dev/null 2>&1; then
+    if gitops-sync check --quiet 2>/dev/null; then
+        :
+    else
+        RET_CHECK=$?
+        if [ "$RET_CHECK" -eq 2 ]; then
+            echo -e "\033[1;36m[*] ⚡ Nueva actualización detectada en Cloudflare Edge...\033[0m"
+            echo -e "\033[0;33m[*] Sincronizando catálogo de programas y entorno...\033[0m"
+            gitops-sync pull --quiet 2>/dev/null || true
+            echo -e "\033[1;32m[✓] Catálogo actualizado exitosamente.\033[0m\n"
+            sleep 0.5
+        fi
+    fi
+fi
+
 MENU_SCRIPT="$REPO_DIR/Programas/menu-instalador.sh"
 if [ -f "$MENU_SCRIPT" ]; then
     bash "$MENU_SCRIPT" "$@"

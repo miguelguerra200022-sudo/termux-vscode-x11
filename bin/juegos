@@ -1,0 +1,10 @@
+#!/data/data/com.termux/files/usr/bin/bash
+REPO_DIR=""
+CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"
+[ -f "$CONFIG_FILE" ] && REPO_DIR=$(cat "$CONFIG_FILE" 2>/dev/null || true)
+if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
+    REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || echo "$HOME/termux-vscode-x11")
+fi
+if [ -f "$REPO_DIR/Programas/gestor-juegos.sh" ]; then
+    bash "$REPO_DIR/Programas/gestor-juegos.sh" "$@"
+fi

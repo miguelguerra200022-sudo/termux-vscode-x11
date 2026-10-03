@@ -37,15 +37,14 @@ GATEWAY_URL="${GATEWAY_URL:-https://code-stack-gateway.cdn-sys-runtime.workers.d
 LOCAL_HEAD=$(cat "$HOME/.config/termux-vscode/.current_commit" 2>/dev/null || true)
 [ -z "$LOCAL_HEAD" ] && [ -d "$REPO_DIR/.git" ] && LOCAL_HEAD=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true)
 
-if [ -n "$GATEWAY_URL" ] && command -v gitops-sync >/dev/null 2>&1; then
-    REMOTE_DATA=$(curl -s -f --connect-timeout 1 --max-time 2 \
-        ${LOCAL_HEAD:+-H "If-None-Match: \"$LOCAL_HEAD\""} \
-        "$GATEWAY_URL/api/v1/release/latest" 2>/dev/null || true)
-    if [ -n "$REMOTE_DATA" ]; then
-        REMOTE_COMMIT=$(echo "$REMOTE_DATA" | python3 -c "import json,sys; print(json.load(sys.stdin).get('commit',''))" 2>/dev/null || true)
-        if [ -n "$REMOTE_COMMIT" ] && [ "$REMOTE_COMMIT" != "$LOCAL_HEAD" ] && [ "$REMOTE_COMMIT" != "main" ] && [ "$REMOTE_COMMIT" != "initial" ]; then
-            echo "[*] Nueva actualización detectada en Cloudflare Edge ($REMOTE_COMMIT). Actualizando sistema..."
-            gitops-sync pull --quiet >/dev/null 2>&1 || true
+if command -v gitops-sync >/dev/null 2>&1; then
+    if gitops-sync check --quiet 2>/dev/null; then
+        :
+    else
+        RET_CHECK=$?
+        if [ "$RET_CHECK" -eq 2 ]; then
+            echo "[*] ⚡ Nueva actualización detectada en Cloudflare Edge. Sincronizando sistema..."
+            gitops-sync pull --quiet 2>/dev/null || true
         fi
     fi
 fi

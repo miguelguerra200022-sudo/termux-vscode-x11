@@ -148,6 +148,41 @@ ICON_SOURCES = {
     "i3-wm": f"{PAPIRUS_BASE}/preferences-desktop-theme.svg",
     "openbox": f"{PAPIRUS_BASE}/openbox.svg",
     "xfce4": f"{PAPIRUS_BASE}/xfce4-logo.svg",
+
+    # 12-Emuladores_y_Retro
+    "ppsspp": f"{PAPIRUS_BASE}/ppsspp.svg",
+    "retroarch": f"{PAPIRUS_BASE}/retroarch.svg",
+    "mgba": f"{PAPIRUS_BASE}/mgba.svg",
+    "duckstation": f"{PAPIRUS_BASE}/duckstation.svg",
+    "dosbox-x": f"{PAPIRUS_BASE}/dosbox.svg",
+    "scummvm": f"{PAPIRUS_BASE}/scummvm.svg",
+
+    # 13-Juegos_Nativos
+    "openttd": f"{PAPIRUS_BASE}/openttd.svg",
+    "mindustry": f"{PAPIRUS_BASE}/mindustry.svg",
+    "supertuxkart": f"{PAPIRUS_BASE}/supertuxkart.svg",
+    "wesnoth": f"{PAPIRUS_BASE}/wesnoth.svg",
+    "cataclysm": f"{PAPIRUS_BASE}/cataclysm-dda.svg",
+    "luanti": f"{PAPIRUS_BASE}/minetest.svg",
+    "flare": f"{PAPIRUS_BASE}/flare.svg",
+    "endless-sky": f"{PAPIRUS_BASE}/endless-sky.svg",
+
+    # 14-Ciencia_y_Educacion
+    "octave": f"{PAPIRUS_BASE}/octave.svg",
+    "stellarium": f"{PAPIRUS_BASE}/stellarium.svg",
+    "geogebra": f"{PAPIRUS_BASE}/geogebra.svg",
+    "kicad": f"{PAPIRUS_BASE}/kicad.svg",
+    "anki": f"{PAPIRUS_BASE}/anki.svg",
+    "qgis": f"{PAPIRUS_BASE}/qgis.svg",
+    "maxima": f"{PAPIRUS_BASE}/wxmaxima.svg",
+    "calibre": f"{PAPIRUS_BASE}/calibre.svg",
+
+    # 15-Produccion_Musical
+    "lmms": f"{PAPIRUS_BASE}/lmms.svg",
+    "hydrogen": f"{PAPIRUS_BASE}/hydrogen.svg",
+    "sonic-pi": f"{PAPIRUS_BASE}/sonic-pi.svg",
+    "musescore": f"{PAPIRUS_BASE}/musescore.svg",
+    "milkytracker": f"{PAPIRUS_BASE}/milkytracker.svg",
 }
 
 def clean_icon(slug):

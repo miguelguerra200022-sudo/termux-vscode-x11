@@ -799,16 +799,29 @@ menu_categoria() {
             local target_name="$_META_NAME"
             [ -z "$target_name" ] && target_name="$slug"
 
+            local is_emu=0
+            case "$slug" in
+                ppsspp|mgba|retroarch|duckstation|dosbox-x|scummvm) is_emu=1 ;;
+            esac
+
             if is_program_installed "$target_script"; then
                 echo ""
                 echo -e "${YELLOW}[!] ${target_name} ya está instalado en este sistema.${NC}"
+                if [ "$is_emu" -eq 1 ]; then
+                    echo -e "  [${CYAN}J${NC}] 🕹️ Catálogo y Biblioteca de Juegos"
+                fi
                 echo -e "  [${YELLOW}1${NC}] ⚡ Reinstalar / Actualizar"
                 echo -e "  [${YELLOW}2${NC}] 🗑️ Desinstalar programa"
                 echo -e "  [${YELLOW}0${NC}] ↩️ Volver atrás ${GRAY}(o pulsa borrar)${NC}"
                 echo ""
                 local sub_action
-                sub_action=$(read_menu_input "${BOLD}👉 Opción [1/2/0]: ${NC}")
-                if [ "$sub_action" = "1" ]; then
+                sub_action=$(read_menu_input "${BOLD}👉 Opción: ${NC}")
+                if [ "$sub_action" = "j" ] || [ "$sub_action" = "J" ]; then
+                    if [ -f "$SCRIPT_DIR/gestor-juegos.sh" ]; then
+                        bash "$SCRIPT_DIR/gestor-juegos.sh" "$slug"
+                    fi
+                    continue
+                elif [ "$sub_action" = "1" ]; then
                     echo ""
                     echo -e "${CYAN}⚡ Reinstalando: ${target_name}...${NC}"
                     echo ""
@@ -831,6 +844,14 @@ menu_categoria() {
                     sync_desktop_launcher "$slug"
                     echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
                     echo -e "\n${GREEN}[✓] ¡${target_name} instalado con éxito!${NC}"
+                    if [ "$is_emu" -eq 1 ] && [ -f "$SCRIPT_DIR/gestor-juegos.sh" ]; then
+                        echo ""
+                        echo -ne "${CYAN}🕹️ ¿Deseas abrir la Biblioteca de Juegos de ${target_name} ahora? (S/n): ${NC}"
+                        read -r open_games
+                        if [ "$open_games" != "n" ] && [ "$open_games" != "N" ]; then
+                            bash "$SCRIPT_DIR/gestor-juegos.sh" "$slug"
+                        fi
+                    fi
                 else
                     echo -e "\n${RED}[!] La instalación de ${target_name} no se completó.${NC}"
                 fi
@@ -912,8 +933,9 @@ run_main_menu() {
                 menu_cmd+=(--item "$item")
             done
             menu_cmd+=(--action " [D] 🗑️ Desinstalar ($inst_count)" \
+                       --action " [J] 🕹️ Biblioteca de Juegos" \
                        --action " [G] ⚡ Calibrar GPU" \
-                       --action " [B] 🔍 Buscar (+110 apps)" \
+                       --action " [B] 🔍 Buscar (+140 apps)" \
                        --action " [0] 🚪 Salir")
             "${menu_cmd[@]}"
         else
@@ -939,6 +961,13 @@ run_main_menu() {
 
         if [ "$opt_cat" = "d" ] || [ "$opt_cat" = "D" ]; then
             menu_desinstalar
+            continue
+        fi
+
+        if [ "$opt_cat" = "j" ] || [ "$opt_cat" = "J" ]; then
+            if [ -f "$SCRIPT_DIR/gestor-juegos.sh" ]; then
+                bash "$SCRIPT_DIR/gestor-juegos.sh"
+            fi
             continue
         fi
 

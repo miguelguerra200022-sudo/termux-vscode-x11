@@ -1,0 +1,12 @@
+#!/data/data/com.termux/files/usr/bin/bash
+echo -e "\033[1;36m======================================================\033[0m"
+echo -e "\033[1;32m  🚀 CODE STACK SH • Actualizador OTA del Sistema\033[0m"
+echo -e "\033[1;36m======================================================\033[0m"
+echo ""
+
+if command -v gitops-sync >/dev/null 2>&1; then
+    gitops-sync pull "$@"
+else
+    echo "[-] Motor gitops-sync no encontrado."
+    exit 1
+fi
