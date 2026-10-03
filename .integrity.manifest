@@ -120,7 +120,7 @@ e821d0b35e330aca675ecef4d235015a310c22c7115de92379ac9bda0c0af557  ./Programas/11
 ae6b686f13ddd82d6e50ab70ca44238b51b46531c3f754a4595c6f841242d107  ./Programas/11-Gestores_de_Ventanas/instalar-openbox.sh
 21bd0350b449a5033b80b8495694d3f3938aeae9161ac7445188286039ea2448  ./Programas/11-Gestores_de_Ventanas/instalar-xfce4.sh
 84f683fc292679ebee059f9c32043cad60a8cdf8fd85cbf8f3957400e26051fd  ./Programas/README.md
-d0aa8184b84bd0cfc010430ebf41d7c12241b5fe968100defd8b25505d09a8fd  ./Programas/menu-instalador.sh
+d69e37033f9beaab45c17d3c220bebc5c9225d6267008973593f70f929f7e07b  ./Programas/menu-instalador.sh
 33c20df89ee1cc500078537561f0756f030d7cc0d488f194088d026d50888d57  ./README.md
 c6245d20a08c0455548c57558dc4111b52770a89a3dbfa7c5c55957a96fadf68  ./assets/ascii/banner_compact.ans.z
 8da31a686574b46c316343314b0ca3130b9a04232c8f4abe19ff157efd330368  ./assets/ascii/banner_large.ans.z
@@ -158,7 +158,7 @@ f838b9fbc9e50efe331313f6124a00b4ed8cd288967e1dac52336a6a2ea51b00  ./bin/notify-d
 4e78ae7155846c5dd0902fd2a6790a2594315b5fdd4c006c9b64617c0c1f0de4  ./bin/start-vscode
 603014ef31aab72eb28776431330fb59615b31f417aa86b3eb2c64ad6cca5005  ./bin/start-vscode-web
 6b6ed869e7093484d70a8cc8302032c17e5f795615654f3ed61bd6a1725de40e  ./bin/stop-vscode
-a5ec38fe47d41c566705954230f1f0bd500fa0cceabb61a38db75f485ce0bf2a  ./bin/switch-identity
+725215554d9445734d1811a42a5d352c8d50866fea197a40cc6dc8e0594c3dd6  ./bin/switch-identity
 2e77f12720da5563cd35c421111a282a8febfa2fcab477a1206bf16ed8782a8b  ./bin/sync-vscode
 1b4150d0a0826b20e686da47735eb46cba1f5823ff0afb750229b724fb88226d  ./bin/system-compiler
 692edac86d2f8547d217035596d7c75e3faeab8534723bbe4ceecadc1fc9c529  ./bin/termux-runner
@@ -166,7 +166,7 @@ d7227adeaeb79fd1c7a1c55f7084a2ef4d2b845a77b11d7ba9ff300a856dceaf  ./bin/toggle-t
 0573aca240e0d27281bf2409c892462cdb9dafebe4f866f06ac63e7ff46f1386  ./bin/vault-logs
 61ee53d8c43788c69001dae5b5dd4aa6b00878b542076b0300a3e5d635abb867  ./bin/vault-manager
 e5443a6a7bf3ed8456a2b9533f380fcd094eaf88c9bb185c3957240f3d6ce5be  ./bin/vscode
-b7303edd8d2454ed050662ef0bcda275158ce0abe6e002ec70aa9b7422e35a85  ./bin/watcher-sync
+b727c3d85ac08454d2911f113d10b4a91e23defad86f5eb16b4baac3627524c9  ./bin/watcher-sync
 e68e15a745e2037c9de93947b1a17270269a5dc91683b6c80e42e203cc8429b9  ./cloud-gateway/README.md
 1e7cbb12ca805e47ffe62db8e1723c5464119ef29c1a6c68425f3a5ddcd98d82  ./cloud-gateway/backfill_r2.py
 c3584f9a17a7e09dd670d86bac8330a4257f3dea0b25b46be606001bc5c5b733  ./cloud-gateway/deploy.sh

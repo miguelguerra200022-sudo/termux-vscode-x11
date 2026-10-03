@@ -282,26 +282,33 @@ else
     fi
 fi
 
+SWITCH_SUCCESS=0
 if [ -f "$TARGET_DIR/vault.enc" ]; then
-    echo -e "${CYAN}[*] Descifrando bóveda con la llave maestra dinámica del Líder...${NC}"
+    echo -e "${CYAN}[*] Descifrando bóveda de forma atómica para: ${TARGET_SEAL}...${NC}"
     if command -v vault-manager >/dev/null 2>&1; then
-        vault-manager unpack "$TARGET_SEAL" "$TARGET_DIR/vault.enc"
+        if vault-manager unpack "$TARGET_SEAL" "$TARGET_DIR/vault.enc"; then
+            SWITCH_SUCCESS=1
+        fi
     elif [ -f "$REPO_DIR/bin/vault-manager" ]; then
-        bash "$REPO_DIR/bin/vault-manager" unpack "$TARGET_SEAL" "$TARGET_DIR/vault.enc"
-    else
-        TARGET_PASS_KEY="$(github-auth-broker session-key "$TARGET_SEAL" 2>/dev/null)"
-        rm -rf "$HOME/.config/Code - OSS/User" "$HOME/.config/zen" 2>/dev/null || true
-        PASS_KEY="$TARGET_PASS_KEY" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$TARGET_DIR/vault.enc" 2>/dev/null | \
-            tar -xzf - -C "$HOME" 2>/dev/null || true
+        if bash "$REPO_DIR/bin/vault-manager" unpack "$TARGET_SEAL" "$TARGET_DIR/vault.enc"; then
+            SWITCH_SUCCESS=1
+        fi
     fi
-    echo -e "${GREEN}[✓] Bóveda y credenciales universales restauradas exitosamente.${NC}"
+else
+    # Inicializar perfil limpio para nuevo dispositivo sin sobreescribir con datos ajenos
+    mkdir -p "$TARGET_DIR"
+    SWITCH_SUCCESS=1
 fi
 
-echo "$TARGET_SEAL" > "$ACTIVE_FILE"
-echo -e "${GREEN}[✓] ¡Conmutación exitosa! Ahora estás operando como: ${BOLD}${TARGET_UNAME}${NC} (${TARGET_SEAL})"
-
-if command -v cloud-sentinel >/dev/null 2>&1; then
-    cloud-sentinel notify "🔄 *CONMUTACIÓN DE IDENTIDAD EN DISPOSITIVO LÍDER*" "📱 Perfil activo cambiado a: \`${TARGET_UNAME}\` (\`${TARGET_SEAL}\`)" >/dev/null 2>&1 || true
+if [ "$SWITCH_SUCCESS" -eq 1 ]; then
+    echo "$TARGET_SEAL" > "$ACTIVE_FILE"
+    echo -e "${GREEN}[✓] ¡Conmutación exitosa! Ahora estás operando como: ${BOLD}${TARGET_UNAME}${NC} (${TARGET_SEAL})"
+    if command -v cloud-sentinel >/dev/null 2>&1; then
+        cloud-sentinel notify "🔄 *CONMUTACIÓN DE IDENTIDAD EN DISPOSITIVO LÍDER*" "📱 Perfil activo cambiado a: \`${TARGET_UNAME}\` (\`${TARGET_SEAL}\`)" >/dev/null 2>&1 || true
+    fi
+else
+    echo -e "${RED}[!] Error crítico: La restauración de la bóveda falló. Se mantiene la identidad previa para proteger tus perfiles.${NC}"
+    exit 1
 fi
 
 echo ""

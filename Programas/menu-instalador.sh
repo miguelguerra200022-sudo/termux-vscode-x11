@@ -304,43 +304,12 @@ remove_desktop_launcher() {
 # Respaldo Criptográfico Silencioso (Cero mención de subidas o GitHub)
 # ------------------------------------------------------------------------------
 do_silent_backup() {
-    echo -e "${YELLOW}[*] Asegurando respaldo y persistencia local de seguridad...${NC}"
-
-    # 1. Asegurar persistencia de configuraciones de usuario en el árbol local
-    mkdir -p "$REPO_DIR/data/vscode/User" "$REPO_DIR/data/zen"
-    if [ -d "$HOME/.config/Code - OSS/User" ]; then
-        rsync -rltD --no-perms --no-owner --no-group --delete \
-            --exclude=".git" --exclude="checkpoints" --exclude="*.log" --exclude="*.tmp" \
-            "$HOME/.config/Code - OSS/User/" "$REPO_DIR/data/vscode/User/" 2>/dev/null || true
+    # Respaldo seguro a través de vault-manager (cifrado AES-256 PBKDF2, sin exponer perfiles en texto plano en Git)
+    if command -v vault-manager >/dev/null 2>&1; then
+        vault-manager pack >/dev/null 2>&1 || true
+    elif [ -f "$REPO_DIR/bin/vault-manager" ]; then
+        bash "$REPO_DIR/bin/vault-manager" pack >/dev/null 2>&1 || true
     fi
-    if [ -d "$HOME/.config/zen" ]; then
-        rsync -rltD --no-perms --no-owner --no-group --delete \
-            --exclude="cache2" --exclude="startupCache" --exclude="Crash Reports" \
-            "$HOME/.config/zen/" "$REPO_DIR/data/zen/" 2>/dev/null || true
-    fi
-
-    # 2. Sellar integridad criptográfica (Ed25519)
-    if command -v integrity-guard >/dev/null 2>&1; then
-        echo -e "${CYAN}[*] Sellando integridad criptográfica (Ed25519)...${NC}"
-        integrity-guard sign "$REPO_DIR" >/dev/null 2>&1 || true
-    fi
-
-    # 3. Respaldo silencioso (Exclusivo del Líder Maestro para no colisionar en Git)
-    local local_seal=""
-    [ -f "$HOME/.config/termux-vscode/.device_hw_seal" ] && local_seal=$(cat "$HOME/.config/termux-vscode/.device_hw_seal" 2>/dev/null)
-    [ -z "$local_seal" ] && command -v github-auth-broker >/dev/null 2>&1 && local_seal=$(github-auth-broker seal 2>/dev/null || true)
-
-    if [ "$local_seal" = "ums9230-sp_6300-3724801c" ] && [ -d "$REPO_DIR/.git" ]; then
-        cd "$REPO_DIR" || return 0
-        git add -A >/dev/null 2>&1 || true
-        local COMMIT_MSG="sync: respaldo de seguridad local ($(date '+%Y-%m-%d %H:%M:%S'))"
-        git commit -S -m "$COMMIT_MSG" >/dev/null 2>&1 || git commit -m "$COMMIT_MSG" >/dev/null 2>&1 || true
-
-        # Push seguro mediante broker efímero (quema de un solo uso)
-        GIT_ASKPASS="github-auth-broker" timeout 35 git push origin main >/dev/null 2>&1 || true
-    fi
-
-    echo -e "${GREEN}[✓] Respaldo completado con éxito.${NC}"
 }
 
 # ------------------------------------------------------------------------------
