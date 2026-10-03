@@ -164,7 +164,7 @@ a5ec38fe47d41c566705954230f1f0bd500fa0cceabb61a38db75f485ce0bf2a  ./bin/switch-i
 692edac86d2f8547d217035596d7c75e3faeab8534723bbe4ceecadc1fc9c529  ./bin/termux-runner
 d7227adeaeb79fd1c7a1c55f7084a2ef4d2b845a77b11d7ba9ff300a856dceaf  ./bin/toggle-touch-mode
 0573aca240e0d27281bf2409c892462cdb9dafebe4f866f06ac63e7ff46f1386  ./bin/vault-logs
-e23b46331347cb8e7c3a9630de626ec913f0f631a8f4fef598bdd18caef16104  ./bin/vault-manager
+61ee53d8c43788c69001dae5b5dd4aa6b00878b542076b0300a3e5d635abb867  ./bin/vault-manager
 e5443a6a7bf3ed8456a2b9533f380fcd094eaf88c9bb185c3957240f3d6ce5be  ./bin/vscode
 b7303edd8d2454ed050662ef0bcda275158ce0abe6e002ec70aa9b7422e35a85  ./bin/watcher-sync
 e68e15a745e2037c9de93947b1a17270269a5dc91683b6c80e42e203cc8429b9  ./cloud-gateway/README.md

@@ -162,12 +162,28 @@ do_unpack() {
     fi
 
     local pass_key=$(get_pass_key "$seal")
+    if [ -z "$pass_key" ]; then
+        return 1
+    fi
 
-    # Limpieza limpia previa para evitar mezclar sesiones de distintos usuarios
-    rm -rf "$HOME/.config/Code - OSS/User" "$HOME/.config/zen" 2>/dev/null || true
+    # 1. Extracción segura en staging temporal para validar integridad antes de tocar archivos vivos
+    local stage_dir
+    stage_dir=$(mktemp -d "$HOME/.config/termux-vscode/.stage_XXXXXX" 2>/dev/null || mktemp -d "/data/data/com.termux/files/usr/tmp/.stage_XXXXXX")
 
-    PASS_KEY="$pass_key" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$in_file" 2>/dev/null | \
-        tar -xzf - -C "$HOME" 2>/dev/null || true
+    local decrypt_ok=0
+    if PASS_KEY="$pass_key" openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass env:PASS_KEY -in "$in_file" 2>/dev/null | \
+        tar -xzf - -C "$stage_dir" 2>/dev/null; then
+        decrypt_ok=1
+    fi
+
+    if [ "$decrypt_ok" -ne 1 ] || [ ! -d "$stage_dir" ] || [ -z "$(ls -A "$stage_dir" 2>/dev/null)" ]; then
+        rm -rf "$stage_dir" 2>/dev/null || true
+        return 1
+    fi
+
+    # 2. Despliegue seguro desde staging hacia el entorno
+    cp -rf "$stage_dir"/. "$HOME"/ 2>/dev/null || true
+    rm -rf "$stage_dir" 2>/dev/null || true
 
     # Asegurar permisos estrictos en claves SSH y Git
     [ -d "$HOME/.ssh" ] && chmod 700 "$HOME/.ssh" && chmod 600 "$HOME/.ssh/"* 2>/dev/null || true
