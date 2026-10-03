@@ -132,8 +132,8 @@ export XDG_DATA_HOME="$HOME/.local/share"
 # 3. Persistencia de credenciales, sesiones y tokens
 export VSCODE_CLI_USE_FILE_KEYCHAIN=1
 
-# 4. Configurar preferencias de Termux-X11 (Portapapeles, filtrado bilineal de alta nitidez)
-termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear preferScancodes:true hardwareKbdScancodesWorkaround:true scaleTouchpad:true >/dev/null 2>&1 || true
+# 4. Configurar preferencias de Termux-X11 (Portapapeles, compatibilidad con teclado flotante/táctil, filtrado bilineal)
+termux-x11-preference clipboardEnable:true fullscreen:true hideCutout:true displayFilteringMode:bilinear preferScancodes:false enforceCharBasedInput:true hardwareKbdScancodesWorkaround:false scaleTouchpad:true >/dev/null 2>&1 || true
 
 # 5. Iniciar servidor de sonido PulseAudio con salida física Android (OpenSL ES / AAudio)
 mkdir -p "${TMPDIR:-/data/data/com.termux/files/usr/tmp}/pulse"

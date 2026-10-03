@@ -25,6 +25,11 @@ echo -e "${YELLOW}[*] Instalando dependencias de X11 y paquete chromium...${NC}"
 pkg install -y x11-repo >/dev/null 2>&1 || true
 pkg install -y chromium
 
+# Asegurar enlace ejecutable universal chromium -> chromium-browser
+if [ -f "$PREFIX/bin/chromium-browser" ]; then
+    ln -sf "$PREFIX/bin/chromium-browser" "$PREFIX/bin/chromium" 2>/dev/null || true
+fi
+
 # Registrar lanzador de escritorio .desktop para Openbox y tint2
 echo -e "${CYAN}[*] Registrando lanzador oficial en el sistema...${NC}"
 mkdir -p "$PREFIX/share/applications" "$HOME/.local/share/applications"
@@ -35,7 +40,7 @@ cat << 'DESK_EOF' > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=Chromium (Termux:X11)
 Comment=Navegador web de código abierto con aceleración y motor Blink.
-Exec=chromium
+Exec=chromium-browser
 Icon=/data/data/com.termux/files/usr/share/pixmaps/chromium.png
 Terminal=false
 Type=Application

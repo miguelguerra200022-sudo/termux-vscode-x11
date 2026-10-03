@@ -156,11 +156,8 @@ EOF
 
     if [ "$acceleration_mode" = "HARDWARE_GPU" ]; then
         cat << 'EOF' >> "$PROFILE_ENV"
-# Aceleración por GPU Hardware Activa (0% uso de CPU)
-export MESA_GL_VERSION_OVERRIDE=4.0
-export MESA_GLES_VERSION_OVERRIDE=3.2
+# Aceleración por GPU Hardware Activa (VirGL / virpipe)
 export LIBGL_ALWAYS_SOFTWARE=0
-export MESA_NO_ERROR=1
 export VIRGL_ACCEL=1
 
 # Optimizaciones de Navegador Web y Video a 60 FPS
@@ -217,8 +214,12 @@ start_gpu_server() {
     if [ "$CODE_STACK_ACCEL_MODE" = "HARDWARE_GPU" ]; then
         if ! pgrep -f "virgl_test_server_android" >/dev/null 2>&1; then
             if command -v virgl_test_server_android >/dev/null 2>&1; then
-                virgl_test_server_android --multi-clients >/dev/null 2>&1 &
-                disown
+                if command -v setsid >/dev/null 2>&1; then
+                    setsid -f virgl_test_server_android --multi-clients >/dev/null 2>&1 || true
+                else
+                    virgl_test_server_android --multi-clients >/dev/null 2>&1 &
+                    disown
+                fi
                 sleep 0.2
             fi
         fi

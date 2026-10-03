@@ -309,6 +309,31 @@ sync_desktop_launcher() {
     fi
 
     if [ -n "$desktop_found" ]; then
+        # Validación y saneamiento proactivo de Exec
+        local exec_line=$(grep -E "^Exec=" "$desktop_found" | head -n 1)
+        local exec_cmd=$(echo "$exec_line" | sed 's/^Exec=//' | awk '{print $1}')
+        if [ -n "$exec_cmd" ] && ! command -v "$exec_cmd" >/dev/null 2>&1; then
+            # Buscar binarios alternativos generados por paquetes Termux
+            for cand in "${exec_cmd}-browser" "${exec_cmd}-desktop" "${exec_cmd}-bin" "${slug}" "${slug}-browser"; do
+                if command -v "$cand" >/dev/null 2>&1; then
+                    ln -sf "$(command -v "$cand")" "$PREFIX/bin/$exec_cmd" 2>/dev/null || true
+                    break
+                fi
+            done
+        fi
+
+        # Validación y saneamiento proactivo de Icon
+        local icon_line=$(grep -E "^Icon=" "$desktop_found" | head -n 1)
+        local icon_path=$(echo "$icon_line" | sed 's/^Icon=//')
+        if [ -n "$icon_path" ] && [ ! -f "$icon_path" ]; then
+            if [ -f "/data/data/com.termux/files/usr/share/pixmaps/${slug}.png" ]; then
+                sed -i "s|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/${slug}.png|" "$desktop_found" 2>/dev/null || true
+            elif [ -f "/data/data/com.termux/files/usr/share/pixmaps/${slug}.svg" ]; then
+                sed -i "s|^Icon=.*|Icon=/data/data/com.termux/files/usr/share/pixmaps/${slug}.svg|" "$desktop_found" 2>/dev/null || true
+            fi
+        fi
+
+        cp -f "$desktop_found" "$HOME/.local/share/applications/" 2>/dev/null || true
         cp -f "$desktop_found" "$HOME/Desktop/" 2>/dev/null || true
         chmod +x "$HOME/Desktop/"*.desktop 2>/dev/null || true
     fi

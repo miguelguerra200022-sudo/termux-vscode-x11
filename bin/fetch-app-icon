@@ -160,10 +160,24 @@ def clean_icon(slug):
         except Exception:
             pass
 
+def generate_fallback_svg(slug):
+    letter = (slug[0] if slug else "A").upper()
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="grad_{slug}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#grad_{slug})"/>
+  <text x="64" y="84" font-family="DejaVu Sans, Arial, sans-serif" font-size="62" font-weight="bold" fill="#ffffff" text-anchor="middle">{letter}</text>
+</svg>""".encode("utf-8")
+
 def fetch_icon(slug):
     """Descarga e instala el icono oficial en /usr/share/pixmaps/<slug>.png bajo demanda."""
     os.makedirs(PIXMAPS_DIR, exist_ok=True)
     target_png = os.path.join(PIXMAPS_DIR, f"{slug}.png")
+    target_svg = os.path.join(PIXMAPS_DIR, f"{slug}.svg")
 
     if os.path.exists(target_png) and os.path.getsize(target_png) > 100:
         return target_png
@@ -197,6 +211,22 @@ def fetch_icon(slug):
             with urllib.request.urlopen(req, timeout=8) as r:
                 data = r.read()
 
+        # Resolver enlaces simbólicos de repositorios Git (ej. Papirus)
+        retries = 3
+        while data and len(data) < 300 and not data.strip().startswith(b"<") and retries > 0:
+            target_name = data.decode("utf-8", errors="ignore").strip()
+            if not target_name or target_name.startswith("http") or "/" in target_name:
+                break
+            base_url = url.rsplit("/", 1)[0]
+            url = f"{base_url}/{target_name}"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = r.read()
+            retries -= 1
+
+        if not data or (not url.endswith(".png") and not data.strip().startswith(b"<")):
+            data = generate_fallback_svg(slug)
+
         if url.endswith(".png"):
             with open(target_png, "wb") as f:
                 f.write(data)
@@ -205,12 +235,13 @@ def fetch_icon(slug):
             with open(temp_svg, "wb") as f:
                 f.write(data)
             
+            # Guardar siempre copia vectorial oficial SVG
+            with open(target_svg, "wb") as f:
+                f.write(data)
+
             # Convertir SVG a PNG de 128x128 píxeles
             res = subprocess.run(["rsvg-convert", "-w", "128", "-h", "128", "-o", target_png, temp_svg], capture_output=True)
             if res.returncode != 0 or not os.path.exists(target_png):
-                target_svg = os.path.join(PIXMAPS_DIR, f"{slug}.svg")
-                with open(target_svg, "wb") as f:
-                    f.write(data)
                 target_png = target_svg
             
             if os.path.exists(temp_svg):
@@ -219,8 +250,20 @@ def fetch_icon(slug):
         print(f"[✓] Icono oficial instalado: {target_png}")
         return target_png
     except Exception as e:
-        print(f"[!] No se pudo descargar el icono para {slug}: {e}")
-        return None
+        print(f"[!] Generando icono de respaldo vectorial para {slug}: {e}")
+        try:
+            fb_data = generate_fallback_svg(slug)
+            with open(target_svg, "wb") as f:
+                f.write(fb_data)
+            temp_svg = os.path.join(TMP_DIR, f"temp_{slug}.svg")
+            with open(temp_svg, "wb") as f:
+                f.write(fb_data)
+            subprocess.run(["rsvg-convert", "-w", "128", "-h", "128", "-o", target_png, temp_svg], capture_output=True)
+            if os.path.exists(temp_svg):
+                os.remove(temp_svg)
+            return target_png
+        except Exception:
+            return None
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
