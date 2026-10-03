@@ -42,6 +42,22 @@ if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR/.git" ]; then
 fi
 
 CREDS_DIR="$REPO_DIR/credenciales"
+COLS=$(tput cols 2>/dev/null || echo 70)
+[ "$COLS" -lt 42 ] && COLS=42
+[ "$COLS" -gt 84 ] && COLS=84
+
+get_box_top() {
+    echo "╔$(printf '%*s' "$((COLS - 2))" '' | tr ' ' '═')╗"
+}
+
+get_box_bot() {
+    echo "╚$(printf '%*s' "$((COLS - 2))" '' | tr ' ' '═')╝"
+}
+
+get_div_line() {
+    printf '%*s' "$COLS" '' | tr ' ' '─'
+}
+
 mkdir -p "$CREDS_DIR"
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 CURRENT_ACTIVE="ums9230-sp_6300-3724801c"
@@ -63,16 +79,16 @@ get_decrypted_meta() {
 # Subcomando: Listar / Dashboard
 cmd_listar() {
     clear 2>/dev/null || true
-    echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}$(get_box_top)${NC}"
     echo -e "${GREEN}║   👑 CENTRO DE COMANDO Y CONTROL DE FLOTA (LÍDER MAESTRO)         ║${NC}"
     echo -e "${CYAN}║      Inspección Descifrada en RAM • Cero Rastros en Disco         ║${NC}"
-    echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${BLUE}$(get_box_bot)${NC}"
     echo ""
 
     INDEX=1
     FOLDERS=()
     echo -e "${BOLD}DISPOSITIVOS REGISTRADOS Y ESTADO DE CUENTAS:${NC}"
-    echo -e "${BLUE}───────────────────────────────────────────────────────────────────${NC}"
+    echo -e "${BLUE}$(get_div_line)${NC}"
 
     for d in "$CREDS_DIR"/*; do
         [ -d "$d" ] || continue
@@ -82,12 +98,20 @@ cmd_listar() {
         
         META=$(get_decrypted_meta "$SEAL")
         
-        USER_NAME=$(python3 -c "import json; print(json.loads('''$META''').get('username', '$SEAL'))" 2>/dev/null || echo "$SEAL")
-        MODEL=$(python3 -c "import json; print(json.loads('''$META''').get('device_model', 'Android'))" 2>/dev/null || echo "Android")
-        ROLE=$(python3 -c "import json; print(json.loads('''$META''').get('role', 'Worker'))" 2>/dev/null || echo "Worker")
-        ACCOUNTS=$(python3 -c "import json; print(json.loads('''$META''').get('accounts_limit', 'Ilimitadas'))" 2>/dev/null || echo "Ilimitadas")
-        STATUS=$(python3 -c "import json; print(json.loads('''$META''').get('status', 'Activo'))" 2>/dev/null || echo "Activo")
-        LAST_SYNC=$(python3 -c "import json; print(json.loads('''$META''').get('last_sync', 'Reciente'))" 2>/dev/null || echo "Reciente")
+        IFS='|' read -r USER_NAME MODEL ROLE ACCOUNTS STATUS LAST_SYNC < <(python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+u = d.get("username") or sys.argv[1]
+m = d.get("device_model") or "Android"
+r = d.get("role") or "Worker"
+a = d.get("accounts_limit") or "Ilimitadas"
+s = d.get("status") or "Activo"
+l = d.get("last_sync") or "Reciente"
+print(f"{u}|{m}|{r}|{a}|{s}|{l}")
+' "$SEAL" <<< "$META" 2>/dev/null || echo "$SEAL|Android|Worker|Ilimitadas|Activo|Reciente")
 
         TAG=""
         if [ "$SEAL" = "$CURRENT_ACTIVE" ] || [ "$SEAL" = "$LOCAL_SEAL" ]; then
@@ -109,7 +133,7 @@ cmd_listar() {
         INDEX=$((INDEX + 1))
     done
 
-    echo -e "${BLUE}───────────────────────────────────────────────────────────────────${NC}"
+    echo -e "${BLUE}$(get_div_line)${NC}"
     echo -e "${BOLD}Comandos de Acción Rápida:${NC}"
     echo -e "  ${YELLOW}flota inspeccionar [N]${NC}  : Ver ficha técnica y telemetría completa"
     echo -e "  ${YELLOW}flota switch [N]${NC}        : Cargar y conmutar a ese celular"

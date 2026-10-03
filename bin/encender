@@ -27,6 +27,47 @@ HL_GREEN = "\033[1;30;42m"
 HL_YELLOW = "\033[1;30;43m"
 HL_TAB = "\033[1;37;44m"
 
+ANSI_TOKEN_RE = re.compile(r"\x1b(?:\[[0-9:;]*m)", re.DOTALL)
+ANSI_ANY_RE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~])", re.DOTALL)
+
+def iter_styled_tokens(text):
+    pos = 0
+    n = len(text)
+    while pos < n:
+        if text[pos] == '\x1b':
+            m = ANSI_ANY_RE.match(text, pos)
+            if m:
+                tok = m.group()
+                if ANSI_TOKEN_RE.fullmatch(tok):
+                    yield tok, 0
+                pos = m.end()
+                continue
+            pos += 1
+            continue
+        ch = text[pos]
+        pos += 1
+        yield ch, 1
+
+def ansi_truncate(text, max_visible, ellipsis="..."):
+    limit = max(0, int(max_visible))
+    if not limit:
+        return ""
+    tokens = list(iter_styled_tokens(str(text)))
+    total_w = sum(w for _, w in tokens)
+    if total_w <= limit:
+        return text
+    available = max(0, limit - len(ellipsis))
+    used = 0
+    out = []
+    for t, w in tokens:
+        if used + w > available:
+            break
+        out.append(t)
+        used += w
+    out.append("\033[0m" + ellipsis)
+    return "".join(out)
+
+
 STORAGE_ROOT = "/storage/emulated/0"
 TERMUX_HOME = os.path.expanduser("~")
 CONFIG_DIR = os.path.expanduser("~/.config/termux-vscode")
@@ -222,7 +263,7 @@ def ensure_controlling_tty():
         except Exception:
             pass
 
-def get_key():
+def get_key(timeout=None):
     """Lee una tecla o secuencia de escape directamente desde el descriptor del SO sin buffer de Python."""
     if not sys.stdin.isatty():
         ch = sys.stdin.read(1)
@@ -234,11 +275,14 @@ def get_key():
     old_settings = termios.tcgetattr(fd)
     try:
         tty.setraw(fd)
+        if timeout is not None:
+            r, _, _ = select.select([fd], [], [], timeout)
+            if not r:
+                return None  # Timeout expirado para animación en tiempo real
         first_b = os.read(fd, 1)
         if not first_b:
             return ''
         if first_b == b'\x1b':
-            # Esperar hasta 80ms para recibir los caracteres restantes de la secuencia ANSI
             r, _, _ = select.select([fd], [], [], 0.08)
             if r:
                 rest_b = os.read(fd, 32)
@@ -522,11 +566,24 @@ def main():
     cursor_idx = 2 if initial_subdirs else 0
 
     while True:
-        cols = min(get_term_cols(), 72)
+        term_size = shutil.get_terminal_size((80, 24))
+        cols = max(38, min(term_size.columns, 100))
         div_line = f"{GRAY}" + "─" * cols + f"{NC}"
         data = load_data()
         descriptions = data.get("descriptions", {})
         history = data.get("history", [])
+
+        # Preparar banner adaptativo según altura real disponible
+        b_lines = []
+        if banner_helper and term_size.lines >= 26 and cols >= 44:
+            max_b_rows = min(8, term_size.lines - 18)
+            if max_b_rows >= 4:
+                b_lines = banner_helper.get_formatted_banner_lines(banner_frame_idx, max_cols=cols, max_rows=max_b_rows)
+
+        # Cálculo dinámico de paginación para evitar desbordes verticales
+        header_h = 5 if cols >= 64 else (4 if cols >= 48 else 3)
+        fixed_h = header_h + len(b_lines) + 10 + (1 if search_filter else 0)
+        page_size = max(3, min(14, term_size.lines - fixed_h))
 
         # Preparar datos según pestaña activa
         if active_tab == 0:
@@ -575,13 +632,8 @@ def main():
 
         # Dibujar pantalla limpia
         sys.stdout.write("\033[H\033[J")
-        term_size = shutil.get_terminal_size((80, 24))
-        # Banner animado dinámico (Opción A2) si hay espacio vertical suficiente (al menos 20 líneas)
-        if banner_helper and term_size.lines >= 20 and cols >= 44:
-            b_lines = banner_helper.get_formatted_banner_lines(banner_frame_idx, max_cols=cols, max_rows=term_size.lines)
-            banner_frame_idx = (banner_frame_idx + 4) % 120
-            for bl in b_lines:
-                sys.stdout.write(bl + "\n")
+        for bl in b_lines:
+            sys.stdout.write(bl + "\n")
 
         print(f"{BLUE}╔" + "═" * (cols - 2) + f"╗{NC}")
         active_file = os.path.expanduser("~/.config/termux-vscode/active_identity")
@@ -592,11 +644,16 @@ def main():
             except Exception:
                 pass
         title_text = f"CODE STACK SH  •  👑 {active_user.upper()}"
-        print(f"{BLUE}║{WHITE}{BOLD} {title_text.center(cols - 4)} {BLUE}║{NC}")
-        slogan_l1 = "«La libertad de programar sin necesidad de una PC: ingeniería portátil"
-        slogan_l2 = "en una estación de trabajo completa, autónoma y lista para crear.»"
-        print(f"{BLUE}║{YELLOW} {slogan_l1.center(cols - 4)} {BLUE}║{NC}")
-        print(f"{BLUE}║{YELLOW} {slogan_l2.center(cols - 4)} {BLUE}║{NC}")
+        title_fitted = ansi_truncate(title_text, cols - 4, ellipsis="").center(cols - 4)
+        print(f"{BLUE}║{WHITE}{BOLD} {title_fitted} {BLUE}║{NC}")
+        if cols >= 64:
+            slogan_l1 = "«La libertad de programar sin necesidad de una PC: ingeniería portátil"
+            slogan_l2 = "en una estación de trabajo completa, autónoma y lista para crear.»"
+            print(f"{BLUE}║{YELLOW} {slogan_l1.center(cols - 4)} {BLUE}║{NC}")
+            print(f"{BLUE}║{YELLOW} {slogan_l2.center(cols - 4)} {BLUE}║{NC}")
+        elif cols >= 48:
+            slogan_compact = "«Ingeniería portátil autónoma y lista para crear»"
+            print(f"{BLUE}║{YELLOW} {slogan_compact.center(cols - 4)} {BLUE}║{NC}")
         print(f"{BLUE}╚" + "═" * (cols - 2) + f"╝{NC}")
 
         # Pestañas de navegación interactiva
@@ -695,8 +752,12 @@ def main():
             print(f" • {YELLOW}Flechas ←/→ o P/N{NC}   : Cambiar de página  • {YELLOW}ESC o Backspace{NC}: Subir un nivel")
             print(f" • {YELLOW}[1-9]{NC}               : Salto numérico     • {YELLOW}[ / ]{NC}          : Buscar / Filtrar")
             print(f" • {YELLOW}[E]{NC}                 : Poner descripción  • {YELLOW}TAB{NC}            : Ver Historial")
-            c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
-            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {c_hint}{BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            if cols >= 68:
+                c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
+                print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {c_hint}{BOLD}{WHITE}←/→{NC}{GRAY} Pág  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            else:
+                c_hint = " c:Id" if is_current_device_leader() else ""
+                print(f"{GRAY}[↵:Abrir ⇥:Hist{c_hint} ↑↓:Mover ←→:Pág /:Buscar esc:Atrás q:Salir]{NC}")
 
         # ------------------ CONTENIDO PESTAÑA 1: HISTORIAL ------------------
         else:
@@ -754,8 +815,12 @@ def main():
             print(f" • {YELLOW}[D]{NC}                       : Eliminar este proyecto del historial")
             print(f" • {YELLOW}TAB o ESC o [0]{NC}          : Volver al Explorador de carpetas")
             print(f" • {YELLOW}[Q]{NC}                       : Salir sin abrir nada")
-            c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
-            print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {c_hint}{BOLD}{WHITE}←/→{NC}{GRAY} Páginas  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            if cols >= 68:
+                c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
+                print(f"{GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {c_hint}{BOLD}{WHITE}←/→{NC}{GRAY} Pág  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
+            else:
+                c_hint = " c:Id" if is_current_device_leader() else ""
+                print(f"{GRAY}[↵:Abrir ⇥:Expl{c_hint} ↑↓:Mover e:Editar d:Borrar esc:Atrás q:Salir]{NC}")
 
         if status_msg:
             print(f"\n{YELLOW}⚠️  {status_msg}{NC}")
@@ -763,8 +828,12 @@ def main():
 
         sys.stdout.flush()
 
-        # Captura de teclado robusta
-        raw_key = get_key()
+        # Captura de teclado reactiva (soporta tick de animación si el banner está en pantalla)
+        anim_timeout = 0.18 if (banner_helper and b_lines) else None
+        raw_key = get_key(timeout=anim_timeout)
+        if raw_key is None:
+            banner_frame_idx = (banner_frame_idx + 4) % 120
+            continue
         action = classify_key(raw_key)
 
         # Acciones Globales

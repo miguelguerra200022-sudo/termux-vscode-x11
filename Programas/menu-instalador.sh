@@ -15,6 +15,23 @@ NC='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALLED_REGISTRY="$HOME/.config/termux-software-center/installed.list"
+get_ui_cols() {
+    local c
+    c=$(tput cols 2>/dev/null || echo 80)
+    if [ "$c" -lt 42 ]; then c=42; elif [ "$c" -gt 86 ]; then c=86; fi
+    echo "$c"
+}
+
+get_div_bar() {
+    local c=$(get_ui_cols)
+    printf '%*s' "$c" '' | tr ' ' '═'
+}
+
+get_sep_bar() {
+    local c=$(get_ui_cols)
+    printf '%*s' "$c" '' | tr ' ' '─'
+}
+
 mkdir -p "$(dirname "$INSTALLED_REGISTRY")" "$HOME/Desktop"
 
 # ------------------------------------------------------------------------------
@@ -343,9 +360,9 @@ prompt_and_uninstall() {
 
     while true; do
         clear
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo -e "${YELLOW}  ⚠️ OPCIONES DE DESINSTALACIÓN: ${BOLD}${pname}${NC}"
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo ""
         echo -e "¿Cómo deseas proceder con la desinstalación?"
         echo ""
@@ -375,9 +392,9 @@ prompt_and_uninstall() {
             [ "$opt_mode" = "2" ] && delete_data=1
 
             echo ""
-            echo -e "${BLUE}======================================================${NC}"
+            echo -e "${BLUE}$(get_div_bar)${NC}"
             echo -e "${YELLOW}  🗑️ Desinstalando: ${BOLD}${pname}${NC}"
-            echo -e "${BLUE}======================================================${NC}"
+            echo -e "${BLUE}$(get_div_bar)${NC}"
             echo ""
 
             if [ "$delete_data" = "1" ]; then
@@ -462,9 +479,9 @@ menu_desinstalar() {
         done
 
         clear
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo -e "${RED}  🗑️ DESINSTALADOR DE PROGRAMAS (SISTEMA LOCAL)${NC}"
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo ""
 
         if [ "${#INSTALLED_LIST[@]}" -eq 0 ]; then
@@ -524,9 +541,9 @@ menu_desinstalar() {
 menu_buscar() {
     while true; do
         clear
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo -e "${GREEN}  🔍 BÚSQUEDA GLOBAL DE PROGRAMAS (+110 DISPONIBLES)${NC}"
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo ""
         echo -e "Escribe el nombre o tema a buscar ${GRAY}(o '0' / borrar para volver al menú)${NC}:"
         echo ""
@@ -565,9 +582,9 @@ menu_buscar() {
 
         while true; do
             clear
-            echo -e "${BLUE}======================================================${NC}"
+            echo -e "${BLUE}$(get_div_bar)${NC}"
             echo -e "${GREEN}  🔍 RESULTADOS PARA: '$query' (${#MATCHES[@]} coincidencias)${NC}"
-            echo -e "${BLUE}======================================================${NC}"
+            echo -e "${BLUE}$(get_div_bar)${NC}"
             echo ""
 
             local m=1
@@ -627,9 +644,13 @@ menu_buscar() {
                         echo ""
                         echo -e "${CYAN}⚡ Reinstalando: ${target_name}...${NC}"
                         echo ""
-                        run_installer_script "$target_script" "$target_name"
-                        sync_desktop_launcher "$slug"
-                        echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                        if run_installer_script "$target_script" "$target_name"; then
+                            sync_desktop_launcher "$slug"
+                            echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                            echo -e "\n${GREEN}[✓] ¡${target_name} reinstalado con éxito!${NC}"
+                        else
+                            echo -e "\n${RED}[!] La reinstalación de ${target_name} no se completó.${NC}"
+                        fi
                         pause_menu "Presiona ENTER o borrar para continuar..."
                     elif [ "$sub_opt" = "2" ]; then
                         prompt_and_uninstall "$target_script"
@@ -638,9 +659,13 @@ menu_buscar() {
                     echo ""
                     echo -e "${CYAN}⚡ Instalando: ${target_name}...${NC}"
                     echo ""
-                    run_installer_script "$target_script" "$target_name"
-                    sync_desktop_launcher "$slug"
-                    echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                    if run_installer_script "$target_script" "$target_name"; then
+                        sync_desktop_launcher "$slug"
+                        echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                        echo -e "\n${GREEN}[✓] ¡${target_name} instalado con éxito!${NC}"
+                    else
+                        echo -e "\n${RED}[!] La instalación de ${target_name} no se completó.${NC}"
+                    fi
                     echo ""
                     pause_menu "Presiona ENTER o borrar para continuar..."
                 fi
@@ -664,9 +689,9 @@ menu_categoria() {
         local cat_title="${sel_cat#[0-9]*-}"
         cat_title="${cat_title//_/ }"
 
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo -e "${GREEN}  📁 CATEGORÍA: $cat_title${NC}"
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo ""
 
         local PROGRAMS=()
@@ -734,9 +759,13 @@ menu_categoria() {
                     echo ""
                     echo -e "${CYAN}⚡ Reinstalando: ${target_name}...${NC}"
                     echo ""
-                    run_installer_script "$target_script" "$target_name"
-                    sync_desktop_launcher "$slug"
-                    echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                    if run_installer_script "$target_script" "$target_name"; then
+                        sync_desktop_launcher "$slug"
+                        echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                        echo -e "\n${GREEN}[✓] ¡${target_name} reinstalado con éxito!${NC}"
+                    else
+                        echo -e "\n${RED}[!] La reinstalación de ${target_name} no se completó.${NC}"
+                    fi
                     pause_menu "Presiona ENTER o borrar para continuar..."
                 elif [ "$sub_action" = "2" ]; then
                     prompt_and_uninstall "$target_script"
@@ -745,9 +774,13 @@ menu_categoria() {
                 echo ""
                 echo -e "${CYAN}⚡ Instalando: ${target_name}...${NC}"
                 echo ""
-                run_installer_script "$target_script" "$target_name"
-                sync_desktop_launcher "$slug"
-                echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                if run_installer_script "$target_script" "$target_name"; then
+                    sync_desktop_launcher "$slug"
+                    echo "$slug" >> "$INSTALLED_REGISTRY" 2>/dev/null || true
+                    echo -e "\n${GREEN}[✓] ¡${target_name} instalado con éxito!${NC}"
+                else
+                    echo -e "\n${RED}[!] La instalación de ${target_name} no se completó.${NC}"
+                fi
                 echo ""
                 pause_menu "Presiona ENTER o borrar para continuar..."
             fi
@@ -783,10 +816,10 @@ run_main_menu() {
             fi
             ((banner_frame=(banner_frame+4)%120))
         fi
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo -e "${GREEN}  📦 CODE STACK SH • CENTRO DE SOFTWARE OFICIAL${NC}"
         echo -e "${CYAN}     «La libertad de programar sin necesidad de una PC»${NC}"
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}$(get_div_bar)${NC}"
         echo ""
         echo -e "Explorar categorías para instalar:"
         echo ""
@@ -810,12 +843,12 @@ run_main_menu() {
         done
 
         echo ""
-        echo -e "${GRAY}------------------------------------------------------${NC}"
+        echo -e "${GRAY}$(get_sep_bar)${NC}"
         echo -e "  [${YELLOW}D${NC}] 🗑️ ${BOLD}Desinstalar programas${NC} (${GREEN}$inst_count instalados${NC})"
         echo -e "  [${YELLOW}B${NC}] 🔍 ${BOLD}Buscar programa${NC} (+110 apps)"
         echo -e "  [${YELLOW}G${NC}] ⚡ ${BOLD}Calibrar GPU y Aceleración Hardware${NC}"
         echo -e "  [${YELLOW}0${NC}] 🚪 Salir ${GRAY}(o pulsa borrar)${NC}"
-        echo -e "${GRAY}------------------------------------------------------${NC}"
+        echo -e "${GRAY}$(get_sep_bar)${NC}"
         echo ""
 
         local opt_cat

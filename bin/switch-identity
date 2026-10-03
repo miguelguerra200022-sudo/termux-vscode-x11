@@ -53,13 +53,29 @@ GATEWAY_URL=""
 
 ACTIVE_FILE="$HOME/.config/termux-vscode/active_identity"
 CURRENT_ACTIVE="ums9230-sp_6300-3724801c"
+COLS=$(tput cols 2>/dev/null || echo 70)
+[ "$COLS" -lt 42 ] && COLS=42
+[ "$COLS" -gt 84 ] && COLS=84
+
+get_box_top() {
+    echo "╔$(printf '%*s' "$((COLS - 2))" '' | tr ' ' '═')╗"
+}
+
+get_box_bot() {
+    echo "╚$(printf '%*s' "$((COLS - 2))" '' | tr ' ' '═')╝"
+}
+
+get_div_line() {
+    printf '%*s' "$COLS" '' | tr ' ' '─'
+}
+
 [ -f "$ACTIVE_FILE" ] && CURRENT_ACTIVE=$(cat "$ACTIVE_FILE" 2>/dev/null | tr -d '[:space:]' || echo "$CURRENT_ACTIVE")
 
 clear 2>/dev/null || true
-echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}$(get_box_top)${NC}"
 echo -e "${GREEN}║   👑 CONMUTADOR DE IDENTIDADES MULTI-DISPOSITIVO (LÍDER)          ║${NC}"
 echo -e "${CYAN}║      Alterna entre los celulares de la flota y sus cuentas         ║${NC}"
-echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+echo -e "${BLUE}$(get_box_bot)${NC}"
 echo ""
 
 echo -e "${YELLOW}[*] Consultando flota registrada en Cloudflare Edge y almacenamiento local...${NC}"
@@ -125,7 +141,7 @@ INDEX=1
 
 echo ""
 echo -e "${BOLD}Dispositivos y cuentas disponibles en la flota:${NC}"
-echo -e "${BLUE}───────────────────────────────────────────────────────────────────${NC}"
+echo -e "${BLUE}$(get_div_line)${NC}"
 
 DEVICE_COUNT=$(python3 -c "import json, sys; print(len(json.loads(sys.argv[1])))" "$DISP_LIST")
 
@@ -140,6 +156,7 @@ for (( i=0; i<DEVICE_COUNT; i++ )); do
     USER_MAP+=("$UNAME")
     MODEL_MAP+=("$MODEL")
     ROLE_MAP+=("$ROLE")
+    STATUS_MAP+=("$STATUS")
 
     TAG=""
     if [ "$SEAL" = "$CURRENT_ACTIVE" ]; then
@@ -160,7 +177,7 @@ for (( i=0; i<DEVICE_COUNT; i++ )); do
 done
 
 echo -e " [0] Cancelar y volver"
-echo -e "${BLUE}───────────────────────────────────────────────────────────────────${NC}"
+echo -e "${BLUE}$(get_div_line)${NC}"
 echo ""
 
 TOTAL_ITEMS=${#SEAL_MAP[@]}
@@ -186,6 +203,12 @@ fi
 TARGET_SEAL="${SEAL_MAP[$((CHOICE - 1))]}"
 TARGET_UNAME="${USER_MAP[$((CHOICE - 1))]}"
 TARGET_MODEL="${MODEL_MAP[$((CHOICE - 1))]}"
+TARGET_STATUS="${STATUS_MAP[$((CHOICE - 1))]}"
+
+if [ "$TARGET_STATUS" = "rejected" ] || [ "$TARGET_STATUS" = "revoked" ]; then
+    echo -e "\n${RED}[⛔] Dispositivo bloqueado: no se permite conmutar a una identidad revocada.${NC}\n"
+    exit 1
+fi
 
 if [ "$TARGET_SEAL" = "$CURRENT_ACTIVE" ]; then
     echo -e "${GREEN}[✓] La identidad '${TARGET_UNAME}' (${TARGET_SEAL}) ya está activa en este dispositivo.${NC}"
