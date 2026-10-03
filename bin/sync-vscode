@@ -80,13 +80,27 @@ else
     fi
 fi
 
-# 5. Sincronizar configuraciones visuales del sistema
-[ -f "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
-[ -f "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
-[ -f "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
-[ -f "$HOME/.config/tint2/tint2rc_vertical" ] && cp "$HOME/.config/tint2/tint2rc_vertical" "$REPO_DIR/config/tint2rc_vertical" 2>/dev/null || true
-[ -f "$HOME/.config/tint2/tint2rc_horizontal" ] && cp "$HOME/.config/tint2/tint2rc_horizontal" "$REPO_DIR/config/tint2rc_horizontal" 2>/dev/null || true
-[ -f "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
+# 5. Sincronizar configuraciones visuales del sistema (solo si no están vacías)
+[ -s "$HOME/.config/openbox/rc.xml" ] && cp "$HOME/.config/openbox/rc.xml" "$REPO_DIR/config/rc.xml" 2>/dev/null || true
+[ -s "$HOME/.config/openbox/menu.xml" ] && cp "$HOME/.config/openbox/menu.xml" "$REPO_DIR/config/menu.xml" 2>/dev/null || true
+[ -s "$HOME/.config/tint2/tint2rc" ] && cp "$HOME/.config/tint2/tint2rc" "$REPO_DIR/config/tint2rc" 2>/dev/null || true
+[ -s "$HOME/.config/tint2/tint2rc_vertical" ] && cp "$HOME/.config/tint2/tint2rc_vertical" "$REPO_DIR/config/tint2rc_vertical" 2>/dev/null || true
+[ -s "$HOME/.config/tint2/tint2rc_horizontal" ] && cp "$HOME/.config/tint2/tint2rc_horizontal" "$REPO_DIR/config/tint2rc_horizontal" 2>/dev/null || true
+[ -s "$HOME/.config/Code - OSS/User/settings.json" ] && cp "$HOME/.config/Code - OSS/User/settings.json" "$REPO_DIR/config/settings.json" 2>/dev/null || true
+
+# Auto-recuperación de tint2 si se encuentra corrupto o vacío en el sistema local
+if [ ! -s "$HOME/.config/tint2/tint2rc_vertical" ] && [ -s "$REPO_DIR/config/tint2rc_vertical" ]; then
+    mkdir -p "$HOME/.config/tint2"
+    cp "$REPO_DIR/config/tint2rc_vertical" "$HOME/.config/tint2/tint2rc_vertical" 2>/dev/null || true
+fi
+if [ ! -s "$HOME/.config/tint2/tint2rc_horizontal" ] && [ -s "$REPO_DIR/config/tint2rc_horizontal" ]; then
+    mkdir -p "$HOME/.config/tint2"
+    cp "$REPO_DIR/config/tint2rc_horizontal" "$HOME/.config/tint2/tint2rc_horizontal" 2>/dev/null || true
+fi
+if [ ! -s "$HOME/.config/tint2/tint2rc" ] && [ -s "$REPO_DIR/config/tint2rc" ]; then
+    mkdir -p "$HOME/.config/tint2"
+    cp "$REPO_DIR/config/tint2rc" "$HOME/.config/tint2/tint2rc" 2>/dev/null || true
+fi
 
 # 6. Sincronizar scripts
 SCRIPTS=(

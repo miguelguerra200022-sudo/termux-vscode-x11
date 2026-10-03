@@ -624,10 +624,16 @@ def main():
         descriptions = data.get("descriptions", {})
         history = data.get("history", [])
 
+        # Guía explicativa adaptable
+        show_detailed_guide = (term_size.lines >= 26)
+        guide_h = 6 if show_detailed_guide else 1
+
         # Preparar banner adaptativo independiente cerrado en caja
+        # Solo se muestra si la terminal tiene al menos 32 líneas para que quepan
+        # el banner superior, el menú interactivo, la lista y la guía sin scroll
         b_box_lines = []
-        if banner_helper and term_size.lines >= 24 and cols >= 38:
-            max_b_rows = min(5, term_size.lines - 19)
+        if banner_helper and term_size.lines >= 32 and cols >= 38:
+            max_b_rows = min(5, term_size.lines - (24 + guide_h))
             if max_b_rows >= 4:
                 try:
                     b_box_lines = banner_helper.get_boxed_banner_lines(banner_frame_idx, max_cols=cols, max_rows=max_b_rows)
@@ -637,7 +643,7 @@ def main():
         # Cálculo dinámico de paginación para evitar desbordes verticales
         b_box_h = (len(b_box_lines) + 1) if b_box_lines else 0
         header_h = 5 if cols >= 64 else (4 if cols >= 48 else 3)
-        fixed_h = header_h + b_box_h + 10 + (1 if search_filter else 0)
+        fixed_h = header_h + b_box_h + 10 + guide_h + (1 if search_filter else 0)
         page_size = max(3, min(14, term_size.lines - fixed_h))
 
         # Preparar datos según pestaña activa
@@ -823,13 +829,25 @@ def main():
             print_menu_line(f"{CYAN}{prev_s}{NC}    {BOLD}Pág {current_page + 1}/{total_pages} ({rango_s}){NC}    {CYAN}{next_s}{NC}", align="center")
             print_menu_sep()
 
-            # Guía explicativa sin conflictos
+            # Guía explicativa con viñetas completas
+            if show_detailed_guide:
+                print_menu_line(f" 💡 {BOLD}Guía de navegación:{NC}")
+                if cols >= 54:
+                    print_menu_line(f"   • {YELLOW}↑/↓ o W/S{NC}: Mover cursor        • {YELLOW}ENTER{NC}: Entrar o Abrir")
+                    print_menu_line(f"   • {YELLOW}←/→ o P/N{NC}: Cambiar página      • {YELLOW}ESC o Backspace{NC}: Subir nivel")
+                    print_menu_line(f"   • {YELLOW}[1-9]{NC}: Salto numérico directo  • {YELLOW}[ / ]{NC}: Buscar / Filtrar")
+                    print_menu_line(f"   • {YELLOW}[E]{NC}: Editar descripción       • {YELLOW}TAB{NC}: Ver Historial")
+                else:
+                    print_menu_line(f"   • {YELLOW}↑↓{NC}: Mover  • {YELLOW}ENTER{NC}: Abrir  • {YELLOW}ESC{NC}: Volver")
+                    print_menu_line(f"   • {YELLOW}←→{NC}: Pág    • {YELLOW}[/]{NC}: Buscar  • {YELLOW}TAB{NC}: Historial")
+                    print_menu_line(f"   • {YELLOW}[1-9]{NC}: Abrir  • {YELLOW}[E]{NC}: Descripción")
+
+            c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
             if cols >= 68:
-                c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
                 print_menu_line(f" {GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Historial  {c_hint}{BOLD}{WHITE}←/→{NC}{GRAY} Pág  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}↑/↓{NC}{GRAY} Mover  {BOLD}{WHITE}/{NC}{GRAY} Buscar  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
             else:
-                c_hint = " c:Id" if is_current_device_leader() else ""
-                print_menu_line(f" {GRAY}[↵:Abrir ⇥:Hist{c_hint} ↑↓:Mover ←→:Pág /:Buscar esc:Atrás q:Salir]{NC}")
+                c_hint_short = " c:Id" if is_current_device_leader() else ""
+                print_menu_line(f" {GRAY}[↵:Abrir ⇥:Hist{c_hint_short} ↑↓:Mover ←→:Pág /:Buscar esc:Atrás q:Salir]{NC}")
 
             print(f"{BLUE}╚{'═' * inner_w}╝{NC}")
 
@@ -880,13 +898,24 @@ def main():
             print_menu_line(f"{CYAN}{prev_s}{NC}    {BOLD}Pág {current_page + 1}/{total_pages} ({rango_s}){NC}    {CYAN}{next_s}{NC}", align="center")
             print_menu_sep()
 
-            # Guía Historial
+            # Guía Historial con viñetas completas
+            if show_detailed_guide:
+                print_menu_line(f" 💡 {BOLD}Guía de Historial:{NC}")
+                if cols >= 54:
+                    print_menu_line(f"   • {YELLOW}↑/↓ o W/S + ENTER{NC}: Iniciar estación en el proyecto")
+                    print_menu_line(f"   • {YELLOW}←/→ o P/N{NC}: Cambiar página de proyectos")
+                    print_menu_line(f"   • {YELLOW}[1-9]{NC}: Abrir directo     • {YELLOW}[E]{NC}: Editar descripción")
+                    print_menu_line(f"   • {YELLOW}[D]{NC}: Eliminar proyecto   • {YELLOW}TAB / ESC{NC}: Volver a Explorador")
+                else:
+                    print_menu_line(f"   • {YELLOW}↑↓+ENTER{NC}: Iniciar  • {YELLOW}←→{NC}: Pág  • {YELLOW}TAB{NC}: Explorador")
+                    print_menu_line(f"   • {YELLOW}[1-9]{NC}: Abrir  • {YELLOW}[E]{NC}: Editar  • {YELLOW}[D]{NC}: Eliminar")
+
+            c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
             if cols >= 68:
-                c_hint = f"{BOLD}{WHITE}c{NC}{GRAY} Identidad  " if is_current_device_leader() else ""
                 print_menu_line(f" {GRAY}Teclado: {BOLD}{WHITE}enter{NC}{GRAY} Abrir  {BOLD}{WHITE}tab{NC}{GRAY} Explorador  {c_hint}{BOLD}{WHITE}←/→{NC}{GRAY} Pág  {BOLD}{WHITE}e{NC}{GRAY} Editar  {BOLD}{WHITE}d{NC}{GRAY} Borrar  {BOLD}{WHITE}esc{NC}{GRAY} Volver  {BOLD}{WHITE}q{NC}{GRAY} Salir{NC}")
             else:
-                c_hint = " c:Id" if is_current_device_leader() else ""
-                print_menu_line(f" {GRAY}[↵:Abrir ⇥:Expl{c_hint} ↑↓:Mover e:Editar d:Borrar esc:Atrás q:Salir]{NC}")
+                c_hint_short = " c:Id" if is_current_device_leader() else ""
+                print_menu_line(f" {GRAY}[↵:Abrir ⇥:Expl{c_hint_short} ↑↓:Mover e:Editar d:Borrar esc:Atrás q:Salir]{NC}")
 
             print(f"{BLUE}╚{'═' * inner_w}╝{NC}")
 

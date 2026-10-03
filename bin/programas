@@ -3,7 +3,12 @@ cleanup_terminal() {
     stty sane 2>/dev/null || true
     echo -ne "\033[?25h\033[0m" 2>/dev/null || true
 }
-trap cleanup_terminal EXIT INT TERM HUP
+handle_sigint() {
+    cleanup_terminal
+    exit 130
+}
+trap cleanup_terminal EXIT HUP
+trap handle_sigint INT TERM
 
 REPO_DIR=""
 CONFIG_FILE="$HOME/.config/termux-vscode/repo_path"

@@ -4,7 +4,13 @@ cleanup_terminal() {
     stty sane 2>/dev/null || true
     echo -ne "\033[?25h\033[0m" 2>/dev/null || true
 }
-trap cleanup_terminal EXIT INT TERM HUP
+handle_sigint() {
+    cleanup_terminal
+    echo -e "\n\033[1;33m[*] Cancelado por el usuario (Ctrl+C). Saliendo...\033[0m\n" >&2
+    exit 130
+}
+trap cleanup_terminal EXIT HUP
+trap handle_sigint INT TERM
 # ==============================================================================
 # menu-instalador.sh: Centro de Instalación y Desinstalación de Software
 # ==============================================================================
@@ -145,13 +151,13 @@ read_menu_input() {
             continue
         fi
 
-        # Ctrl+C (\x03) o Ctrl+D (\x04) -> ATRÁS
+        # Ctrl+C (\x03) o Ctrl+D (\x04) -> SALIR INMEDIATAMENTE
         if [ "$char" = $'\x03' ] || [ "$char" = $'\x04' ]; then
-            stty "$old_stty" 2>/dev/null || true
+            stty "$old_stty" 2>/dev/null || stty sane 2>/dev/null || true
             trap - INT TERM
-            echo "" >&2
-            echo "__BACK__"
-            return 0
+            echo -e "\n${YELLOW}[*] Cancelado por el usuario (Ctrl+C). Saliendo...${NC}\n" >&2
+            kill -s INT $$ 2>/dev/null || exit 130
+            return 130
         fi
 
         # Caracteres normales imprimibles
